@@ -1,0 +1,7 @@
+## Copy this file to android/key.properties and fill your real values.
+## IMPORTANT: Use the SAME keystore for every release update.
+
+storeFile=../keystore/dattsoap-upload.jks
+storePassword=CHANGE_ME
+keyAlias=dattsoap
+keyPassword=CHANGE_ME

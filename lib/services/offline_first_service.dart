@@ -1,0 +1,517 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
+import '../data/local/base_entity.dart';
+import '../data/local/entities/sync_queue_entity.dart';
+import 'base_service.dart';
+import 'database_service.dart';
+import 'outbox_codec.dart';
+
+/// Base class for offline-first services
+///
+/// Provides reusable local storage operations for all services.
+/// Local storage is the single source of truth.
+/// Firebase sync is optional and non-blocking.
+abstract class OfflineFirstService extends BaseService {
+  final DatabaseService dbService;
+
+  OfflineFirstService(super.firebaseServices, [DatabaseService? dbService])
+    : dbService = dbService ?? DatabaseService.instance;
+
+  /// Override in subclass to provide local storage key (for SharedPreferences fallback)
+  String get localStorageKey;
+
+  /// Whether this service uses Isar for local storage
+  bool get useIsar => false;
+
+  // ======================================
+  // LOCAL STORAGE OPERATIONS (ISAR & SHPREFS)
+  // ======================================
+
+  /// Load all items from local storage
+  Future<List<Map<String, dynamic>>> loadFromLocal() async {
+    try {
+      if (useIsar) {
+        // Subclasses using Isar should override specific fetch logic or use this as a hint.
+        // For now, this remains the SharedPreferences fallback.
+        return [];
+      }
+      final prefs = await SharedPreferences.getInstance();
+      final json = prefs.getString(localStorageKey);
+      if (json != null) {
+        final decoded = List<Map<String, dynamic>>.from(jsonDecode(json));
+        return decoded.where((item) => item['isDeleted'] != true).toList();
+      }
+      return [];
+    } catch (e) {
+      handleError(e, 'loadFromLocal');
+      return [];
+    }
+  }
+
+  /// Save all items to local storage
+  Future<void> saveToLocal(List<Map<String, dynamic>> items) async {
+    try {
+      if (useIsar) return; // Isar uses specific put() calls
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(localStorageKey, jsonEncode(items));
+    } catch (e) {
+      handleError(e, 'saveToLocal');
+      rethrow;
+    }
+  }
+
+  /// Add a single item to local storage
+  Future<void> addToLocal(Map<String, dynamic> item) async {
+    try {
+      if (useIsar) return;
+      final items = await loadFromLocal();
+      items.add(item);
+      await saveToLocal(items);
+    } catch (e) {
+      handleError(e, 'addToLocal');
+      rethrow;
+    }
+  }
+
+  /// Add multiple items to local storage (Bulk)
+  Future<void> bulkAddToLocal(List<Map<String, dynamic>> newItems) async {
+    try {
+      if (useIsar) return;
+      final items = await loadFromLocal();
+      items.addAll(newItems);
+      await saveToLocal(items);
+    } catch (e) {
+      handleError(e, 'bulkAddToLocal');
+      rethrow;
+    }
+  }
+
+  /// Update an item in local storage
+  Future<void> updateInLocal(String id, Map<String, dynamic> updates) async {
+    try {
+      if (useIsar) return;
+      final items = await loadFromLocal();
+      final index = items.indexWhere((item) => item['id'] == id);
+      if (index != -1) {
+        items[index] = {...items[index], ...updates};
+        await saveToLocal(items);
+      }
+    } catch (e) {
+      handleError(e, 'updateInLocal');
+      rethrow;
+    }
+  }
+
+  /// Delete an item from local storage
+  Future<void> deleteFromLocal(String id) async {
+    try {
+      if (useIsar) return;
+      final items = await loadFromLocal();
+      final now = getCurrentTimestamp();
+      final index = items.indexWhere((item) => item['id'] == id);
+      if (index != -1) {
+        items[index] = {
+          ...items[index],
+          'isDeleted': true,
+          'deletedAt': now,
+          'updatedAt': now,
+        };
+        await saveToLocal(items);
+      }
+    } catch (e) {
+      handleError(e, 'deleteFromLocal');
+      rethrow;
+    }
+  }
+
+  /// Find a single item by ID in local storage
+  Future<Map<String, dynamic>?> findInLocal(String id) async {
+    try {
+      if (useIsar) return null;
+      final items = await loadFromLocal();
+      final item = items.firstWhere(
+        (item) => item['id'] == id,
+        orElse: () => <String, dynamic>{},
+      );
+      if (item.isNotEmpty && item['isDeleted'] == true) {
+        return null;
+      }
+      return item.isEmpty ? null : item;
+    } catch (e) {
+      handleError(e, 'findInLocal');
+      return null;
+    }
+  }
+
+  /// Upsert (Update or Insert) an item in local storage
+  Future<void> upsertToLocal(Map<String, dynamic> item) async {
+    try {
+      if (useIsar) return;
+      final id = item['id']?.toString();
+      if (id == null) return;
+
+      final items = await loadFromLocal();
+      final index = items.indexWhere((i) => i['id'] == id);
+
+      if (index != -1) {
+        // Update existing
+        items[index] = {...items[index], ...item};
+      } else {
+        // Insert new
+        items.add(item);
+      }
+      await saveToLocal(items);
+    } catch (e) {
+      handleError(e, 'upsertToLocal');
+      rethrow;
+    }
+  }
+
+  // ======================================
+  // SYNC QUEUE OPERATIONS
+  // ======================================
+
+  /// Upsert item to durable sync queue.
+  @protected
+  Future<void> enqueue(Map<String, dynamic> item) async {
+    try {
+      final data = item['data'] as Map<String, dynamic>? ?? {};
+      final collection = item['collection']?.toString() ?? '';
+      final action = item['action']?.toString() ?? 'set';
+      final queueId =
+          item['queueId']?.toString() ??
+          OutboxCodec.buildQueueId(collection, data);
+      final existing = await dbService.syncQueue.getById(queueId);
+      final now = DateTime.now();
+      final existingMeta = existing == null
+          ? null
+          : OutboxCodec.decode(
+              existing.dataJson,
+              fallbackQueuedAt: existing.createdAt,
+            ).meta;
+
+      final entity = SyncQueueEntity()
+        ..id = queueId
+        ..collection = collection
+        ..action = action
+        ..dataJson = OutboxCodec.encodeEnvelope(
+          payload: data,
+          existingMeta: existingMeta,
+          now: now,
+          resetRetryState: true,
+        )
+        ..createdAt = existing?.createdAt ?? now
+        ..updatedAt = now
+        ..syncStatus = SyncStatus.pending;
+
+      await dbService.db.writeTxn(() async {
+        await dbService.syncQueue.put(entity);
+      });
+    } catch (e) {
+      handleError(e, 'enqueue');
+    }
+  }
+
+  /// Remove item from sync queue
+  @protected
+  Future<void> dequeue(String queueId) async {
+    try {
+      final existing = await dbService.syncQueue.getById(queueId);
+      if (existing == null) return;
+      await dbService.db.writeTxn(() async {
+        await dbService.syncQueue.delete(existing.isarId);
+      });
+    } catch (e) {
+      handleError(e, 'dequeue');
+    }
+  }
+
+  // ======================================
+  // FIREBASE SYNC (QUEUE-BASED)
+  // ======================================
+
+  /// Sync to Firebase with queue fallback
+  /// 1. Upsert durable outbox item
+  /// 2. Try immediate sync (optional)
+  /// 3. Dequeue if success
+  Future<void> syncToFirebase(
+    String action,
+    Map<String, dynamic> data, {
+    String? collectionName,
+    bool syncImmediately = true,
+  }) async {
+    final collection =
+        collectionName ?? localStorageKey.replaceAll('local_', '');
+    final payload = Map<String, dynamic>.from(data);
+    final queueId = OutboxCodec.buildQueueId(collection, payload);
+
+    try {
+      await enqueue(<String, dynamic>{
+        'queueId': queueId,
+        'action': action,
+        'collection': collection,
+        'data': payload,
+      });
+
+      if (!syncImmediately) return;
+
+      final firestore = db;
+      if (firestore == null) {
+        return;
+      }
+
+      await performSync(action, collection, payload);
+      await dequeue(queueId);
+    } catch (e) {
+      await _recordQueueFailure(queueId, e);
+    }
+  }
+
+  /// Bulk enqueue to Firebase outbox
+  Future<void> bulkSyncToFirebase(
+    String action,
+    List<Map<String, dynamic>> itemsList, {
+    String? collectionName,
+  }) async {
+    final collection =
+        collectionName ?? localStorageKey.replaceAll('local_', '');
+
+    try {
+      final entities = <SyncQueueEntity>[];
+      final now = DateTime.now();
+      for (final item in itemsList) {
+        final payload = Map<String, dynamic>.from(item);
+        final queueId = OutboxCodec.buildQueueId(collection, payload);
+        final existing = await dbService.syncQueue.getById(queueId);
+        final existingMeta = existing == null
+            ? null
+            : OutboxCodec.decode(
+                existing.dataJson,
+                fallbackQueuedAt: existing.createdAt,
+              ).meta;
+        entities.add(
+          SyncQueueEntity()
+            ..id = queueId
+            ..collection = collection
+            ..action = action
+            ..dataJson = OutboxCodec.encodeEnvelope(
+              payload: payload,
+              existingMeta: existingMeta,
+              now: now,
+              resetRetryState: true,
+            )
+            ..createdAt = existing?.createdAt ?? now
+            ..updatedAt = now
+            ..syncStatus = SyncStatus.pending,
+        );
+      }
+      if (entities.isNotEmpty) {
+        await dbService.db.writeTxn(() async {
+          await dbService.syncQueue.putAll(entities);
+        });
+      }
+    } catch (e) {
+      handleError(e, 'bulkSyncToFirebase');
+    }
+  }
+
+  Future<void> _recordQueueFailure(String queueId, Object error) async {
+    try {
+      final existing = await dbService.syncQueue.getById(queueId);
+      if (existing == null) return;
+      final decoded = OutboxCodec.decode(
+        existing.dataJson,
+        fallbackQueuedAt: existing.createdAt,
+      );
+      final updatedMeta = OutboxCodec.markFailure(decoded.meta, error);
+      final wrapped = OutboxCodec.encodeEnvelope(
+        payload: decoded.payload,
+        existingMeta: updatedMeta,
+        now: DateTime.now(),
+        resetRetryState: false,
+      );
+      existing
+        ..dataJson = wrapped
+        ..updatedAt = DateTime.now()
+        ..syncStatus = OutboxCodec.isPermanentFailure(updatedMeta)
+            ? SyncStatus.conflict
+            : SyncStatus.pending;
+      await dbService.db.writeTxn(() async {
+        await dbService.syncQueue.put(existing);
+      });
+    } catch (_) {
+      // Preserve queue item as-is.
+    }
+  }
+
+  /// Returns all permanently-failed (dead-letter) sync queue items.
+  ///
+  /// These are items that exhausted their retry budget and were marked
+  /// with [SyncStatus.conflict] by [_recordQueueFailure].
+  Future<List<SyncQueueEntity>> getFailedSyncItems() async {
+    final all = await dbService.syncQueue.where().findAll();
+    return all.where((e) => e.syncStatus == SyncStatus.conflict).toList();
+  }
+
+  /// Resets a permanently-failed item back to [SyncStatus.pending] so the
+  /// queue processor will retry it on the next sync cycle.
+  Future<bool> retryFailedSyncItem(String queueId) async {
+    try {
+      final item = await dbService.syncQueue.getById(queueId);
+      if (item == null) return false;
+      item
+        ..syncStatus = SyncStatus.pending
+        ..updatedAt = DateTime.now();
+      await dbService.db.writeTxn(() async {
+        await dbService.syncQueue.put(item);
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Permanently removes a failed sync queue item (admin discard).
+  Future<bool> deleteFailedSyncItem(String queueId) async {
+    try {
+      final item = await dbService.syncQueue.getById(queueId);
+      if (item == null) return false;
+      await dbService.db.writeTxn(() async {
+        await dbService.syncQueue.delete(item.isarId);
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Override this in subclasses to implement custom sync logic (e.g., Transactions)
+  /// Default implementation handles standard CRUD
+  @protected
+  Future<void> performSync(
+    String action,
+    String collection,
+    Map<String, dynamic> data,
+  ) async {
+    final firestore = db;
+    if (firestore == null) return;
+
+    final id = data['id'] as String?;
+    final now = getCurrentTimestamp();
+
+    switch (action) {
+      case 'add':
+      case 'set':
+        data['updatedAt'] ??= now;
+        data['isDeleted'] ??= false;
+        if (data['isDeleted'] == true) {
+          data['deletedAt'] ??= now;
+        } else if (!data.containsKey('deletedAt')) {
+          data['deletedAt'] = null;
+        }
+        if (id != null) {
+          await firestore.collection(collection).doc(id).set(data);
+        } else {
+          final newId = generateId();
+          data['id'] = newId;
+          await firestore.collection(collection).doc(newId).set(data);
+        }
+        break;
+      case 'update':
+        data['updatedAt'] ??= now;
+        data['isDeleted'] ??= false;
+        if (data['isDeleted'] == true) {
+          data['deletedAt'] ??= now;
+        }
+        if (id != null) {
+          await firestore
+              .collection(collection)
+              .doc(id)
+              .set(data, SetOptions(merge: true));
+        }
+        break;
+      case 'delete':
+        if (id != null) {
+          if (_isFinancialCollection(collection)) {
+            debugPrint(
+              'Blocked delete for $collection/$id. Financial docs require reversal entries.',
+            );
+            return;
+          }
+          await firestore.collection(collection).doc(id).set({
+            'id': id,
+            'isDeleted': true,
+            'deletedAt': data['deletedAt'] ?? now,
+            'updatedAt': data['updatedAt'] ?? now,
+          }, SetOptions(merge: true));
+        }
+        break;
+    }
+  }
+
+  bool _isFinancialCollection(String collection) {
+    return collection == 'accounts' ||
+        collection == 'vouchers' ||
+        collection == 'voucher_entries';
+  }
+
+  /// Bootstrap local storage from Firebase (one-time)
+  Future<List<Map<String, dynamic>>> bootstrapFromFirebase({
+    required String collectionName,
+  }) async {
+    try {
+      final firestore = db;
+      if (firestore == null) return [];
+
+      final snapshot = await firestore
+          .collection(collectionName)
+          .get()
+          .timeout(const Duration(seconds: 3));
+      final items = snapshot.docs
+          .map((doc) => {...doc.data(), 'id': doc.id})
+          .toList();
+
+      if (items.isNotEmpty && !useIsar) {
+        await saveToLocal(items);
+      }
+
+      return items;
+    } catch (e) {
+      handleError(e, 'bootstrapFromFirebase');
+      return [];
+    }
+  }
+
+  // ======================================
+  // UTILITY METHODS
+  // ======================================
+
+  /// Generate a unique ID for new items
+  String generateId() {
+    return const Uuid().v4();
+  }
+
+  /// Get current ISO timestamp
+  String getCurrentTimestamp() {
+    return DateTime.now().toIso8601String();
+  }
+
+  /// Add timestamps to data
+  Map<String, dynamic> addTimestamps(
+    Map<String, dynamic> data, {
+    bool isNew = true,
+  }) {
+    final now = getCurrentTimestamp();
+    if (isNew) {
+      data['createdAt'] = now;
+    }
+    data['lastUpdatedAt'] = now;
+    return data;
+  }
+}

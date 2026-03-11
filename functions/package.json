@@ -1,0 +1,26 @@
+{
+    "name": "functions",
+    "description": "Cloud Functions for DattSoap ERP",
+    "scripts": {
+        "lint": "eslint .",
+        "serve": "firebase emulators:start --only functions",
+        "shell": "firebase functions:shell",
+        "start": "npm run shell",
+        "deploy": "firebase deploy --only functions",
+        "logs": "firebase functions:log"
+    },
+    "engines": {
+        "node": "18"
+    },
+    "main": "index.js",
+    "dependencies": {
+        "firebase-admin": "^13.6.1",
+        "firebase-functions": "^4.3.0"
+    },
+    "devDependencies": {
+        "eslint": "^4.1.1",
+        "eslint-config-google": "^0.9.1",
+        "firebase-functions-test": "^3.1.0"
+    },
+    "private": true
+}

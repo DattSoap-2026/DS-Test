@@ -1,0 +1,36 @@
+END-USER LICENSE AGREEMENT (EULA)
+DattSoap ERP Software
+
+Last Updated: January 2026
+
+IMPORTANT - READ CAREFULLY:
+
+This End-User License Agreement ("AGREEMENT") is a legal agreement between you (either an individual or a single entity) and DattSoap ("LICENSOR") for the DattSoap ERP software product, which includes computer software and may include associated media, printed materials, and "online" or electronic documentation ("SOFTWARE").
+
+By installing, copying, or otherwise using the SOFTWARE, you agree to be bound by the terms of this AGREEMENT. If you do not agree to the terms of this AGREEMENT, do not install or use the SOFTWARE.
+
+1. GRANT OF LICENSE
+   This AGREEMENT grants you the following rights:
+   - Installation and Use: You may install and use the SOFTWARE on a single computer.
+   - Backup Copy: You may make one backup copy of the SOFTWARE for archival purposes.
+
+2. DESCRIPTION OF OTHER RIGHTS AND LIMITATIONS
+   - You may not reverse engineer, decompile, or disassemble the SOFTWARE.
+   - You may not rent, lease, or lend the SOFTWARE.
+   - You may not use the SOFTWARE for any illegal purpose.
+
+3. COPYRIGHT
+   All title and copyrights in and to the SOFTWARE are owned by DattSoap.
+
+4. LIMITED WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+
+5. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL DATTSOAP BE LIABLE FOR ANY DAMAGES WHATSOEVER ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE.
+
+6. TERMINATION
+   Without prejudice to any other rights, DattSoap may terminate this AGREEMENT if you fail to comply with the terms and conditions.
+
+By clicking "I Agree" or by installing the SOFTWARE, you acknowledge that you have read this agreement, understand it, and agree to be bound by its terms and conditions.
+
+Copyright (c) 2026 DattSoap Management. All Rights Reserved.

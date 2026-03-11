@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "ds-dev-test-c09e0",
+    "staging": "ds-dev-test-c09e0",
+    "production": "dattsoap-6cf2a"
+  }
+}

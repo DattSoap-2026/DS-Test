@@ -1,0 +1,9 @@
+# Exclude Firebase plugins from Windows build
+# Firebase C++ SDK has CMake version compatibility issues on Windows
+# App already supports offline mode without Firebase
+firebase_core
+firebase_auth
+cloud_firestore
+cloud_functions
+firebase_messaging
+firebase_storage

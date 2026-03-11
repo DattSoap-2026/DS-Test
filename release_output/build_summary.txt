@@ -1,0 +1,80 @@
+═══════════════════════════════════════════════════════════════
+  DattSoap ERP - Build Summary
+═══════════════════════════════════════════════════════════════
+
+App Name:           DattSoap ERP
+New Version:        1.0.29+31
+Build Date:         2026-03-09
+Old Version:        1.0.28+30
+
+═══════════════════════════════════════════════════════════════
+  Android Build (arm64-v8a)
+═══════════════════════════════════════════════════════════════
+
+File Name:          DattSoap_v1.0.29_arm64.apk
+File Size:          46.4 MB (48,610,442 bytes)
+Location:           release_output/
+Target Platform:    android-arm64 (arm64-v8a)
+Build Type:         Release
+Signing Status:     SIGNED (with release keystore)
+Build Duration:     ~393 seconds
+
+═══════════════════════════════════════════════════════════════
+  Windows Build (x64)
+═══════════════════════════════════════════════════════════════
+
+File Name:          DattSoap_v1.0.29_Windows.zip
+File Size:          32.6 MB (34,211,517 bytes)
+Location:           release_output/
+Target Platform:    Windows x64
+Build Type:         Release
+Packager Used:      ZIP (Inno Setup not installed)
+Build Duration:     ~856 seconds
+
+Note: Inno Setup compiler (iscc) not found. Windows build packaged
+      as ZIP archive. Install Inno Setup 6 to generate EXE installer.
+      Installer script updated at: installer/installer.iss
+
+═══════════════════════════════════════════════════════════════
+  Build Environment
+═══════════════════════════════════════════════════════════════
+
+Flutter Version:    3.38.6 (stable)
+Dart Version:       3.10.7
+DevTools Version:   2.51.1
+Framework Revision: 8b87286849
+Engine Revision:    78fc3012e4
+
+═══════════════════════════════════════════════════════════════
+  Files Updated
+═══════════════════════════════════════════════════════════════
+
+✓ pubspec.yaml                    (version: 1.0.29+31)
+✓ android/app/build.gradle.kts    (versionCode: 31, versionName: 1.0.29)
+✓ installer/installer.iss         (version: 1.0.29)
+
+═══════════════════════════════════════════════════════════════
+  Distribution Files
+═══════════════════════════════════════════════════════════════
+
+1. DattSoap_v1.0.29_arm64.apk     - Android (arm64-v8a) signed APK
+2. DattSoap_v1.0.29_Windows.zip   - Windows x64 portable package
+
+Total Size: 82.8 MB
+
+═══════════════════════════════════════════════════════════════
+  Installation Instructions
+═══════════════════════════════════════════════════════════════
+
+Android:
+  - Transfer APK to device
+  - Enable "Install from Unknown Sources" in Settings
+  - Tap APK file to install
+  - Existing app will be updated (same signature required)
+
+Windows:
+  - Extract DattSoap_v1.0.29_Windows.zip
+  - Run flutter_app.exe from extracted folder
+  - All DLLs and data files included in archive
+
+═══════════════════════════════════════════════════════════════

@@ -1,0 +1,141 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'owner'];
+    }
+    
+    function isManager() {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in [
+          'admin', 'owner', 'sales manager', 'production manager', 'dealer manager', 'dispatch manager'
+        ];
+    }
+    
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidDocType() {
+      return request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('application/msword') ||
+             request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.*');
+    }
+    
+    function isUnder10MB() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // =========================================================================
+    // PRODUCT IMAGES - Public read, Admin/Manager write
+    // =========================================================================
+    match /products/{imageId} {
+      allow read: if true;
+      allow write: if isManager() && isValidImageType() && isUnder10MB();
+    }
+    
+    match /products/finished/{imageId} {
+      allow read: if true;
+      allow write: if isManager() && isValidImageType() && isUnder10MB();
+    }
+    
+    match /products/traded/{imageId} {
+      allow read: if true;
+      allow write: if isManager() && isValidImageType() && isUnder10MB();
+    }
+    
+    // =========================================================================
+    // USER PROFILE IMAGES - Private, user can read/write own
+    // =========================================================================
+    match /users/{userId}/profile/{imageId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && request.auth.uid == userId && isValidImageType() && isUnder10MB();
+    }
+    
+    // =========================================================================
+    // USER DOCUMENTS - Private, user can read/write own
+    // =========================================================================
+    match /users/{userId}/documents/{docId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && request.auth.uid == userId && isValidDocType() && isUnder10MB();
+    }
+    
+    // =========================================================================
+    // EMPLOYEE DOCUMENTS - HR access
+    // =========================================================================
+    match /employees/{employeeId}/documents/{docId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == employeeId || 
+        isManager()
+      );
+      allow write: if isManager() && isValidDocType() && isUnder10MB();
+    }
+    
+    // =========================================================================
+    // COMPANY DOCUMENTS - Admin only
+    // =========================================================================
+    match /company/{folder}/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidDocType() && isUnder10MB();
+    }
+    
+    // =========================================================================
+    // VEHICLE DOCUMENTS - Fleet management
+    // =========================================================================
+    match /vehicles/{vehicleId}/documents/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isManager() && isValidDocType() && isUnder10MB();
+    }
+    
+    // =========================================================================
+    // INVOICE PDFs - Sales team access
+    // =========================================================================
+    match /invoices/{invoiceId}.pdf {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        request.resource.contentType == 'application/pdf' && 
+        isUnder10MB();
+    }
+    
+    // =========================================================================
+    // REPORT PDFs - Authenticated users
+    // =========================================================================
+    match /reports/{reportId}.pdf {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        request.resource.contentType == 'application/pdf' && 
+        isUnder10MB();
+    }
+    
+    // =========================================================================
+    // BACKUP FILES - Admin only
+    // =========================================================================
+    match /backups/{backupId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // =========================================================================
+    // TEMP FILES - User can write own, auto-delete after 24h
+    // =========================================================================
+    match /temp/{userId}/{fileId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() && request.auth.uid == userId && isUnder10MB();
+    }
+    
+    // =========================================================================
+    // DEFAULT DENY - Catch all
+    // =========================================================================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

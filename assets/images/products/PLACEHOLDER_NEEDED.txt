@@ -1,0 +1,7 @@
+CREATE THIS FILE: placeholder.png
+
+Size: 256x256px
+Content: Gray background with "No Image" text
+Tool: Paint, Canva, Figma, or any image editor
+
+This is a reminder - delete this file after creating placeholder.png

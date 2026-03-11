@@ -1,0 +1,49 @@
+========================================================================
+                     DattSoap ERP - Windows Edition
+                          USER GUIDE & README
+========================================================================
+
+Welcome to DattSoap ERP, the professional offline-first management system
+tailored for mobile and desktop efficiency.
+
+1. GETTING STARTED
+------------------
+- Launch the application from the Start Menu or Desktop shortcut.
+- Login using your assigned credentials.
+- Ensure you have an internet connection for the initial login and data pull.
+
+2. OFFLINE-FIRST CAPABILITY
+---------------------------
+- DattSoap ERP is designed to work without a continuous internet connection.
+- All core operations (Sales, Dispatch, Production) can be performed offline.
+- Data will be stored locally and synchronized when a network is available.
+
+3. MANUAL SYNCHRONIZATION
+-------------------------
+- Use the 'Sync' button in the dashboard to manually trigger data reconciliation.
+- Best Practice: Sync your data at the start and end of your shift.
+- Auto-sync runs daily after 8:00 PM when online.
+
+4. WINDOWS KEYBOARD SHORTCUTS
+-----------------------------
+- Ctrl + K : Open Command Palette (Quick Navigation)
+- Ctrl + S : Quick Save current record
+- Ctrl + R : Manual Sync
+- Ctrl + T : Open current view in New Tab
+- Ctrl + \ : Open Split View
+- Ctrl + / : Show Keyboard Shortcuts Help
+- Esc      : Close active dialog or search
+
+5. SYSTEM REQUIREMENTS
+----------------------
+- Windows 10 (Build 19041) or higher.
+- Minimum 4GB RAM.
+- Stable internet connection for periodic syncing.
+
+6. SUPPORT & CONTACT
+--------------------
+For technical support or feature requests, please contact the IT 
+department or your system administrator.
+
+(c) 2026 DattSoap Management. All Rights Reserved.
+========================================================================

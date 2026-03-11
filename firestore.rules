@@ -1,0 +1,266 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function isAdmin() {
+      return isAuth() && (
+        request.auth.token.role == 'Admin' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'Admin'
+      );
+    }
+    function isOwner(field) { return isAuth() && field == uid(); }
+    function isAdminOrOwner(field) { return isAdmin() || isOwner(field); }
+    function isSalesman() {
+      return isAuth() && (
+        request.auth.token.role == 'Salesman' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'Salesman'
+      );
+    }
+    function isDealerManager() {
+      return isAuth() && (
+        request.auth.token.role == 'DealerManager' ||
+        request.auth.token.role == 'Dealer Manager' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'DealerManager' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'Dealer Manager'
+      );
+    }
+
+    function isBhattiSupervisor() {
+      return isAuth() && (
+        request.auth.token.role == 'BhattiSupervisor' ||
+        request.auth.token.role == 'Bhatti Supervisor' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'BhattiSupervisor' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'Bhatti Supervisor'
+      );
+    }
+    function isStoreIncharge() {
+      return isAuth() && (
+        request.auth.token.role == 'StoreIncharge' ||
+        request.auth.token.role == 'Store Incharge' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'StoreIncharge' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'Store Incharge'
+      );
+    }
+    function isProductionSupervisor() {
+      return isAuth() && (
+        request.auth.token.role == 'ProductionSupervisor' ||
+        request.auth.token.role == 'Production Supervisor' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'ProductionSupervisor' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'Production Supervisor'
+      );
+    }
+    function isFuelIncharge() {
+      return isAuth() && (
+        request.auth.token.role == 'FuelIncharge' ||
+        request.auth.token.role == 'Fuel Incharge' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'FuelIncharge' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'Fuel Incharge'
+      );
+    }
+    function isAccountant() {
+      return isAuth() && (
+        request.auth.token.role == 'Accountant' ||
+        get(/databases/$(database)/documents/users/$(uid())).data.role == 'Accountant'
+      );
+    }
+    function isBhattiOrAdmin() {
+      return isAdmin() || isBhattiSupervisor();
+    }
+    function isStoreOrAdmin() {
+      return isAdmin() || isStoreIncharge();
+    }
+    function isBhattiOrStoreOrAdmin() {
+      return isAdmin() || isBhattiSupervisor() || isStoreIncharge();
+    }
+    function isProductionSupervisorOrAdmin() {
+      return isAdmin() || isProductionSupervisor();
+    }
+
+    // Unit-Level Scoping Helpers
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(uid())).data;
+    }
+    function isUserUnit(unitName) {
+      // Handles cases where department might be "sona" and bhattiName might be "Sona Bhatti"
+      // or assignedBhatti might be "gita"
+      let user = getUserData();
+      return (
+        (user.department != null && user.department.lower().matches('.*' + unitName.lower() + '.*')) ||
+        (user.assignedBhatti != null && user.assignedBhatti.lower().matches('.*' + unitName.lower() + '.*'))
+      );
+    }
+    function isBhattiSupervisorForUnit(unitName) {
+      return isBhattiSupervisor() && (unitName == null || isUserUnit(unitName));
+    }
+    function isStockMovementForUnit(data) {
+      return isBhattiSupervisor() && (
+        (data.source != null && isUserUnit(data.source)) || 
+        (data.referenceNumber != null && isUserUnit(data.referenceNumber))
+      );
+    }
+
+    match /users/{id} { allow read: if isAuth(); allow write: if isAdmin() || uid() == id; }
+    match /alerts/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /products/{id} { 
+      allow read: if isAuth(); 
+      allow write: if isStoreOrAdmin(); 
+    }
+    match /opening_stock/{id} { allow read, write: if isStoreOrAdmin(); }
+    match /opening_stock_entries/{id} { allow read, write: if isStoreOrAdmin(); }
+    match /stock_ledger/{id} { allow read, write: if isStoreOrAdmin(); }
+    // department_stocks unit scoped, fall back to open read for now to prevent breaking other apps if necessary.
+    // However, goal is restricting to unit. But Admin and StoreIncharge can see all.
+    match /department_stocks/{id} { 
+      allow read: if isAuth(); // keeping open for all auth users for now (inventory summary needs it)
+      allow write: if isStoreOrAdmin(); 
+    }
+    match /units/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /product_categories/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /product_types/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /deleted_records/{id} { allow read, write: if isAdmin(); }
+    match /sales/{id} { allow read, write: if isAdmin() || isAdminOrOwner(resource.data.salesmanId) || (isDealerManager() && resource.data.recipientType == 'dealer'); }
+    match /sale_items/{id} { allow read, write: if isAdmin(); }
+    match /sales_history/{id} { allow read, write: if isAdmin(); }
+    match /sales_payments/{id} { allow read, write: if isAdmin(); }
+    match /sales_returns/{id} { allow read, write: if isAdmin(); }
+    match /sales_targets/{id} { 
+      allow read: if isAdmin() || (isAuth() && resource.data.salesmanId == uid());
+      allow write: if isAdmin(); 
+    }
+    match /sales_voucher_posts/{id} { allow read, write: if isAdmin(); }
+    match /returns/{id} { allow read, write: if isAdmin() || isAdminOrOwner(resource.data.salesmanId) || (isDealerManager() && resource.data.returnType == 'dealer_return'); }
+    match /payments/{id} { allow read, write: if isAdmin(); }
+    match /payment_links/{id} { allow read, write: if isAdmin(); }
+    match /schemes/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /approvals/{id} { allow read, write: if isAdmin(); }
+    match /dispatches/{id} { allow read, write: if isAdmin() || isStoreIncharge() || isAdminOrOwner(resource.data.salesmanId) || (isDealerManager() && resource.data.recipientType == 'dealer'); }
+    match /dispatch_items/{id} { allow read, write: if isAdmin(); }
+    match /dispatch_history/{id} { allow read, write: if isAdmin(); }
+    match /delivery_trips/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /salesman_allocated_stock/{id} { allow read, write: if isAdmin(); }
+    match /salesman_stock_transactions/{id} { allow read, write: if isAdmin(); }
+    match /salesman_stock_history/{id} { allow read, write: if isAdmin(); }
+    match /customers/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /dealers/{id} { allow read: if isAuth(); allow write: if isAdmin() || isDealerManager(); }
+    match /suppliers/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /customer_visits/{id} { allow read, write: if isAuth(); }
+    match /routes/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /route_orders/{id} { 
+      allow read: if isAdmin() || isProductionSupervisor() || isStoreIncharge() || isDealerManager() || (isSalesman() && resource.data.salesmanId == uid());
+      allow write: if isAdmin() || isProductionSupervisor() || isStoreIncharge(); 
+    }
+    match /route_order_items/{id} { 
+      allow read: if isAdmin() || isProductionSupervisor() || isStoreIncharge();
+      allow write: if isAdmin() || isProductionSupervisor() || isStoreIncharge(); 
+    }
+    match /route_sessions/{id} { allow read, write: if isAuth(); }
+    
+    match /production_logs/{id} { 
+      allow read: if isAdmin() || isBhattiSupervisorForUnit(resource.data.bhattiName); 
+      allow write: if isProductionSupervisorOrAdmin(); 
+    }
+    match /production_entries/{id} { allow read, create, update: if isProductionSupervisorOrAdmin(); allow delete: if isAdmin(); }
+    match /detailed_production_logs/{id} { allow read, write: if isProductionSupervisorOrAdmin(); }
+    match /production_targets/{id} { allow read, write: if isAdmin(); }
+    match /production_daily_entries/{id} { allow read, write: if isAdmin(); }
+    match /production_batches/{id} { allow read: if isAdmin(); allow write: if isAuth(); }
+    
+    match /bhatti_batches/{id} { 
+      allow read: if isAdmin() || isBhattiSupervisorForUnit(resource.data.bhattiName);
+      allow create: if isBhattiOrAdmin(); // Can create for any, but UI handles assigning name
+      allow update: if isAdmin() || isBhattiSupervisorForUnit(resource.data.bhattiName);
+      allow delete: if isAdmin(); 
+    }
+    match /bhatti_entries/{id} { 
+      allow read: if isAdmin() || isBhattiSupervisorForUnit(resource.data.bhattiName) || isProductionSupervisor();
+      allow create: if isBhattiOrAdmin();
+      allow update: if isAdmin() || isBhattiSupervisorForUnit(resource.data.bhattiName);
+      allow delete: if isAdmin(); 
+    }
+    match /bhatti_daily_entries/{id} { 
+      // bhatti_daily_entries also needs scoping
+      allow read: if isAdmin() || isBhattiSupervisorForUnit(resource.data.bhattiName);
+      allow create: if isBhattiOrAdmin();
+      allow update: if isAdmin() || isBhattiSupervisorForUnit(resource.data.bhattiName);
+      allow delete: if isAdmin(); 
+    }
+
+    match /cutting_batches/{id} { allow read, create, update: if isProductionSupervisorOrAdmin(); allow delete: if isAdmin(); }
+    match /wastage_logs/{id} { allow read, write: if isBhattiOrStoreOrAdmin(); }
+    match /vehicles/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /diesel_logs/{id} { allow read, write: if isAdmin() || isStoreIncharge() || isFuelIncharge(); }
+    match /tanks/{id} { allow read, write: if isBhattiOrStoreOrAdmin(); }
+    match /tank_transactions/{id} { allow read, write: if isBhattiOrStoreOrAdmin(); }
+    match /tank_transfers/{id} { allow read, write: if isBhattiOrStoreOrAdmin(); }
+    match /tank_lots/{id} { allow read, write: if isBhattiOrStoreOrAdmin(); }
+    match /fuel_purchases/{id} { allow read, write: if isAdmin() || isFuelIncharge(); }
+    match /vehicle_maintenance_logs/{id} { allow read, write: if isAdmin(); }
+    match /vehicle_issues/{id} { allow read, write: if isAdmin(); }
+    match /tyre_logs/{id} { allow read, write: if isAdmin(); }
+    match /tyre_items/{id} { allow read, write: if isAdmin(); }
+    match /employees/{id} { allow read, write: if isAdmin(); }
+    match /leave_requests/{id} { allow read, write: if isAdminOrOwner(resource.data.employeeId); }
+    match /duty_sessions/{id} { allow read: if isAdmin(); allow write: if isAuth(); }
+    match /attendances/{id} { allow read, write: if isAdminOrOwner(resource.data.employeeId); }
+    match /payroll/{id} { allow read, write: if isAdmin(); }
+    match /payroll_records/{id} { allow read, write: if isAdmin(); }
+    match /advances/{id} { allow read, write: if isAdmin(); }
+    match /performance_reviews/{id} { allow read, write: if isAdmin(); }
+    match /employee_documents/{id} { allow read, write: if isAdmin(); }
+    match /accounts/{id} { 
+      allow read: if isAdmin() || isAccountant();
+      allow write: if isAdmin(); 
+    }
+    match /vouchers/{id} { 
+      allow read: if isAdmin() || isAccountant();
+      allow write: if isAdmin(); 
+    }
+    match /voucher_entries/{id} { 
+      allow read: if isAdmin() || isAccountant();
+      allow write: if isAdmin(); 
+    }
+    match /accounting_compensation_log/{id} { allow read, write: if isAdmin(); }
+    match /tasks/{id} { allow read, write: if isAuth(); }
+    match /task_history/{id} { allow read, write: if isAdmin(); }
+    match /audit_logs/{id} { 
+      allow read: if isAdmin();
+      allow write: if isAdmin() || isAccountant(); 
+    }
+    match /sync_conflicts/{id} { allow read: if isAdmin(); allow write: if isAuth(); }
+    match /outbox_queue/{id} { allow read, write: if isAuth(); }
+    match /messages/{id} { allow read, write: if isAuth(); }
+    match /settings/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /public_settings/{id} { allow read: if isAuth(); allow write: if isAdmin() || isFuelIncharge(); }
+    match /custom_roles/{id} { allow read, write: if isAdmin(); }
+    match /notification_events/{id} { 
+      allow read: if isAdmin() || (isAuth() && resource.data.userId == uid());
+      allow write: if isAdmin(); 
+    }
+    match /stock_movements/{id} { 
+      allow read: if isAdmin() || isStockMovementForUnit(resource.data);
+      allow write: if isAdmin(); 
+    }
+    match /holidays/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /formulas/{id} { allow read: if isBhattiOrAdmin(); allow write: if isAdmin(); }
+    match /locations/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /purchase_orders/{id} { allow read, write: if isStoreOrAdmin(); }
+    match /goods_received/{id} { allow read, write: if isStoreOrAdmin(); }
+    match /tank_refills/{id} { allow read, write: if isBhattiOrStoreOrAdmin(); }
+    match /godown_stock/{id} { allow read: if isBhattiOrStoreOrAdmin(); allow write: if isStoreOrAdmin(); }
+    
+    // Warehouse Management
+    match /warehouses/{id} { 
+      allow read: if isAuth(); 
+      allow write: if isAdmin(); 
+    }
+    match /warehouse_transfers/{id} { 
+      allow read: if isStoreOrAdmin(); 
+      allow create: if isStoreOrAdmin();
+      allow update, delete: if isAdmin(); 
+    }
+    
+    match /{document=**} { allow read, write: if false; }
+  }
+}

@@ -1,0 +1,45 @@
+{
+    "name": "DattSoap ERP",
+    "short_name": "DattSoap",
+    "description": "Soap Manufacturing ERP System",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#4f46e5",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "/company-logo.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/company-logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "business",
+        "productivity"
+    ],
+    "shortcuts": [
+        {
+            "name": "Dashboard",
+            "url": "/dashboard",
+            "description": "Open Dashboard"
+        },
+        {
+            "name": "Products",
+            "url": "/dashboard/products",
+            "description": "Manage Products"
+        },
+        {
+            "name": "Sales",
+            "url": "/dashboard/sales",
+            "description": "View Sales"
+        }
+    ]
+}

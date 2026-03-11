@@ -1,0 +1,310 @@
+# Accountant Audit System - Visual Flow
+
+## 🔄 Complete Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ACCOUNTANT AUDIT SYSTEM                       │
+└─────────────────────────────────────────────────────────────────┘
+
+┌──────────────┐
+│  Accountant  │
+│    Login     │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────────────┐
+│  Create Voucher      │
+│  - Sales             │
+│  - Purchase          │
+│  - Manual            │
+│  - Reversal          │
+└──────┬───────────────┘
+       │
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│              AuditedPostingService                            │
+│  ┌────────────────────────────────────────────────────┐      │
+│  │  1. Check if user is Accountant                    │      │
+│  │  2. Call PostingService to create voucher          │      │
+│  │  3. If success + Accountant → Log action           │      │
+│  └────────────────────────────────────────────────────┘      │
+└──────┬───────────────────────────────────────────────────────┘
+       │
+       ├─────────────────┬─────────────────┐
+       ▼                 ▼                 ▼
+┌─────────────┐   ┌─────────────┐   ┌─────────────┐
+│  Voucher    │   │ Audit Log   │   │ Audit Log   │
+│  Created    │   │ → Isar      │   │ → Firestore │
+│  Firestore  │   │ (Local)     │   │ (Remote)    │
+└─────────────┘   └─────────────┘   └─────────────┘
+                         │                 │
+                         └────────┬────────┘
+                                  ▼
+                         ┌─────────────────┐
+                         │  Audit Trail    │
+                         │  Complete       │
+                         └─────────────────┘
+                                  │
+                                  ▼
+                         ┌─────────────────┐
+                         │  Admin Login    │
+                         └────────┬────────┘
+                                  ▼
+                    ┌──────────────────────────┐
+                    │ Accountant Audit Screen  │
+                    │  - View all logs         │
+                    │  - Filter by user        │
+                    │  - See details           │
+                    │  - Refresh               │
+                    └──────────────────────────┘
+```
+
+## 📊 Data Flow
+
+```
+Accountant Action
+       ↓
+┌──────────────────────────────────────┐
+│  Action Details Captured:            │
+│  • userId: A4JwAAb9hTePBPU8BCimWjew  │
+│  • userName: Tushar Thorat           │
+│  • action: create                    │
+│  • collection: vouchers              │
+│  • documentId: sale_12345            │
+│  • changes: {type, amount, entries}  │
+│  • notes: Sales voucher posted       │
+│  • timestamp: 2024-03-10T10:30:00Z   │
+└──────────────────────────────────────┘
+       ↓
+┌──────────────────────────────────────┐
+│  Parallel Storage:                   │
+│  ┌────────────┐  ┌────────────┐     │
+│  │   Isar     │  │ Firestore  │     │
+│  │  (Local)   │  │ (Remote)   │     │
+│  │  Instant   │  │  Synced    │     │
+│  └────────────┘  └────────────┘     │
+└──────────────────────────────────────┘
+       ↓
+┌──────────────────────────────────────┐
+│  Admin Retrieval:                    │
+│  • Query by user                     │
+│  • Query by date                     │
+│  • Query by collection               │
+│  • Sort by timestamp                 │
+└──────────────────────────────────────┘
+```
+
+## 🔐 Permission Flow
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  FIRESTORE RULES                         │
+└─────────────────────────────────────────────────────────┘
+
+Request to /vouchers/{id}
+       ↓
+┌──────────────────────┐
+│  Check Auth          │
+│  request.auth != null│
+└──────┬───────────────┘
+       ↓
+┌──────────────────────┐
+│  Check Role          │
+│  isAdmin() OR        │
+│  isAccountant()      │
+└──────┬───────────────┘
+       ↓
+┌──────────────────────┐
+│  Grant Access        │
+│  read: true          │
+│  write: true         │
+└──────────────────────┘
+
+Request to /audit_logs/{id}
+       ↓
+┌──────────────────────┐
+│  Check Auth          │
+│  request.auth != null│
+└──────┬───────────────┘
+       ↓
+┌──────────────────────┐
+│  Check Operation     │
+│  Read OR Write?      │
+└──────┬───────────────┘
+       ↓
+┌──────────────────────┬──────────────────────┐
+│  READ                │  WRITE               │
+│  isAdmin() only      │  isAdmin() OR        │
+│                      │  isAccountant()      │
+└──────────────────────┴──────────────────────┘
+```
+
+## 🎨 UI Flow
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              ACCOUNTANT AUDIT SCREEN                     │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  Title: Accountant Audit Log    [Refresh Button]  │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                          │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  [●] Tushar Thorat - create                       │  │
+│  │      vouchers / sale_12345                        │  │
+│  │      Sales voucher posted                         │  │
+│  │      10 Mar 2024, 10:30 AM              [ℹ]      │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                          │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  [●] Tushar Thorat - create                       │  │
+│  │      vouchers / purchase_67890                    │  │
+│  │      Purchase voucher posted                      │  │
+│  │      10 Mar 2024, 11:15 AM              [ℹ]      │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                          │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  [●] Tushar Thorat - create                       │  │
+│  │      vouchers / reversal_11111                    │  │
+│  │      Reversal: Incorrect entry                    │  │
+│  │      10 Mar 2024, 02:45 PM              [ℹ]      │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+
+Click [ℹ] → Detail Dialog
+       ↓
+┌─────────────────────────────────────────────────────────┐
+│              AUDIT LOG DETAILS                           │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  User: Tushar Thorat                              │  │
+│  │  Action: create                                   │  │
+│  │  Collection: vouchers                             │  │
+│  │  Document ID: sale_12345                          │  │
+│  │  Notes: Sales voucher posted                      │  │
+│  │  Changes:                                         │  │
+│  │    • type: sales                                  │  │
+│  │    • amount: 15000                                │  │
+│  │    • entries: 4                                   │  │
+│  │  Date: 10 March 2024, 10:30 AM                    │  │
+│  └───────────────────────────────────────────────────┘  │
+│                                                          │
+│                                    [Close]               │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 🔄 State Diagram
+
+```
+┌─────────────┐
+│   Initial   │
+│   State     │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Loading    │
+│  Logs...    │
+└──────┬──────┘
+       │
+       ├─────────────┬─────────────┐
+       ▼             ▼             ▼
+┌──────────┐  ┌──────────┐  ┌──────────┐
+│  Empty   │  │  Loaded  │  │  Error   │
+│  State   │  │  State   │  │  State   │
+└──────────┘  └────┬─────┘  └──────────┘
+                   │
+                   ├──────────┬──────────┐
+                   ▼          ▼          ▼
+            ┌──────────┐ ┌────────┐ ┌────────┐
+            │  View    │ │ Detail │ │Refresh │
+            │  List    │ │ Dialog │ │        │
+            └──────────┘ └────────┘ └───┬────┘
+                                        │
+                                        ▼
+                                  ┌──────────┐
+                                  │ Loading  │
+                                  │ Again... │
+                                  └──────────┘
+```
+
+## 📈 Performance Flow
+
+```
+Accountant Creates Voucher
+       ↓
+┌──────────────────────────────────────┐
+│  Synchronous Operations:             │
+│  1. Validate voucher data            │
+│  2. Create voucher in Firestore      │
+│  3. Return success to UI             │
+└──────────────────────────────────────┘
+       ↓ (User sees success immediately)
+┌──────────────────────────────────────┐
+│  Asynchronous Operations:            │
+│  1. Create audit log entity          │
+│  2. Save to Isar (local)             │
+│  3. Sync to Firestore (background)   │
+└──────────────────────────────────────┘
+       ↓ (No UI blocking)
+┌──────────────────────────────────────┐
+│  Result:                             │
+│  • Fast user experience              │
+│  • Complete audit trail              │
+│  • No performance impact             │
+└──────────────────────────────────────┘
+```
+
+## 🎯 Success Metrics
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  BEFORE vs AFTER                         │
+└─────────────────────────────────────────────────────────┘
+
+BEFORE ❌
+├─ Accountant Access: Permission Denied
+├─ Audit Trail: None
+├─ Admin Visibility: Zero
+├─ Compliance: Not Ready
+└─ User Experience: Blocked
+
+AFTER ✅
+├─ Accountant Access: Full Access
+├─ Audit Trail: Complete & Automatic
+├─ Admin Visibility: 100%
+├─ Compliance: Ready
+└─ User Experience: Seamless
+```
+
+## 🚀 Deployment Checklist
+
+```
+□ Update firestore.rules
+  └─ Add isAccountant() function
+  └─ Update vouchers permissions
+  └─ Update voucher_entries permissions
+  └─ Update audit_logs permissions
+
+□ Deploy rules to Firebase
+  └─ firebase deploy --only firestore:rules
+  └─ Wait 30-60 seconds
+
+□ Test Accountant access
+  └─ Login as Accountant
+  └─ Create voucher
+  └─ Verify no errors
+
+□ Test Admin audit view
+  └─ Login as Admin
+  └─ Open Audit Log screen
+  └─ Verify logs visible
+
+□ Verify audit logging
+  └─ Check Isar database
+  └─ Check Firestore collection
+  └─ Verify timestamps
+
+✅ COMPLETE - System Ready!
+```
+
+This visual flow shows the complete Accountant audit system architecture!

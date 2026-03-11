@@ -1,0 +1,17 @@
+{
+  "finished_goods": {
+    "SOAP-100G": "assets/images/products/finished/soap_bar_100g.webp",
+    "SOAP-200G": "assets/images/products/finished/soap_bar_200g.webp",
+    "SOAP-500G": "assets/images/products/finished/soap_bar_500g.webp",
+    "DET-1KG": "assets/images/products/finished/detergent_powder_1kg.webp",
+    "DET-5KG": "assets/images/products/finished/detergent_powder_5kg.webp"
+  },
+  "traded_goods": {
+    "SURF-1KG": "assets/images/products/traded/surf_excel_1kg.webp",
+    "VIM-200G": "assets/images/products/traded/vim_bar_200g.webp",
+    "RIN-250G": "assets/images/products/traded/rin_bar_250g.webp",
+    "HARPIC-500ML": "assets/images/products/traded/harpic_500ml.webp",
+    "LIZOL-500ML": "assets/images/products/traded/lizol_500ml.webp"
+  },
+  "placeholder": "assets/images/products/placeholder.webp"
+}
