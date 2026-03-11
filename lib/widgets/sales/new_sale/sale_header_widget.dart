@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../models/customer.dart';
+import '../../../data/local/entities/inventory_location_entity.dart';
 import '../../../widgets/ui/unified_card.dart';
 import '../../../widgets/ui/custom_text_field.dart';
 
@@ -11,6 +12,10 @@ class SaleHeaderWidget extends StatelessWidget {
   final Customer? selectedCustomer;
   final List<Customer> filteredCustomers;
   final List<Customer> allCustomers;
+  final bool showSourceWarehouse;
+  final List<InventoryLocationEntity> warehouses;
+  final String? selectedWarehouseId;
+  final ValueChanged<String?>? onWarehouseChanged;
   final VoidCallback? onInputInteraction;
   final ValueChanged<String?> onRouteChanged;
   final ValueChanged<Customer?> onCustomerSelected;
@@ -24,6 +29,10 @@ class SaleHeaderWidget extends StatelessWidget {
     required this.selectedCustomer,
     required this.filteredCustomers,
     required this.allCustomers,
+    this.showSourceWarehouse = false,
+    this.warehouses = const [],
+    this.selectedWarehouseId,
+    this.onWarehouseChanged,
     this.onInputInteraction,
     required this.onRouteChanged,
     required this.onCustomerSelected,
@@ -440,6 +449,37 @@ class SaleHeaderWidget extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
+
+            // Source Warehouse Selection
+            if (showSourceWarehouse) ...[
+              Text(
+                'Source Warehouse',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: selectedWarehouseId,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  hintText: 'Select Warehouse',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                items: warehouses.map((w) {
+                  return DropdownMenuItem<String>(
+                    value: w.id,
+                    child: Text(w.name),
+                  );
+                }).toList(),
+                onChanged: onWarehouseChanged,
+              ),
+              const SizedBox(height: 20),
+            ],
 
             // Route Selection
             if (availableRoutes.isNotEmpty || isSalesman) ...[

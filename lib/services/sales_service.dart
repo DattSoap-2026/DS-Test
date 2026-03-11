@@ -520,7 +520,11 @@ class SalesService extends OfflineFirstService {
     required String recipientType,
     required String salesmanUid,
     required List<InventoryCommandItem> items,
+    String? sourceWarehouseId,
   }) async {
+    if (sourceWarehouseId != null && sourceWarehouseId.trim().isNotEmpty) {
+      return sourceWarehouseId.trim();
+    }
     final normalizedRecipientType = _normalizeRecipientType(recipientType);
     if (normalizedRecipientType == 'customer' &&
         salesmanUid.trim().isNotEmpty) {
@@ -745,6 +749,7 @@ class SalesService extends OfflineFirstService {
     String? actorLegacyAppUserId,
     DateTime? occurredAt,
     String? editCommandKey,
+    String? sourceWarehouseId,
   }) async {
     if (items.isEmpty) {
       return;
@@ -753,6 +758,7 @@ class SalesService extends OfflineFirstService {
       recipientType: recipientType,
       salesmanUid: salesmanUid,
       items: items,
+      sourceWarehouseId: sourceWarehouseId,
     );
     await _seedSourceBalancesInTxn(
       sourceLocationId: sourceLocationId,
@@ -782,6 +788,7 @@ class SalesService extends OfflineFirstService {
     required String actorUid,
     String? actorLegacyAppUserId,
     required String commandKey,
+    String? nextSourceWarehouseId,
     DateTime? occurredAt,
   }) async {
     final previousCommand = await _loadLatestSaleCommandContext(saleId);
@@ -829,6 +836,7 @@ class SalesService extends OfflineFirstService {
       actorLegacyAppUserId: actorLegacyAppUserId,
       occurredAt: occurredAt,
       editCommandKey: commandKey,
+      sourceWarehouseId: nextSourceWarehouseId,
     );
   }
 
@@ -840,6 +848,7 @@ class SalesService extends OfflineFirstService {
     String? recipientSalesmanUid,
     String? actorUid,
     String? actorLegacyAppUserId,
+    String? sourceWarehouseId,
   }) async {
     final commandItems = _commandItemsFromMaps(items);
     if (commandItems.isEmpty) {
@@ -882,6 +891,7 @@ class SalesService extends OfflineFirstService {
         items: commandItems,
         actorUid: effectiveActorUid,
         actorLegacyAppUserId: effectiveLegacyId,
+        sourceWarehouseId: sourceWarehouseId,
       );
     });
   }
@@ -896,6 +906,7 @@ class SalesService extends OfflineFirstService {
     required String commandKey,
     String? actorUid,
     String? actorLegacyAppUserId,
+    String? nextSourceWarehouseId,
   }) async {
     final effectiveActorUid = _resolveInventoryActorUid(
       explicitActorUid: actorUid,
@@ -915,6 +926,7 @@ class SalesService extends OfflineFirstService {
         actorUid: effectiveActorUid,
         actorLegacyAppUserId: effectiveLegacyId,
         commandKey: commandKey,
+        nextSourceWarehouseId: nextSourceWarehouseId,
       );
     });
   }
@@ -1087,6 +1099,7 @@ class SalesService extends OfflineFirstService {
       ..cancelledAt = data['cancelledAt']?.toString()
       ..commissionAmount = _toDouble(data['commissionAmount'])
       ..commissionType = data['commissionType']?.toString()
+      ..sourceWarehouseId = data['sourceWarehouseId']?.toString()
       ..syncStatus = syncStatus;
 
     if (entity.month == null || entity.year == null) {
@@ -1624,8 +1637,7 @@ class SalesService extends OfflineFirstService {
             salesmanUid: salesmanId,
             items: authoritativeItems,
             recipientSalesmanUid: data['recipientId']?.toString(),
-            actorUid: salesmanId,
-            actorLegacyAppUserId: data['editedBy']?.toString(),
+            sourceWarehouseId: data['sourceWarehouseId']?.toString(),
           );
 
           // 4. Stock operations
@@ -1875,6 +1887,7 @@ class SalesService extends OfflineFirstService {
             commandKey: commandKey,
             actorUid: data['editedBy']?.toString(),
             actorLegacyAppUserId: data['editedBy']?.toString(),
+            nextSourceWarehouseId: data['sourceWarehouseId']?.toString(),
           );
 
           if (recipientType == 'customer') {
@@ -2665,6 +2678,7 @@ class SalesService extends OfflineFirstService {
     String? tripId,
     double gstPercentage = 0,
     String gstType = 'None',
+    String? sourceWarehouseId,
   }) async {
     _ensureSalesmanAllocationUsesDispatch(recipientType);
     final actor = await _requireSalesMutationActor('create sale');
@@ -2693,6 +2707,7 @@ class SalesService extends OfflineFirstService {
       gstType: gstType,
       salesmanId: salesmanId,
       salesmanName: salesmanName,
+      sourceWarehouseId: sourceWarehouseId,
     );
   }
 
@@ -2715,6 +2730,7 @@ class SalesService extends OfflineFirstService {
     String gstType = 'None',
     required String salesmanId,
     required String salesmanName,
+    String? sourceWarehouseId,
   }) async {
     _ensureSalesmanAllocationUsesDispatch(recipientType);
     final saleId = generateId();
@@ -2894,6 +2910,7 @@ class SalesService extends OfflineFirstService {
           actorUid: inventoryActorUid,
           actorLegacyAppUserId: inventoryActorLegacyId,
           occurredAt: DateTime.parse(now),
+          sourceWarehouseId: sourceWarehouseId,
         );
       }
 

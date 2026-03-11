@@ -67,6 +67,8 @@ class SaleEntity extends BaseEntity {
   String? cancelledAt;
   double? commissionAmount;
   String? commissionType;
+  
+  String? sourceWarehouseId;
 
   Sale toDomain() {
     return Sale(
@@ -110,6 +112,7 @@ class SaleEntity extends BaseEntity {
       cancelledAt: cancelledAt,
       commissionAmount: commissionAmount,
       commissionType: commissionType,
+      sourceWarehouseId: sourceWarehouseId,
     );
   }
 
@@ -154,7 +157,8 @@ class SaleEntity extends BaseEntity {
       ..cancelledBy = sale.cancelledBy
       ..cancelledAt = sale.cancelledAt
       ..commissionAmount = sale.commissionAmount
-      ..commissionType = sale.commissionType;
+      ..commissionType = sale.commissionType
+      ..sourceWarehouseId = sale.sourceWarehouseId;
   }
 }
 

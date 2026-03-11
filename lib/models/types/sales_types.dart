@@ -348,6 +348,8 @@ class Sale {
   String? cancelReason;
   String? cancelledBy;
   String? cancelledAt; // ISO timestamp
+  
+  final String? sourceWarehouseId;
 
   Sale({
     required this.id,
@@ -393,6 +395,7 @@ class Sale {
     this.cancelReason,
     this.cancelledBy,
     this.cancelledAt,
+    this.sourceWarehouseId,
   });
 
   factory Sale.fromJson(Map<String, dynamic> json) {
@@ -445,6 +448,7 @@ class Sale {
       cancelReason: json['cancelReason'] as String?,
       cancelledBy: json['cancelledBy'] as String?,
       cancelledAt: json['cancelledAt'] as String?,
+      sourceWarehouseId: json['sourceWarehouseId'] as String?,
     );
   }
 
@@ -493,6 +497,7 @@ class Sale {
       if (cancelReason != null) 'cancelReason': cancelReason,
       if (cancelledBy != null) 'cancelledBy': cancelledBy,
       if (cancelledAt != null) 'cancelledAt': cancelledAt,
+      if (sourceWarehouseId != null) 'sourceWarehouseId': sourceWarehouseId,
     };
   }
 }

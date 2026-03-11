@@ -9,8 +9,8 @@ import 'offline_first_service.dart';
 import 'database_service.dart';
 import 'inventory_movement_engine.dart';
 import 'inventory_projection_service.dart';
-import '../data/local/entities/cutting_batch_entity.dart';
 import '../data/local/entities/sync_queue_entity.dart';
+import '../data/local/entities/cutting_batch_entity.dart';
 import '../data/local/base_entity.dart';
 import '../utils/unit_scope_utils.dart';
 import 'outbox_codec.dart';
@@ -568,11 +568,16 @@ class CuttingBatchService extends OfflineFirstService {
           }
         }
 
+        // Fetch the department to get its mapped location (shed)
+        final departmentEntity =
+            await _dbService.departmentMasters.get(fastHash(departmentId));
+        final shedLocationId = departmentEntity?.sourceWarehouseId ??
+            InventoryProjectionService.warehouseMainLocationId;
+
         final command = InventoryCommand.cuttingProductionComplete(
           batchId: batchId,
-          consumptionLocationId:
-              InventoryProjectionService.warehouseMainLocationId,
-          outputLocationId: InventoryProjectionService.warehouseMainLocationId,
+          consumptionLocationId: shedLocationId,
+          outputLocationId: shedLocationId,
           consumptions: consumptions,
           outputs: outputs,
           actorUid: operatorId,

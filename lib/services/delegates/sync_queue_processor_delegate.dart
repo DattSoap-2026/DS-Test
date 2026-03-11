@@ -83,6 +83,13 @@ import 'package:flutter_app/utils/app_logger.dart';
 typedef ResolvePaymentsService = PaymentsService Function();
 
 class SyncQueueProcessorDelegate {
+  /// Maximum items to process per sync cycle to avoid overwhelming
+  /// the platform channel (especially on Windows desktop).
+  static const int _maxBatchSize = 20;
+
+  /// Cooldown delay after heavy Firestore transactions to prevent
+  /// rapid-fire native SDK calls that crash the Windows platform channel.
+  static const Duration _heavyOpCooldown = Duration(milliseconds: 200);
   final DatabaseService _dbService;
   final FirebaseServices _firebase;
   final SalesService _salesService;
@@ -219,11 +226,21 @@ class SyncQueueProcessorDelegate {
         'Converting queue items to workItems...',
         tag: 'Sync_Trace',
       );
-      final workItems = queueItems
+      final allWorkItems = queueItems
           .map((item) => _QueueWorkItem.from(item))
           .toList(growable: false);
+      // Limit batch size to avoid overwhelming the Firestore native SDK.
+      final workItems = allWorkItems.length > _maxBatchSize
+          ? allWorkItems.sublist(0, _maxBatchSize)
+          : allWorkItems;
+      if (allWorkItems.length > _maxBatchSize) {
+        AppLogger.info(
+          'Queue has ${allWorkItems.length} items, processing first $_maxBatchSize this cycle.',
+          tag: 'Sync',
+        );
+      }
       AppLogger.debug(
-        'Converted to ${workItems.length} workItems.',
+        'Converted to ${workItems.length} workItems (of ${allWorkItems.length} total).',
         tag: 'Sync_Trace',
       );
 
@@ -469,6 +486,9 @@ class SyncQueueProcessorDelegate {
           } else if (collection == 'inventory_commands') {
             final applier = RemoteInventoryCommandApplier(db);
             await applier.applyCommand(syncData);
+            // Cooldown after heavy Firestore transaction to prevent
+            // native platform channel overload on Windows.
+            await Future<void>.delayed(_heavyOpCooldown);
           } else {
             AppLogger.debug(
               'Delegating to _performGenericUpsert...',

@@ -1,4 +1,4 @@
-﻿// [HARD LOCKED] - Auth Repository
+// [HARD LOCKED] - Auth Repository
 // CRITICAL: NO modification allowed without explicit AUTH_LOCK_OVERRIDE.
 // Standardized on 3-pass lookup: UID Doc -> Email Doc ID -> Email Field Query.
 
@@ -69,11 +69,34 @@ class AuthRepository {
   // [AUTH_LOCK_OVERRIDE] Fast startup restore for warm sessions.
   // Reads the most recently updated local user without requiring Firebase user
   // object to be immediately available.
+  // LOCKED: Prioritises the Firebase-authed user so bootstrap/system accounts
+  //         (e.g. accountant@dattsoap.local) cannot hijack the session.
   Future<UserEntity?> getLastCachedUser() async {
     try {
       final cachedUsers = await _dbService.users.where().findAll();
       if (cachedUsers.isEmpty) return null;
 
+      // Try to match the current Firebase Auth identity first.
+      final firebaseUser = _firebaseAuth?.currentUser;
+      if (firebaseUser != null) {
+        final uid = firebaseUser.uid;
+        final email = firebaseUser.email?.toLowerCase();
+
+        // 1. Match by UID (doc ID)
+        for (final user in cachedUsers) {
+          if (user.id == uid && user.isActive) return user;
+        }
+        // 2. Match by email
+        if (email != null) {
+          for (final user in cachedUsers) {
+            if (user.email?.toLowerCase() == email && user.isActive) {
+              return user;
+            }
+          }
+        }
+      }
+
+      // Fallback: most recently updated active user (legacy behaviour).
       cachedUsers.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       for (final user in cachedUsers) {
         if (user.isActive) return user;

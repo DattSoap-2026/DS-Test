@@ -193,49 +193,54 @@ const SaleEntitySchema = CollectionSchema(
       name: r'sgstAmount',
       type: IsarType.double,
     ),
-    r'status': PropertySchema(
+    r'sourceWarehouseId': PropertySchema(
       id: 35,
+      name: r'sourceWarehouseId',
+      type: IsarType.string,
+    ),
+    r'status': PropertySchema(
+      id: 36,
       name: r'status',
       type: IsarType.string,
     ),
     r'subtotal': PropertySchema(
-      id: 36,
+      id: 37,
       name: r'subtotal',
       type: IsarType.double,
     ),
     r'syncStatus': PropertySchema(
-      id: 37,
+      id: 38,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _SaleEntitysyncStatusEnumValueMap,
     ),
     r'taxableAmount': PropertySchema(
-      id: 38,
+      id: 39,
       name: r'taxableAmount',
       type: IsarType.double,
     ),
     r'totalAmount': PropertySchema(
-      id: 39,
+      id: 40,
       name: r'totalAmount',
       type: IsarType.double,
     ),
     r'tripId': PropertySchema(
-      id: 40,
+      id: 41,
       name: r'tripId',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 41,
+      id: 42,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'vehicleNumber': PropertySchema(
-      id: 42,
+      id: 43,
       name: r'vehicleNumber',
       type: IsarType.string,
     ),
     r'year': PropertySchema(
-      id: 43,
+      id: 44,
       name: r'year',
       type: IsarType.long,
     )
@@ -459,6 +464,12 @@ int _saleEntityEstimateSize(
   bytesCount += 3 + object.salesmanId.length * 3;
   bytesCount += 3 + object.salesmanName.length * 3;
   {
+    final value = object.sourceWarehouseId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.status;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -525,15 +536,16 @@ void _saleEntitySerialize(
   writer.writeString(offsets[32], object.salesmanId);
   writer.writeString(offsets[33], object.salesmanName);
   writer.writeDouble(offsets[34], object.sgstAmount);
-  writer.writeString(offsets[35], object.status);
-  writer.writeDouble(offsets[36], object.subtotal);
-  writer.writeByte(offsets[37], object.syncStatus.index);
-  writer.writeDouble(offsets[38], object.taxableAmount);
-  writer.writeDouble(offsets[39], object.totalAmount);
-  writer.writeString(offsets[40], object.tripId);
-  writer.writeDateTime(offsets[41], object.updatedAt);
-  writer.writeString(offsets[42], object.vehicleNumber);
-  writer.writeLong(offsets[43], object.year);
+  writer.writeString(offsets[35], object.sourceWarehouseId);
+  writer.writeString(offsets[36], object.status);
+  writer.writeDouble(offsets[37], object.subtotal);
+  writer.writeByte(offsets[38], object.syncStatus.index);
+  writer.writeDouble(offsets[39], object.taxableAmount);
+  writer.writeDouble(offsets[40], object.totalAmount);
+  writer.writeString(offsets[41], object.tripId);
+  writer.writeDateTime(offsets[42], object.updatedAt);
+  writer.writeString(offsets[43], object.vehicleNumber);
+  writer.writeLong(offsets[44], object.year);
 }
 
 SaleEntity _saleEntityDeserialize(
@@ -583,17 +595,18 @@ SaleEntity _saleEntityDeserialize(
   object.salesmanId = reader.readString(offsets[32]);
   object.salesmanName = reader.readString(offsets[33]);
   object.sgstAmount = reader.readDoubleOrNull(offsets[34]);
-  object.status = reader.readStringOrNull(offsets[35]);
-  object.subtotal = reader.readDoubleOrNull(offsets[36]);
+  object.sourceWarehouseId = reader.readStringOrNull(offsets[35]);
+  object.status = reader.readStringOrNull(offsets[36]);
+  object.subtotal = reader.readDoubleOrNull(offsets[37]);
   object.syncStatus =
-      _SaleEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[37])] ??
+      _SaleEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[38])] ??
           SyncStatus.pending;
-  object.taxableAmount = reader.readDoubleOrNull(offsets[38]);
-  object.totalAmount = reader.readDoubleOrNull(offsets[39]);
-  object.tripId = reader.readStringOrNull(offsets[40]);
-  object.updatedAt = reader.readDateTime(offsets[41]);
-  object.vehicleNumber = reader.readStringOrNull(offsets[42]);
-  object.year = reader.readLongOrNull(offsets[43]);
+  object.taxableAmount = reader.readDoubleOrNull(offsets[39]);
+  object.totalAmount = reader.readDoubleOrNull(offsets[40]);
+  object.tripId = reader.readStringOrNull(offsets[41]);
+  object.updatedAt = reader.readDateTime(offsets[42]);
+  object.vehicleNumber = reader.readStringOrNull(offsets[43]);
+  object.year = reader.readLongOrNull(offsets[44]);
   return object;
 }
 
@@ -682,22 +695,24 @@ P _saleEntityDeserializeProp<P>(
     case 35:
       return (reader.readStringOrNull(offset)) as P;
     case 36:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 37:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 38:
       return (_SaleEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 38:
-      return (reader.readDoubleOrNull(offset)) as P;
     case 39:
       return (reader.readDoubleOrNull(offset)) as P;
     case 40:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 41:
-      return (reader.readDateTime(offset)) as P;
-    case 42:
       return (reader.readStringOrNull(offset)) as P;
+    case 42:
+      return (reader.readDateTime(offset)) as P;
     case 43:
+      return (reader.readStringOrNull(offset)) as P;
+    case 44:
       return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -5327,6 +5342,160 @@ extension SaleEntityQueryFilter
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'sourceWarehouseId',
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'sourceWarehouseId',
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sourceWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sourceWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sourceWarehouseId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'sourceWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'sourceWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'sourceWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'sourceWarehouseId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceWarehouseId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      sourceWarehouseIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'sourceWarehouseId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> statusIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -6628,6 +6797,19 @@ extension SaleEntityQuerySortBy
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortBySourceWarehouseId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceWarehouseId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy>
+      sortBySourceWarehouseIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceWarehouseId', Sort.desc);
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'status', Sort.asc);
@@ -7160,6 +7342,19 @@ extension SaleEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenBySourceWarehouseId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceWarehouseId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy>
+      thenBySourceWarehouseIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceWarehouseId', Sort.desc);
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'status', Sort.asc);
@@ -7502,6 +7697,14 @@ extension SaleEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QDistinct> distinctBySourceWarehouseId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sourceWarehouseId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QDistinct> distinctByStatus(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -7784,6 +7987,13 @@ extension SaleEntityQueryProperty
   QueryBuilder<SaleEntity, double?, QQueryOperations> sgstAmountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sgstAmount');
+    });
+  }
+
+  QueryBuilder<SaleEntity, String?, QQueryOperations>
+      sourceWarehouseIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sourceWarehouseId');
     });
   }
 

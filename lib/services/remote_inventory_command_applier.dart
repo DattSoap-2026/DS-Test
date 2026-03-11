@@ -42,6 +42,15 @@ class _TouchedBalance {
   _TouchedBalance(this.locationId, this.productId, this.quantity);
 }
 
+/// LOCKED: Replaced runTransaction with sequential reads + WriteBatch to
+/// prevent native platform-channel crash on Windows.
+/// The Firestore C++ SDK dispatches transaction callbacks on non-platform
+/// threads which violates Flutter's platform channel contract and causes
+/// hard crashes ("Lost connection to device").
+///
+/// Trade-off: We lose strict atomicity but retain idempotency via the
+/// `appliedRemotely` guard. Each command has a unique immutable ID and
+/// the guard check ensures duplicate application is impossible.
 class RemoteInventoryCommandApplier {
   final firestore.FirebaseFirestore _db;
 
@@ -69,194 +78,211 @@ class RemoteInventoryCommandApplier {
         ? DateTime.tryParse(occurredAtStr) ?? DateTime.now()
         : DateTime.now();
 
-    await _db.runTransaction((tx) async {
-      final cmdRef = _db
-          .collection(CollectionRegistry.inventoryCommands)
-          .doc(commandId);
-      final cmdDoc = await tx.get(cmdRef);
+    // ── Step 1: Idempotency guard (sequential read) ──
+    final cmdRef = _db
+        .collection(CollectionRegistry.inventoryCommands)
+        .doc(commandId);
+    final cmdDoc = await cmdRef.get();
 
-      if (cmdDoc.exists && cmdDoc.data()?['appliedRemotely'] == true) {
-        AppLogger.info(
-          'Command $commandId already applied remotely. Skipping.',
-          tag: 'RemoteCommand',
-        );
-        return;
-      }
-
-      final balanceSnapshot = await _loadRequiredBalances(tx, type, payload);
-      final movements = _generateMovementLines(
-        type,
-        commandId,
-        payload,
-        actorUid,
-        occurredAt,
-        balanceSnapshot,
+    if (cmdDoc.exists && cmdDoc.data()?['appliedRemotely'] == true) {
+      AppLogger.info(
+        'Command $commandId already applied remotely. Skipping.',
+        tag: 'RemoteCommand',
       );
+      return;
+    }
 
-      final touchedBalances = <String, _TouchedBalance>{};
+    // ── Step 2: Load required balances (sequential reads) ──
+    final balanceSnapshot = await _loadRequiredBalances(type, payload);
 
-      // Apply movements to balances
-      for (final movement in movements) {
-        if (movement.sourceLocationId != null) {
-          final balanceId =
-              '${movement.sourceLocationId}_${movement.productId}';
-          final balanceRef = _db.collection('stock_balances').doc(balanceId);
-          final current = balanceSnapshot[balanceId] ?? 0.0;
-          final newQty = current - movement.quantityBase;
-          balanceSnapshot[balanceId] = newQty;
+    // ── Step 3: Generate movement lines (pure computation) ──
+    final movements = _generateMovementLines(
+      type,
+      commandId,
+      payload,
+      actorUid,
+      occurredAt,
+      balanceSnapshot,
+    );
 
-          touchedBalances[balanceId] ??= _TouchedBalance(
-            movement.sourceLocationId!,
-            movement.productId,
-            0.0,
-          );
-          touchedBalances[balanceId]!.quantity = newQty;
+    // ── Step 4: Build a single WriteBatch for all writes ──
+    final batch = _db.batch();
+    final touchedBalances = <String, _TouchedBalance>{};
 
-          tx.set(balanceRef, {
-            'id': balanceId,
-            'locationId': movement.sourceLocationId,
-            'productId': movement.productId,
-            'quantity': newQty,
-            'updatedAt': firestore.FieldValue.serverTimestamp(),
-          }, firestore.SetOptions(merge: true));
-        }
+    // Apply movements to balances
+    for (final movement in movements) {
+      if (movement.sourceLocationId != null) {
+        final balanceId =
+            '${movement.sourceLocationId}_${movement.productId}';
+        final balanceRef = _db.collection('stock_balances').doc(balanceId);
+        final current = balanceSnapshot[balanceId] ?? 0.0;
+        final newQty = current - movement.quantityBase;
+        balanceSnapshot[balanceId] = newQty;
 
-        if (movement.destinationLocationId != null) {
-          final balanceId =
-              '${movement.destinationLocationId}_${movement.productId}';
-          final balanceRef = _db.collection('stock_balances').doc(balanceId);
-          final current = balanceSnapshot[balanceId] ?? 0.0;
-          final newQty = current + movement.quantityBase;
-          balanceSnapshot[balanceId] = newQty;
+        touchedBalances[balanceId] ??= _TouchedBalance(
+          movement.sourceLocationId!,
+          movement.productId,
+          0.0,
+        );
+        touchedBalances[balanceId]!.quantity = newQty;
 
-          touchedBalances[balanceId] ??= _TouchedBalance(
-            movement.destinationLocationId!,
-            movement.productId,
-            0.0,
-          );
-          touchedBalances[balanceId]!.quantity = newQty;
-
-          tx.set(balanceRef, {
-            'id': balanceId,
-            'locationId': movement.destinationLocationId,
-            'productId': movement.productId,
-            'quantity': newQty,
-            'updatedAt': firestore.FieldValue.serverTimestamp(),
-          }, firestore.SetOptions(merge: true));
-        }
-
-        // Create the movement record
-        final movementDocId = '$commandId:${movement.movementIndex}';
-        final movementRef = _db
-            .collection(CollectionRegistry.stockMovements)
-            .doc(movementDocId);
-        tx.set(movementRef, {
-          'id': movementDocId,
-          'movementId': movementDocId,
-          'commandId': commandId,
-          'movementIndex': movement.movementIndex,
+        batch.set(balanceRef, {
+          'id': balanceId,
+          'locationId': movement.sourceLocationId,
           'productId': movement.productId,
-          'sourceLocationId': movement.sourceLocationId,
-          'destinationLocationId': movement.destinationLocationId,
-          'quantityBase': movement.quantityBase,
-          'movementType': movement.movementType,
-          'reasonCode': movement.reasonCode,
-          'referenceType': movement.referenceType,
-          'referenceId': movement.referenceId,
-          'actorUid': movement.actorUid,
-          'occurredAt': movement.occurredAt.toIso8601String(),
-          'isReversal': movement.isReversal,
+          'quantity': newQty,
           'updatedAt': firestore.FieldValue.serverTimestamp(),
         }, firestore.SetOptions(merge: true));
       }
 
-      // Projections
-      for (final touched in touchedBalances.values) {
-        await _applyCompatibilityProjection(
-          tx,
-          touched.locationId,
-          touched.productId,
-          touched.quantity,
-          occurredAt,
+      if (movement.destinationLocationId != null) {
+        final balanceId =
+            '${movement.destinationLocationId}_${movement.productId}';
+        final balanceRef = _db.collection('stock_balances').doc(balanceId);
+        final current = balanceSnapshot[balanceId] ?? 0.0;
+        final newQty = current + movement.quantityBase;
+        balanceSnapshot[balanceId] = newQty;
+
+        touchedBalances[balanceId] ??= _TouchedBalance(
+          movement.destinationLocationId!,
+          movement.productId,
+          0.0,
         );
+        touchedBalances[balanceId]!.quantity = newQty;
+
+        batch.set(balanceRef, {
+          'id': balanceId,
+          'locationId': movement.destinationLocationId,
+          'productId': movement.productId,
+          'quantity': newQty,
+          'updatedAt': firestore.FieldValue.serverTimestamp(),
+        }, firestore.SetOptions(merge: true));
       }
 
-      // Command-specific remote side-effects
-      if (type == 'dispatch_create') {
-        final dispatchId = payload['dispatchId']?.toString();
-        if (dispatchId != null) {
-          final dispatchRef = _db
-              .collection(CollectionRegistry.dispatches)
-              .doc(dispatchId);
+      // Create the movement record
+      final movementDocId = '$commandId:${movement.movementIndex}';
+      final movementRef = _db
+          .collection(CollectionRegistry.stockMovements)
+          .doc(movementDocId);
+      batch.set(movementRef, {
+        'id': movementDocId,
+        'movementId': movementDocId,
+        'commandId': commandId,
+        'movementIndex': movement.movementIndex,
+        'productId': movement.productId,
+        'sourceLocationId': movement.sourceLocationId,
+        'destinationLocationId': movement.destinationLocationId,
+        'quantityBase': movement.quantityBase,
+        'movementType': movement.movementType,
+        'reasonCode': movement.reasonCode,
+        'referenceType': movement.referenceType,
+        'referenceId': movement.referenceId,
+        'actorUid': movement.actorUid,
+        'occurredAt': movement.occurredAt.toIso8601String(),
+        'isReversal': movement.isReversal,
+        'updatedAt': firestore.FieldValue.serverTimestamp(),
+      }, firestore.SetOptions(merge: true));
+    }
 
-          final existingDispatch = await tx.get(dispatchRef);
-          if (!existingDispatch.exists) {
-            final seriesRef = _db
-                .collection('transaction_series')
-                .doc('Dispatch');
-            final seriesSnap = await tx.get(seriesRef);
+    // Projections
+    for (final touched in touchedBalances.values) {
+      _applyCompatibilityProjection(
+        batch,
+        touched.locationId,
+        touched.productId,
+        touched.quantity,
+        occurredAt,
+      );
+    }
 
-            int nextNumber = 1;
-            String prefix = "DSP-";
-            if (seriesSnap.exists) {
-              final sData = seriesSnap.data() as Map<String, dynamic>;
-              nextNumber = (sData['current'] as num? ?? 0).toInt() + 1;
-              prefix = sData['prefix']?.toString() ?? "DSP-";
-              tx.update(seriesRef, {'current': nextNumber});
-            } else {
-              tx.set(seriesRef, {'current': 1, 'prefix': prefix});
-            }
+    // Command-specific remote side-effects
+    if (type == 'dispatch_create') {
+      await _handleDispatchSideEffects(batch, payload, commandId);
+    }
 
-            final humanReadableId = "$prefix$nextNumber";
+    // Mark applied remotely
+    final Map<String, dynamic> updateData = Map.from(commandJson);
+    updateData['appliedRemotely'] = true;
+    updateData['updatedAt'] = firestore.FieldValue.serverTimestamp();
 
-            final dispatchData = Map<String, dynamic>.from(payload);
-            dispatchData.remove('items');
-            dispatchData['id'] = dispatchId;
-            dispatchData['dispatchId'] = humanReadableId;
-            dispatchData['humanReadableId'] = humanReadableId;
-            dispatchData['isSynced'] = true;
-            tx.set(
-              dispatchRef,
-              dispatchData,
-              firestore.SetOptions(merge: true),
-            );
+    batch.set(cmdRef, updateData, firestore.SetOptions(merge: true));
 
-            final routeOrderId = payload['routeOrderId']?.toString();
-            if (routeOrderId != null && routeOrderId.isNotEmpty) {
-              final routeOrderRef = _db
-                  .collection(CollectionRegistry.routeOrders)
-                  .doc(routeOrderId);
-              tx.set(routeOrderRef, {
-                'status': 'dispatch_pending_confirmation',
-                'actualDispatchId': dispatchId,
-                'updatedAt': firestore.FieldValue.serverTimestamp(),
-              }, firestore.SetOptions(merge: true));
-            }
-          }
-        }
-      }
-
-      // Mark applied remotely
-      final Map<String, dynamic> updateData = Map.from(commandJson);
-      updateData['appliedRemotely'] = true;
-      updateData['updatedAt'] = firestore.FieldValue.serverTimestamp();
-
-      tx.set(cmdRef, updateData, firestore.SetOptions(merge: true));
-    });
+    // ── Step 5: Commit the batch (single network round-trip) ──
+    await batch.commit();
   }
 
-  Future<void> _applyCompatibilityProjection(
-    firestore.Transaction tx,
+  /// Handles dispatch_create side-effects: creates dispatch doc, updates
+  /// transaction_series counter, and links to routeOrder if present.
+  Future<void> _handleDispatchSideEffects(
+    firestore.WriteBatch batch,
+    Map<String, dynamic> payload,
+    String commandId,
+  ) async {
+    final dispatchId = payload['dispatchId']?.toString();
+    if (dispatchId == null) return;
+
+    final dispatchRef = _db
+        .collection(CollectionRegistry.dispatches)
+        .doc(dispatchId);
+
+    final existingDispatch = await dispatchRef.get();
+    if (existingDispatch.exists) return;
+
+    final seriesRef = _db
+        .collection('transaction_series')
+        .doc('Dispatch');
+    final seriesSnap = await seriesRef.get();
+
+    int nextNumber = 1;
+    String prefix = "DSP-";
+    if (seriesSnap.exists) {
+      final sData = seriesSnap.data() as Map<String, dynamic>;
+      nextNumber = (sData['current'] as num? ?? 0).toInt() + 1;
+      prefix = sData['prefix']?.toString() ?? "DSP-";
+      batch.update(seriesRef, {'current': nextNumber});
+    } else {
+      batch.set(seriesRef, {'current': 1, 'prefix': prefix});
+    }
+
+    final humanReadableId = "$prefix$nextNumber";
+
+    final dispatchData = Map<String, dynamic>.from(payload);
+    dispatchData.remove('items');
+    dispatchData['id'] = dispatchId;
+    dispatchData['dispatchId'] = humanReadableId;
+    dispatchData['humanReadableId'] = humanReadableId;
+    dispatchData['isSynced'] = true;
+    batch.set(
+      dispatchRef,
+      dispatchData,
+      firestore.SetOptions(merge: true),
+    );
+
+    final routeOrderId = payload['routeOrderId']?.toString();
+    if (routeOrderId != null && routeOrderId.isNotEmpty) {
+      final routeOrderRef = _db
+          .collection(CollectionRegistry.routeOrders)
+          .doc(routeOrderId);
+      batch.set(routeOrderRef, {
+        'status': 'dispatch_pending_confirmation',
+        'actualDispatchId': dispatchId,
+        'updatedAt': firestore.FieldValue.serverTimestamp(),
+      }, firestore.SetOptions(merge: true));
+    }
+  }
+
+  void _applyCompatibilityProjection(
+    firestore.WriteBatch batch,
     String locationId,
     String productId,
     double quantity,
     DateTime occurredAt,
-  ) async {
+  ) {
     if (locationId == 'warehouse_main') {
       final productRef = _db
           .collection(CollectionRegistry.products)
           .doc(productId);
-      tx.set(productRef, {
+      batch.set(productRef, {
         'stock': quantity,
         'updatedAt': firestore.FieldValue.serverTimestamp(),
       }, firestore.SetOptions(merge: true));
@@ -265,7 +291,7 @@ class RemoteInventoryCommandApplier {
       final deptStockRef = _db
           .collection('department_stocks')
           .doc('${deptId}_$productId');
-      tx.set(deptStockRef, {
+      batch.set(deptStockRef, {
         'id': '${deptId}_$productId',
         'departmentId': deptId,
         'departmentName': deptId, // Assuming ID is roughly the name for legacy
@@ -277,18 +303,16 @@ class RemoteInventoryCommandApplier {
       final salesmanUid = locationId.substring('salesman_van:'.length);
       final userRef = _db.collection(CollectionRegistry.users).doc(salesmanUid);
 
-      // Need to read the user to update array inside map.
-      // Firestore transactions require reads before writes.
-      // To bypass doing read inside the loop, we use merge and assume top-level replace for the product key.
-      tx.set(userRef, {
+      batch.set(userRef, {
         'allocatedStock': {productId: quantity},
         'updatedAt': firestore.FieldValue.serverTimestamp(),
       }, firestore.SetOptions(merge: true));
     }
   }
 
+  /// Loads balances required for this command type via direct reads
+  /// (no transaction needed).
   Future<Map<String, double>> _loadRequiredBalances(
-    firestore.Transaction tx,
     String type,
     Map<String, dynamic> payload,
   ) async {
@@ -298,9 +322,7 @@ class RemoteInventoryCommandApplier {
       final productId = payload['productId']?.toString();
       if (locationId != null && productId != null) {
         final balanceId = '${locationId}_$productId';
-        final doc = await tx.get(
-          _db.collection('stock_balances').doc(balanceId),
-        );
+        final doc = await _db.collection('stock_balances').doc(balanceId).get();
         if (doc.exists) {
           balances[balanceId] =
               (doc.data()?['quantity'] as num?)?.toDouble() ?? 0.0;
@@ -365,9 +387,8 @@ class RemoteInventoryCommandApplier {
       }
 
       for (final balanceId in pairs) {
-        final doc = await tx.get(
-          _db.collection('stock_balances').doc(balanceId),
-        );
+        final doc =
+            await _db.collection('stock_balances').doc(balanceId).get();
         balances[balanceId] =
             (doc.data()?['quantity'] as num?)?.toDouble() ?? 0.0;
       }

@@ -261,6 +261,30 @@ service cloud.firestore {
       allow update, delete: if isAdmin(); 
     }
     
+    // Settings / Config collections
+    match /user_departments/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /currencies/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /transaction_series/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /pdf_templates/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /department_master/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /tax_config/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+    match /financial_years/{id} { 
+      allow read: if isAdmin() || isAccountant(); 
+      allow write: if isAdmin(); 
+    }
+
+    // Inventory extended collections
+    match /inventory_commands/{id} { allow read, write: if isStoreOrAdmin(); }
+    match /inventory_locations/{id} { allow read, write: if isStoreOrAdmin(); }
+    match /stock_balances/{id} { allow read, write: if isStoreOrAdmin(); }
+    match /salesman_returns/{id} { allow read, write: if isAdmin(); }
+
+    // Fleet extended
+    match /tyre_brands/{id} { allow read: if isAuth(); allow write: if isAdmin(); }
+
+    // Sync / Telemetry
+    match /sync_metrics/{id} { allow read: if isAdmin(); allow write: if isAuth(); }
+    
     match /{document=**} { allow read, write: if false; }
   }
 }

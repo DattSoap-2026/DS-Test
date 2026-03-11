@@ -29,6 +29,8 @@ import '../../widgets/sales/new_sale/product_selector_widget.dart';
 import '../../widgets/sales/new_sale/cart_list_widget.dart';
 import '../../services/settings_service.dart';
 import '../../services/vehicles_service.dart';
+import '../../services/warehouse_service.dart';
+import '../../data/local/entities/inventory_location_entity.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../widgets/sales/new_sale/sale_totals_widget.dart';
 import '../../widgets/ui/master_screen_header.dart';
@@ -51,6 +53,7 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
   late InventoryService _inventoryService;
   late SchemesService _schemesService;
   late VehiclesService _vehiclesService;
+  late WarehouseService _warehouseService;
   final SaleCalculationEngine _calculationEngine = SaleCalculationEngine();
 
   Customer? _selectedCustomer;
@@ -87,6 +90,10 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
   final Map<String, String> _routeNameById = {};
   List<Map<String, dynamic>> _routeReferences = const [];
 
+  // Warehouse management
+  List<InventoryLocationEntity> _warehouses = [];
+  String? _selectedWarehouseId;
+
   // Financials
   final double _discountPercentage = 0;
   double _additionalDiscountPercentage = 0;
@@ -107,6 +114,7 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
     _inventoryService = context.read<InventoryService>();
     _schemesService = context.read<SchemesService>();
     _vehiclesService = context.read<VehiclesService>();
+    _warehouseService = context.read<WarehouseService>();
 
     if (widget.preSelectedCustomer != null) {
       _selectedCustomer = widget.preSelectedCustomer;
@@ -119,6 +127,7 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
     _loadProducts();
     _loadSchemes();
     _loadCompanyProfile();
+    _loadWarehouses();
     _loadSalesDiscountControls();
 
     // Serialize route/customer loading to ensure robust route-token filtering.
@@ -355,6 +364,32 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
       }
     } catch (e) {
       debugPrint('Error loading customers: $e');
+    }
+  }
+
+  Future<void> _loadWarehouses() async {
+    if (_isSalesman) return;
+    try {
+      final result = await _warehouseService.getWarehouseOptions();
+      if (mounted) {
+        setState(() {
+          _warehouses =
+              result.warehouses
+                  .map(
+                    (w) => InventoryLocationEntity()
+                      ..id = w.id
+                      ..name = w.name
+                      ..type = 'warehouse'
+                      ..updatedAt = DateTime.now(),
+                  )
+                  .toList();
+          if (_warehouses.isNotEmpty) {
+            _selectedWarehouseId = _warehouses.first.id;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading warehouses: $e');
     }
   }
 
@@ -1181,7 +1216,9 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
               id: saleId,
               recipientType: 'customer',
               recipientId: selectedCustomerSnapshot.id,
-              recipientName: selectedCustomerSnapshot.shopName,
+              recipientName: selectedCustomerSnapshot.shopName.isNotEmpty
+                  ? selectedCustomerSnapshot.shopName
+                  : selectedCustomerSnapshot.ownerName,
               items: cartSnapshot
                   .map((item) => item.toSaleItem())
                   .toList(growable: false),
@@ -1201,6 +1238,7 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
               sgstAmount: calcSnapshot.sgstAmount,
               igstAmount: calcSnapshot.igstAmount,
               totalAmount: calcSnapshot.totalAmount,
+              sourceWarehouseId: _selectedWarehouseId,
               roundOff: _round(
                 calcSnapshot.totalAmount -
                     (calcSnapshot.taxableAmount + calcSnapshot.totalGstAmount),
@@ -2093,6 +2131,14 @@ Thank you for your business!
                           selectedCustomer: _selectedCustomer,
                           filteredCustomers: _filteredCustomers,
                           allCustomers: _allCustomers,
+                          showSourceWarehouse: !_isSalesman,
+                          warehouses: _warehouses,
+                          selectedWarehouseId: _selectedWarehouseId,
+                          onWarehouseChanged: (warehouseId) {
+                            setState(() {
+                              _selectedWarehouseId = warehouseId;
+                            });
+                          },
                           onInputInteraction: _scrollStepperToTop,
                           onRouteChanged: (val) {
                             if (_isSaving) return;

@@ -15,7 +15,7 @@ import 'inventory_movement_engine.dart';
 import 'outbox_codec.dart';
 
 class OpeningStockService {
-  static const String mainWarehouseId = 'Main';
+  static const String mainWarehouseId = 'warehouse_main';
   static const String _dedupeMigrationFlag =
       'opening_stock_set_balance_migrated_v1';
   final FirebaseFirestore _firestore;
@@ -276,6 +276,12 @@ class OpeningStockService {
     return entity?.toDomain();
   }
 
+  Future<List<OpeningStockEntry>> getAllOpeningStocks() async {
+    await _migrateOpeningStockSetBalanceIfNeeded();
+    final entities = await _dbService.openingStockEntries.where().findAll();
+    return entities.map((e) => e.toDomain()).toList();
+  }
+
   /// Gets the Settings collection
   CollectionReference<Map<String, dynamic>> get _settingsRef =>
       _firestore.collection(CollectionRegistry.settings);
@@ -333,13 +339,6 @@ class OpeningStockService {
   }) async {
     await _migrateOpeningStockSetBalanceIfNeeded();
     await _ensureMainWarehouseLocation();
-    final normalizedWarehouseId = mainWarehouseId;
-    if (warehouseId != normalizedWarehouseId) {
-      AppLogger.info(
-        'Opening stock warehouse normalized from $warehouseId to $normalizedWarehouseId',
-        tag: 'Inventory',
-      );
-    }
 
     // 1. CHECK GO-LIVE LOCK (Try Local First if available, or fetch)
     // For now we check Firestore directly for lock, but we could cache this too
@@ -364,7 +363,7 @@ class OpeningStockService {
     OpeningStockEntity? openingForSync;
     final existingOpening = await _findOpeningStockEntity(
       productId: productId,
-      warehouseId: normalizedWarehouseId,
+      warehouseId: warehouseId,
     );
 
     final duplicateOpenings = existingOpening == null
@@ -373,7 +372,7 @@ class OpeningStockService {
                   .filter()
                   .productIdEqualTo(productId)
                   .and()
-                  .warehouseIdEqualTo(normalizedWarehouseId)
+                  .warehouseIdEqualTo(warehouseId)
                   .findAll())
               .where((entry) => entry.id != existingOpening.id)
               .toList();
@@ -390,7 +389,7 @@ class OpeningStockService {
         ..id = existingOpening?.id ?? entryId
         ..productId = productId
         ..productType = productType
-        ..warehouseId = normalizedWarehouseId
+        ..warehouseId = warehouseId
         ..quantity = quantity
         ..unit = unit
         ..openingRate = openingRate
@@ -418,7 +417,7 @@ class OpeningStockService {
     }
 
     final cmd = InventoryCommand.openingSetBalance(
-      warehouseId: normalizedWarehouseId,
+      warehouseId: warehouseId,
       productId: productId,
       setQuantityBase: quantity,
       openingWindowId: openingForSync?.id ?? entryId,

@@ -207,13 +207,16 @@ class InventoryCommand {
     required String actorUid,
     String? actorLegacyAppUserId,
     DateTime? createdAt,
+    String? sourceLocationId,
   }) {
     return InventoryCommand(
       commandId: 'dispatch:$dispatchId',
       commandType: InventoryCommandType.dispatchCreate,
       payload: <String, dynamic>{
         'dispatchId': dispatchId,
-        'sourceLocationId': InventoryProjectionService.warehouseMainLocationId,
+        'sourceLocationId':
+            sourceLocationId ?? InventoryProjectionService.warehouseMainLocationId,
+        'salesmanUid': salesmanUid,
         'destinationLocationId':
             InventoryProjectionService.salesmanLocationIdForUid(salesmanUid),
         'referenceId': dispatchId,

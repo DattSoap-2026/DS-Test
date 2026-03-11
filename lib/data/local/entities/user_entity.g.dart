@@ -67,84 +67,94 @@ const UserEntitySchema = CollectionSchema(
       name: r'assignedVehicleNumber',
       type: IsarType.string,
     ),
-    r'deletedAt': PropertySchema(
+    r'assignedWarehouseId': PropertySchema(
       id: 10,
+      name: r'assignedWarehouseId',
+      type: IsarType.string,
+    ),
+    r'assignedWarehouseName': PropertySchema(
+      id: 11,
+      name: r'assignedWarehouseName',
+      type: IsarType.string,
+    ),
+    r'deletedAt': PropertySchema(
+      id: 12,
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
     r'department': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'department',
       type: IsarType.string,
     ),
     r'departmentsJson': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'departmentsJson',
       type: IsarType.string,
     ),
     r'designation': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'designation',
       type: IsarType.string,
     ),
     r'email': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'email',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'id',
       type: IsarType.string,
     ),
     r'isActive': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'isActive',
       type: IsarType.bool,
     ),
     r'isDeleted': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'name': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'name',
       type: IsarType.string,
     ),
     r'passwordHash': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'passwordHash',
       type: IsarType.string,
     ),
     r'permissions': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'permissions',
       type: IsarType.stringList,
     ),
     r'phone': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'phone',
       type: IsarType.string,
     ),
     r'role': PropertySchema(
-      id: 22,
+      id: 24,
       name: r'role',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 23,
+      id: 25,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 24,
+      id: 26,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _UserEntitysyncStatusEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 25,
+      id: 27,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -250,6 +260,18 @@ int _userEntityEstimateSize(
     }
   }
   {
+    final value = object.assignedWarehouseId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.assignedWarehouseName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.department;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -335,22 +357,24 @@ void _userEntitySerialize(
   writer.writeString(offsets[7], object.assignedVehicleId);
   writer.writeString(offsets[8], object.assignedVehicleName);
   writer.writeString(offsets[9], object.assignedVehicleNumber);
-  writer.writeDateTime(offsets[10], object.deletedAt);
-  writer.writeString(offsets[11], object.department);
-  writer.writeString(offsets[12], object.departmentsJson);
-  writer.writeString(offsets[13], object.designation);
-  writer.writeString(offsets[14], object.email);
-  writer.writeString(offsets[15], object.id);
-  writer.writeBool(offsets[16], object.isActive);
-  writer.writeBool(offsets[17], object.isDeleted);
-  writer.writeString(offsets[18], object.name);
-  writer.writeString(offsets[19], object.passwordHash);
-  writer.writeStringList(offsets[20], object.permissions);
-  writer.writeString(offsets[21], object.phone);
-  writer.writeString(offsets[22], object.role);
-  writer.writeString(offsets[23], object.status);
-  writer.writeByte(offsets[24], object.syncStatus.index);
-  writer.writeDateTime(offsets[25], object.updatedAt);
+  writer.writeString(offsets[10], object.assignedWarehouseId);
+  writer.writeString(offsets[11], object.assignedWarehouseName);
+  writer.writeDateTime(offsets[12], object.deletedAt);
+  writer.writeString(offsets[13], object.department);
+  writer.writeString(offsets[14], object.departmentsJson);
+  writer.writeString(offsets[15], object.designation);
+  writer.writeString(offsets[16], object.email);
+  writer.writeString(offsets[17], object.id);
+  writer.writeBool(offsets[18], object.isActive);
+  writer.writeBool(offsets[19], object.isDeleted);
+  writer.writeString(offsets[20], object.name);
+  writer.writeString(offsets[21], object.passwordHash);
+  writer.writeStringList(offsets[22], object.permissions);
+  writer.writeString(offsets[23], object.phone);
+  writer.writeString(offsets[24], object.role);
+  writer.writeString(offsets[25], object.status);
+  writer.writeByte(offsets[26], object.syncStatus.index);
+  writer.writeDateTime(offsets[27], object.updatedAt);
 }
 
 UserEntity _userEntityDeserialize(
@@ -370,24 +394,26 @@ UserEntity _userEntityDeserialize(
   object.assignedVehicleId = reader.readStringOrNull(offsets[7]);
   object.assignedVehicleName = reader.readStringOrNull(offsets[8]);
   object.assignedVehicleNumber = reader.readStringOrNull(offsets[9]);
-  object.deletedAt = reader.readDateTimeOrNull(offsets[10]);
-  object.department = reader.readStringOrNull(offsets[11]);
-  object.departmentsJson = reader.readStringOrNull(offsets[12]);
-  object.designation = reader.readStringOrNull(offsets[13]);
-  object.email = reader.readStringOrNull(offsets[14]);
-  object.id = reader.readString(offsets[15]);
-  object.isActive = reader.readBool(offsets[16]);
-  object.isDeleted = reader.readBool(offsets[17]);
-  object.name = reader.readStringOrNull(offsets[18]);
-  object.passwordHash = reader.readStringOrNull(offsets[19]);
-  object.permissions = reader.readStringList(offsets[20]);
-  object.phone = reader.readStringOrNull(offsets[21]);
-  object.role = reader.readStringOrNull(offsets[22]);
-  object.status = reader.readStringOrNull(offsets[23]);
+  object.assignedWarehouseId = reader.readStringOrNull(offsets[10]);
+  object.assignedWarehouseName = reader.readStringOrNull(offsets[11]);
+  object.deletedAt = reader.readDateTimeOrNull(offsets[12]);
+  object.department = reader.readStringOrNull(offsets[13]);
+  object.departmentsJson = reader.readStringOrNull(offsets[14]);
+  object.designation = reader.readStringOrNull(offsets[15]);
+  object.email = reader.readStringOrNull(offsets[16]);
+  object.id = reader.readString(offsets[17]);
+  object.isActive = reader.readBool(offsets[18]);
+  object.isDeleted = reader.readBool(offsets[19]);
+  object.name = reader.readStringOrNull(offsets[20]);
+  object.passwordHash = reader.readStringOrNull(offsets[21]);
+  object.permissions = reader.readStringList(offsets[22]);
+  object.phone = reader.readStringOrNull(offsets[23]);
+  object.role = reader.readStringOrNull(offsets[24]);
+  object.status = reader.readStringOrNull(offsets[25]);
   object.syncStatus =
-      _UserEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[24])] ??
+      _UserEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[26])] ??
           SyncStatus.pending;
-  object.updatedAt = reader.readDateTime(offsets[25]);
+  object.updatedAt = reader.readDateTime(offsets[27]);
   return object;
 }
 
@@ -419,38 +445,42 @@ P _userEntityDeserializeProp<P>(
     case 9:
       return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 11:
       return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 13:
       return (reader.readStringOrNull(offset)) as P;
     case 14:
       return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 16:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 17:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 18:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 19:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 20:
-      return (reader.readStringList(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 21:
       return (reader.readStringOrNull(offset)) as P;
     case 22:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringList(offset)) as P;
     case 23:
       return (reader.readStringOrNull(offset)) as P;
     case 24:
+      return (reader.readStringOrNull(offset)) as P;
+    case 25:
+      return (reader.readStringOrNull(offset)) as P;
+    case 26:
       return (_UserEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 25:
+    case 27:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2289,6 +2319,315 @@ extension UserEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'assignedVehicleNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'assignedWarehouseId',
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'assignedWarehouseId',
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'assignedWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'assignedWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'assignedWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'assignedWarehouseId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'assignedWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'assignedWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'assignedWarehouseId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'assignedWarehouseId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'assignedWarehouseId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'assignedWarehouseId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'assignedWarehouseName',
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'assignedWarehouseName',
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'assignedWarehouseName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'assignedWarehouseName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'assignedWarehouseName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'assignedWarehouseName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'assignedWarehouseName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'assignedWarehouseName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'assignedWarehouseName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'assignedWarehouseName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'assignedWarehouseName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterFilterCondition>
+      assignedWarehouseNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'assignedWarehouseName',
         value: '',
       ));
     });
@@ -4403,6 +4742,34 @@ extension UserEntityQuerySortBy
     });
   }
 
+  QueryBuilder<UserEntity, UserEntity, QAfterSortBy>
+      sortByAssignedWarehouseId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assignedWarehouseId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterSortBy>
+      sortByAssignedWarehouseIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assignedWarehouseId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterSortBy>
+      sortByAssignedWarehouseName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assignedWarehouseName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterSortBy>
+      sortByAssignedWarehouseNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assignedWarehouseName', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserEntity, UserEntity, QAfterSortBy> sortByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.asc);
@@ -4711,6 +5078,34 @@ extension UserEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<UserEntity, UserEntity, QAfterSortBy>
+      thenByAssignedWarehouseId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assignedWarehouseId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterSortBy>
+      thenByAssignedWarehouseIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assignedWarehouseId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterSortBy>
+      thenByAssignedWarehouseName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assignedWarehouseName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QAfterSortBy>
+      thenByAssignedWarehouseNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'assignedWarehouseName', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserEntity, UserEntity, QAfterSortBy> thenByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.asc);
@@ -4985,6 +5380,22 @@ extension UserEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<UserEntity, UserEntity, QDistinct> distinctByAssignedWarehouseId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'assignedWarehouseId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserEntity, UserEntity, QDistinct>
+      distinctByAssignedWarehouseName({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'assignedWarehouseName',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<UserEntity, UserEntity, QDistinct> distinctByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deletedAt');
@@ -5167,6 +5578,20 @@ extension UserEntityQueryProperty
       assignedVehicleNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'assignedVehicleNumber');
+    });
+  }
+
+  QueryBuilder<UserEntity, String?, QQueryOperations>
+      assignedWarehouseIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'assignedWarehouseId');
+    });
+  }
+
+  QueryBuilder<UserEntity, String?, QQueryOperations>
+      assignedWarehouseNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'assignedWarehouseName');
     });
   }
 

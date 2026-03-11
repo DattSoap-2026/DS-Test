@@ -66,6 +66,9 @@ class _OpeningStockSetupScreenState extends State<OpeningStockSetupScreen> {
   final ScrollController _typeFilterScrollController = ScrollController();
   late final Map<String, GlobalKey> _typeFilterChipKeys;
 
+  // Cache for existing opening stocks (ProductId -> WarehouseId -> Qty)
+  final Map<String, Map<String, double>> _openingStocks = {};
+
   // Cache for saved states (Product ID -> bool)
   final Map<String, bool> _savedProducts = {};
   final Map<String, bool> _savingProducts = {};
@@ -99,12 +102,19 @@ class _OpeningStockSetupScreenState extends State<OpeningStockSetupScreen> {
     try {
       final products = await _productsService.getProducts();
       final warehouseResult = await _warehouseService.getWarehouseOptions();
+      final allOpenings = await _openingService.getAllOpeningStocks();
 
       if (mounted) {
         setState(() {
           _allProducts = products.where((p) => p.status == 'active').toList();
           _warehouses = warehouseResult.warehouses;
           _selectedWarehouseId = _warehouses.isNotEmpty ? _warehouses.first.id : null;
+
+          _openingStocks.clear();
+          for (final entry in allOpenings) {
+            _openingStocks.putIfAbsent(entry.productId, () => {})[entry.warehouseId] = entry.quantity;
+            _savedProducts[entry.productId] = true;
+          }
 
           for (var p in _allProducts) {
             _qtyControllers[p.id] = TextEditingController(text: '0');
@@ -587,6 +597,7 @@ class _OpeningStockSetupScreenState extends State<OpeningStockSetupScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            _buildOpeningStockText(product, theme),
                           ],
                         ),
                       ),
@@ -672,6 +683,7 @@ class _OpeningStockSetupScreenState extends State<OpeningStockSetupScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
+                              _buildOpeningStockText(product, theme),
                             ],
                           ),
                         ),
@@ -823,6 +835,37 @@ class _OpeningStockSetupScreenState extends State<OpeningStockSetupScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildOpeningStockText(Product product, ThemeData theme) {
+    final openingStocksMap = _openingStocks[product.id] ?? {};
+    if (openingStocksMap.isEmpty) return const SizedBox.shrink();
+    
+    final parts = <String>[];
+    for (final wh in _warehouses) {
+      final qty = openingStocksMap[wh.id] ?? 0.0;
+      if (qty > 0) {
+        final qtyStr = qty.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+        final shortName = wh.name.replaceAll(' Shed', '').replaceAll(' Warehouse', '').trim();
+        parts.add('$shortName:$qtyStr');
+      }
+    }
+    
+    if (parts.isEmpty) return const SizedBox.shrink();
+    
+    return Padding(
+      padding: const EdgeInsets.only(top: 4.0),
+      child: Text(
+        'Stock: ' + parts.join(' | '),
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: theme.colorScheme.tertiary,
+        ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 
@@ -999,6 +1042,7 @@ class _OpeningStockSetupScreenState extends State<OpeningStockSetupScreen> {
         setState(() {
           _savedProducts[product.id] = true;
           _savingProducts[product.id] = false;
+          _openingStocks.putIfAbsent(product.id, () => {})[_selectedWarehouseId!] = qty;
         });
         AppToast.showSuccess(
           context,
