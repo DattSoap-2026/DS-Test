@@ -101,4 +101,24 @@ coverage/
 
 # Pub cache (should not be committed)
 .pub-cache/
-.pub/
+# ==============================================================================
+# Build Artifacts (Skip Git)
+# ==============================================================================
+
+# Android release artifacts
+*.apk
+*.aab
+
+# Windows release artifacts
+installer/output/
+*.exe
+
+# Logs from agents and tools
+analysis_log.txt
+analysis_output.txt
+analysis.txt
+analyze_output.txt
+analysis.json
+build_log.txt
+code_summary.json
+**/manual_build_log.txt
