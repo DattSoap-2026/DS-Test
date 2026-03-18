@@ -1,69 +1,104 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# ==============================================================================
+# ⚠️ SENSITIVE - KABHI PUSH MAT KARO
+# Firebase & Environment Configuration Files
+# In files mein API keys, project secrets aur private credentials hote hain.
+# Agar yeh galti se push ho jayein, turant rotate karo aur git history clean karo.
+# ==============================================================================
 
-# IntelliJ related
+# Firebase config files
+lib/firebase_options.dart
+android/app/google-services.json
+android/app/google-services.xml
+windows/firebase_config.json
+
+# Environment variable files
+.env
+.env.local
+.env.production
+.env.development
+*.env
+
+# ==============================================================================
+# Flutter Build Outputs
+# ==============================================================================
+
+# Build artifacts
+build/
+
+# Dart tool cache
+.dart_tool/
+
+# Flutter plugin state files
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# pubspec.lock (team preference: uncomment agar lock file ignore karni ho)
+# pubspec.lock
+
+# ==============================================================================
+# IDE & Editor Files
+# ==============================================================================
+
+# IntelliJ / Android Studio
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code
+.vscode/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/android/build/
-/ios/build/
-/linux/build/
-/macos/build/
-/windows/build/
-/coverage/
+# ==============================================================================
+# OS Generated Files
+# ==============================================================================
 
-# Symbolication related
-app.*.symbols
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
-# Obfuscation related
-app.*.map.json
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# ==============================================================================
+# Android
+# ==============================================================================
 
-# Agent/tool-generated artifacts (do not commit)
-analysis_log.txt
-analysis_output.txt
-analysis.txt
-analyze_output.txt
-analysis.json
-build_log.txt
-code_summary.json
-**/manual_build_log.txt
-*.zip
-*.apk
-installer/output/
-
-# Release signing secrets/artifacts
-keystore/
+# Android Keystore (signing keys - KABHI PUSH MAT KARO)
 *.jks
 *.keystore
-*.p12
+android/key.properties
+
+# Android local config
+android/local.properties
+
+# ==============================================================================
+# Windows
+# ==============================================================================
+
+# Windows build artifacts
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+
+# ==============================================================================
+# Logs & Misc
+# ==============================================================================
+
+# Dart crash logs
+*.log
+crash.log
+
+# Coverage
+coverage/
+
+# Pub cache (should not be committed)
+.pub-cache/
+.pub/

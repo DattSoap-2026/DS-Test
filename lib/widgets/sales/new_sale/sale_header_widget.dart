@@ -461,7 +461,7 @@ class SaleHeaderWidget extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: selectedWarehouseId,
+                initialValue: selectedWarehouseId,
                 isExpanded: true,
                 decoration: InputDecoration(
                   hintText: 'Select Warehouse',

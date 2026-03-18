@@ -572,7 +572,7 @@ class _WarehouseTransferScreenState extends State<WarehouseTransferScreen>
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           decoration: InputDecoration(
             isDense: true,
             filled: true,

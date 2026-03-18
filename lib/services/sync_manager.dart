@@ -475,8 +475,7 @@ class SyncManager extends ChangeNotifier {
 
   bool _canSyncStockLedger(UserRole role) {
     return _isAdminLikeRole(role) ||
-        _isManagerLikeRole(role) ||
-        role == UserRole.salesman;
+        _isManagerLikeRole(role);
   }
 
   bool _canSyncWarehouseReferenceData(UserRole role) {
@@ -995,6 +994,15 @@ class SyncManager extends ChangeNotifier {
     return ownerKeys;
   }
 
+  /// Collections that must only be pushed by their creator (admin/manager).
+  /// If a queue item in these collections has NO actor metadata (old pre-fix
+  /// items), a salesman or non-admin user must NOT see it — to prevent
+  /// Firestore permission-denied errors from pushing admin-owned records.
+  static const Set<String> _adminStrictCollections = {
+    CollectionRegistry.openingStockEntries,
+    CollectionRegistry.inventoryCommands,
+  };
+
   bool _isQueueVisibleToCurrentSession(SyncQueueEntity item) {
     final sessionKeys = _currentSessionActorKeys();
     if (sessionKeys.isEmpty) return true;
@@ -1003,7 +1011,16 @@ class SyncManager extends ChangeNotifier {
       fallbackQueuedAt: item.createdAt,
     );
     final ownerKeys = _extractQueueOwnerKeys(item, decoded);
-    if (ownerKeys.isEmpty) return true;
+    if (ownerKeys.isEmpty) {
+      // For admin-strict collections, items without owner metadata must only
+      // be processed by admin/owner roles. Salesman / restricted roles skip them.
+      if (_adminStrictCollections.contains(item.collection)) {
+        final role = _currentUser?.role;
+        if (role == null) return false;
+        return _isAdminLikeRole(role) || _isManagerLikeRole(role);
+      }
+      return true;
+    }
     return ownerKeys.any(sessionKeys.contains);
   }
 

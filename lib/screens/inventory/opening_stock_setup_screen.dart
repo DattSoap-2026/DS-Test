@@ -377,7 +377,7 @@ class _OpeningStockSetupScreenState extends State<OpeningStockSetupScreen> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: _selectedWarehouseId,
+                        initialValue: _selectedWarehouseId,
                         decoration: InputDecoration(
                           isDense: true,
                           filled: true,
@@ -857,7 +857,7 @@ class _OpeningStockSetupScreenState extends State<OpeningStockSetupScreen> {
     return Padding(
       padding: const EdgeInsets.only(top: 4.0),
       child: Text(
-        'Stock: ' + parts.join(' | '),
+        'Stock: ${parts.join(' | ')}',
         style: theme.textTheme.labelSmall?.copyWith(
           fontSize: 10,
           fontWeight: FontWeight.w700,

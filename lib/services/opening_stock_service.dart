@@ -11,6 +11,7 @@ import '../data/local/entities/inventory_location_entity.dart';
 import '../utils/app_logger.dart';
 import 'database_service.dart';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'inventory_movement_engine.dart';
 import 'outbox_codec.dart';
 
@@ -38,6 +39,7 @@ class OpeningStockService {
     required Map<String, dynamic> payload,
     String action = 'set',
     String? explicitRecordKey,
+    Map<String, dynamic>? actorMeta,
   }) async {
     final queueId = OutboxCodec.buildQueueId(
       collection,
@@ -52,13 +54,19 @@ class OpeningStockService {
             existing.dataJson,
             fallbackQueuedAt: existing.createdAt,
           ).meta;
+
+    Map<String, dynamic>? mergedMeta;
+    if (existingMeta != null || actorMeta != null) {
+      mergedMeta = {...?existingMeta, ...?actorMeta};
+    }
+
     final queueEntity = SyncQueueEntity()
       ..id = queueId
       ..collection = collection
       ..action = action
       ..dataJson = OutboxCodec.encodeEnvelope(
         payload: payload,
-        existingMeta: existingMeta,
+        existingMeta: mergedMeta,
         now: now,
         resetRetryState: true,
       )
@@ -408,11 +416,17 @@ class OpeningStockService {
       openingForSync = openingEntity;
     });
     if (openingForSync != null) {
+      final user = FirebaseAuth.instance.currentUser;
+      final actorMeta = user == null ? null : {
+        OutboxCodec.actorUidMetaField: user.uid.trim(),
+        if (user.email != null) OutboxCodec.actorEmailMetaField: user.email!.trim(),
+      };
       await _enqueueOutbox(
         collection: _openingCollection,
         payload: _openingPayload(openingForSync!),
         action: 'set',
         explicitRecordKey: openingForSync!.id,
+        actorMeta: actorMeta,
       );
     }
 
@@ -444,11 +458,17 @@ class OpeningStockService {
       'goLiveCompleted': true,
       'updatedAt': DateTime.now().toIso8601String(),
     };
+    final user = FirebaseAuth.instance.currentUser;
+    final actorMeta = user == null ? null : {
+      OutboxCodec.actorUidMetaField: user.uid.trim(),
+      if (user.email != null) OutboxCodec.actorEmailMetaField: user.email!.trim(),
+    };
     final queueId = await _enqueueOutbox(
       collection: 'settings',
       payload: payload,
       action: 'set',
       explicitRecordKey: 'general',
+      actorMeta: actorMeta,
     );
 
     try {

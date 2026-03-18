@@ -1066,13 +1066,23 @@ class InventoryMovementEngine {
             fallbackQueuedAt: existing.createdAt,
           ).meta;
 
+    Map<String, dynamic>? mergedMeta;
+    final actorMeta = {
+      OutboxCodec.actorUidMetaField: command.actorUid,
+    };
+    if (existingMeta != null) {
+      mergedMeta = {...existingMeta, ...actorMeta};
+    } else {
+      mergedMeta = actorMeta;
+    }
+
     return SyncQueueEntity()
       ..id = queueId
       ..collection = CollectionRegistry.inventoryCommands
       ..action = 'set'
       ..dataJson = OutboxCodec.encodeEnvelope(
         payload: payload,
-        existingMeta: existingMeta,
+        existingMeta: mergedMeta,
         now: now,
         resetRetryState: true,
       )
