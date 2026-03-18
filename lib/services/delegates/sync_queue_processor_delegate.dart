@@ -348,8 +348,19 @@ class SyncQueueProcessorDelegate {
         // ---------------------------------------------------------
 
         if (!OutboxCodec.shouldRetryNow(meta)) {
-          skippedBackoff++;
-          continue;
+          // Special case: Opening stock items should retry immediately
+          // to avoid blocking system initialization
+          final collection = item.entity.collection;
+          if (collection == 'opening_stock_entries' || 
+              collection == 'inventory_commands') {
+            AppLogger.info(
+              'Bypassing backoff for system-level operation: $collection',
+              tag: 'Sync',
+            );
+          } else {
+            skippedBackoff++;
+            continue;
+          }
         }
 
         try {
@@ -788,6 +799,12 @@ class SyncQueueProcessorDelegate {
     _QueueWorkItem item,
     firebase_auth.User authUser,
   ) {
+    // Special handling for opening stock entries - allow any authenticated user to process
+    if (item.entity.collection == 'opening_stock_entries' || 
+        item.entity.collection == 'inventory_commands') {
+      return true;
+    }
+    
     final ownerKeys = _extractQueueOwnerKeys(item);
     if (ownerKeys.isEmpty) return true;
     final sessionKeys = _currentSessionActorKeys(authUser);

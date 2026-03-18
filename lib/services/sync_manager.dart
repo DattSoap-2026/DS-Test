@@ -2501,6 +2501,99 @@ class SyncManager extends ChangeNotifier {
 
   Future<void> refreshPendingCount() => _updatePendingCount();
 
+  /// Clears stuck opening stock queue items for the current user session.
+  /// This is useful when opening stock entries are stuck due to ownership issues.
+  Future<int> clearStuckOpeningStockQueue() async {
+    int clearedCount = 0;
+    try {
+      final queueItems = await _dbService.syncQueue.where().findAll();
+      final itemsToDelete = <Id>[];
+      
+      for (final item in queueItems) {
+        if (item.collection == CollectionRegistry.openingStockEntries ||
+            (item.collection == CollectionRegistry.inventoryCommands && 
+             item.id.contains('opening'))) {
+          itemsToDelete.add(item.isarId);
+        }
+      }
+      
+      if (itemsToDelete.isNotEmpty) {
+        await _dbService.db.writeTxn(() async {
+          for (final id in itemsToDelete) {
+            await _dbService.syncQueue.delete(id);
+          }
+        });
+        clearedCount = itemsToDelete.length;
+        await _updatePendingCount();
+        AppLogger.success(
+          'Cleared $clearedCount stuck opening stock queue items',
+          tag: 'Sync',
+        );
+      }
+    } catch (e) {
+      AppLogger.error(
+        'Failed to clear stuck opening stock queue',
+        error: e,
+        tag: 'Sync',
+      );
+    }
+    return clearedCount;
+  }
+
+  /// Resets retry state for stuck opening stock queue items.
+  /// This forces immediate retry by clearing backoff timers.
+  Future<int> resetStuckOpeningStockRetry() async {
+    int resetCount = 0;
+    try {
+      final queueItems = await _dbService.syncQueue.where().findAll();
+      final itemsToReset = <SyncQueueEntity>[];
+      
+      for (final item in queueItems) {
+        if (item.collection == CollectionRegistry.openingStockEntries ||
+            (item.collection == CollectionRegistry.inventoryCommands && 
+             item.id.contains('opening'))) {
+          itemsToReset.add(item);
+        }
+      }
+      
+      if (itemsToReset.isNotEmpty) {
+        await _dbService.db.writeTxn(() async {
+          final now = DateTime.now();
+          for (final item in itemsToReset) {
+            final decoded = OutboxCodec.decode(
+              item.dataJson,
+              fallbackQueuedAt: item.createdAt,
+            );
+            
+            // Reset retry state to force immediate processing
+            item.dataJson = OutboxCodec.encodeEnvelope(
+              payload: decoded.payload,
+              existingMeta: decoded.meta,
+              now: now,
+              resetRetryState: true,
+            );
+            item.updatedAt = now;
+            item.syncStatus = SyncStatus.pending;
+            await _dbService.syncQueue.put(item);
+          }
+        });
+        resetCount = itemsToReset.length;
+        await _updatePendingCount();
+        AppLogger.success(
+          'Reset retry state for $resetCount opening stock queue items',
+          tag: 'Sync',
+        );
+      }
+    } catch (e) {
+      AppLogger.error(
+        'Failed to reset opening stock queue retry state',
+        error: e,
+        tag: 'Sync',
+      );
+    }
+    return resetCount;
+  }
+
   /// Auto-fetch daily production logs (Bhatti & Production)
   /// Called on app start and network restore
   Future<void> autoFetchDailyProductionData() async {

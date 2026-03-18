@@ -104,6 +104,10 @@ import 'services/ai_brain_service.dart'; // AI Brain for persistent chat
 import 'models/types/user_types.dart';
 import 'widgets/ui/app_error_boundary.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'core/database/isar_service.dart';
+import 'core/network/connectivity_service.dart';
+import 'core/sync/sync_service.dart';
+import 'core/utils/device_id_service.dart';
 
 void main() {
   var appMounted = false;
@@ -175,6 +179,13 @@ void main() {
         // 2. Initialize Database
         final databaseService = DatabaseService();
         await databaseService.init();
+        await IsarService.instance.initialize();
+        await DeviceIdService.instance.initialize();
+        await SyncService.instance.initialize();
+        await ConnectivityService.instance.initialize();
+        if (ConnectivityService.instance.isOnline) {
+          await SyncService.instance.syncAllPending();
+        }
         final fieldEncryptionService = FieldEncryptionService.instance;
         await fieldEncryptionService.initialize();
 

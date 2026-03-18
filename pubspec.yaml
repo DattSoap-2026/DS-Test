@@ -132,6 +132,7 @@ dependencies:
   flutter_tts: ^4.2.5
   build_runner: ^2.4.13
   synchronized: ^3.4.0
+  logger: ^2.5.0
 
 dev_dependencies:
   flutter_test:

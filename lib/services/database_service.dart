@@ -70,6 +70,10 @@ import '../data/local/entities/dispatch_entity.dart';
 import '../data/local/entities/stock_movement_entity.dart';
 import '../data/local/entities/route_order_entity.dart'; // Added
 import '../data/local/entities/task_entity.dart';
+import '../features/inventory/models/product.dart' as inventory_product;
+import '../features/inventory/models/stock_movement.dart'
+    as inventory_stock_movement;
+import '../features/inventory/models/sync_queue.dart' as inventory_sync_queue;
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -197,6 +201,9 @@ class DatabaseService {
       AILearningItemSchema,
       AIInsightCacheSchema,
       AIBrainSettingsSchema,
+      inventory_product.ProductSchema,
+      inventory_stock_movement.StockMovementSchema,
+      inventory_sync_queue.SyncQueueSchema,
     ];
 
     return Isar.open(schemas, directory: path, name: _dbName);
@@ -273,10 +280,13 @@ class DatabaseService {
         AILearningItemSchema,
         AIInsightCacheSchema,
         AIBrainSettingsSchema,
-      ],
-      directory: path,
-      name: _legacyDbName,
-    );
+        inventory_product.ProductSchema,
+        inventory_stock_movement.StockMovementSchema,
+        inventory_sync_queue.SyncQueueSchema,
+    ],
+    directory: path,
+    name: _legacyDbName,
+  );
   }
 
   Future<void> _deleteLegacyFiles(String path) async {
@@ -637,4 +647,11 @@ class DatabaseService {
       _isar.stockMovementEntitys;
   IsarCollection<RouteOrderEntity> get routeOrders => _isar.routeOrderEntitys;
   IsarCollection<TaskEntity> get tasks => _isar.taskEntitys;
+  IsarCollection<inventory_product.Product> get inventorySyncProducts =>
+      _isar.products;
+  IsarCollection<inventory_stock_movement.StockMovement>
+      get inventorySyncStockMovements =>
+      _isar.stockMovements;
+  IsarCollection<inventory_sync_queue.SyncQueue> get inventorySyncQueues =>
+      _isar.syncQueues;
 }

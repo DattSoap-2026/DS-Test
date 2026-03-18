@@ -417,9 +417,9 @@ class OpeningStockService {
     });
     if (openingForSync != null) {
       final user = FirebaseAuth.instance.currentUser;
-      final actorMeta = user == null ? null : {
-        OutboxCodec.actorUidMetaField: user.uid.trim(),
-        if (user.email != null) OutboxCodec.actorEmailMetaField: user.email!.trim(),
+      final actorMeta = {
+        OutboxCodec.actorUidMetaField: userId.trim(),
+        if (user?.email != null) OutboxCodec.actorEmailMetaField: user!.email!.trim(),
       };
       await _enqueueOutbox(
         collection: _openingCollection,

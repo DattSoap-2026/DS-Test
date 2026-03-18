@@ -48,7 +48,7 @@ class FirebaseServices {
       if (kIsWeb) {
         // await _db?.enablePersistence();
       } else {
-        _db?.settings = const Settings(persistenceEnabled: true);
+        _db?.settings = const Settings(persistenceEnabled: false);
       }
 
       debugPrint('Firebase Initialized Successfully with Real SDK');
