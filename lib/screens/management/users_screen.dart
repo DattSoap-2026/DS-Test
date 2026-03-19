@@ -138,12 +138,12 @@ class _UsersScreenState extends State<UsersScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final syncManager = context.read<SyncManager>();
+    final appSyncCoordinator = context.read<AppSyncCoordinator>();
     try {
       // Load users via service (offline-first), then attempt one sync refresh.
       var users = await _usersService.getUsers();
       try {
-        await syncManager.syncUsersViaDelegate(
+        await appSyncCoordinator.syncUsersViaDelegate(
           forceRefresh: true,
         );
         final syncedUsers = await _usersService.getUsers();
@@ -334,10 +334,10 @@ class _UsersScreenState extends State<UsersScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () async {
-                final syncManager = context.read<SyncManager>();
+                final appSyncCoordinator = context.read<AppSyncCoordinator>();
                 final authProvider = context.read<AuthProvider>();
                 if (authProvider.state.user != null) {
-                  await syncManager.syncAll(authProvider.state.user);
+                  await appSyncCoordinator.syncAll(authProvider.state.user);
                 }
                 await _loadData();
               },
@@ -1068,14 +1068,14 @@ class _UsersScreenState extends State<UsersScreen> {
             ..assignedBhatti = result['assignedBhatti'];
 
           final userRepo = context.read<UserRepository>();
-          final syncManager = context.read<SyncManager>();
+          final appSyncCoordinator = context.read<AppSyncCoordinator>();
 
           await userRepo.createUser(newUser);
 
-          // 2. Trigger Background Sync (Optional, SyncManager will pick it up)
+          // 2. Trigger Background Sync (Optional, app sync coordinator will pick it up)
           final authUser = authProvider.state.user;
           if (authUser != null) {
-            syncManager.syncAll(authUser);
+            appSyncCoordinator.syncAll(authUser);
           }
         } else {
           // Update
@@ -1135,12 +1135,12 @@ class _UsersScreenState extends State<UsersScreen> {
 
           if (success) {
             if (!mounted) return;
-            final syncManager = context.read<SyncManager>();
+            final appSyncCoordinator = context.read<AppSyncCoordinator>();
             final authProvider = context.read<AuthProvider>();
             final authUser = authProvider.state.user;
 
             if (authUser != null) {
-              await syncManager.syncAll(authUser);
+              await appSyncCoordinator.syncAll(authUser);
             }
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -1188,14 +1188,14 @@ class _UsersScreenState extends State<UsersScreen> {
               // Also delete from local repository
               try {
                 final userRepo = context.read<UserRepository>();
-                final syncManager = context.read<SyncManager>();
+                final appSyncCoordinator = context.read<AppSyncCoordinator>();
                 final authProvider = context.read<AuthProvider>();
 
                 await userRepo.deleteUser(user.id);
 
                 final authUser = authProvider.state.user;
                 if (authUser != null) {
-                  await syncManager.syncAll(authUser);
+                  await appSyncCoordinator.syncAll(authUser);
                 }
               } catch (e) {
                 debugPrint(

@@ -17,139 +17,144 @@ const EmployeeEntitySchema = CollectionSchema(
   name: r'EmployeeEntity',
   id: -565720732203765070,
   properties: {
-    r'bankDetails': PropertySchema(
+    r'assignedRoutes': PropertySchema(
       id: 0,
+      name: r'assignedRoutes',
+      type: IsarType.stringList,
+    ),
+    r'bankDetails': PropertySchema(
+      id: 1,
       name: r'bankDetails',
       type: IsarType.string,
     ),
     r'baseMonthlySalary': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'baseMonthlySalary',
       type: IsarType.double,
     ),
     r'createdAt': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'deletedAt': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
     r'department': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'department',
       type: IsarType.string,
     ),
     r'deviceId': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'deviceId',
       type: IsarType.string,
     ),
     r'employeeId': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'employeeId',
       type: IsarType.string,
     ),
     r'exitDate': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'exitDate',
       type: IsarType.dateTime,
     ),
     r'hourlyRate': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'hourlyRate',
       type: IsarType.double,
     ),
     r'id': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'id',
       type: IsarType.string,
     ),
     r'isActive': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isActive',
       type: IsarType.bool,
     ),
     r'isDeleted': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'joiningDate': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'joiningDate',
       type: IsarType.dateTime,
     ),
     r'lastSynced': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'lastSynced',
       type: IsarType.dateTime,
     ),
     r'linkedUserId': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'linkedUserId',
       type: IsarType.string,
     ),
     r'mobile': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'mobile',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'name',
       type: IsarType.string,
     ),
     r'overtimeMultiplier': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'overtimeMultiplier',
       type: IsarType.double,
     ),
     r'paymentMethod': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'paymentMethod',
       type: IsarType.string,
     ),
     r'roleType': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'roleType',
       type: IsarType.string,
     ),
     r'shiftStartHour': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'shiftStartHour',
       type: IsarType.long,
     ),
     r'shiftStartMinute': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'shiftStartMinute',
       type: IsarType.long,
     ),
     r'syncStatus': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _EmployeeEntitysyncStatusEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'version': PropertySchema(
-      id: 25,
+      id: 26,
       name: r'version',
       type: IsarType.long,
     ),
     r'weeklyOffDay': PropertySchema(
-      id: 26,
+      id: 27,
       name: r'weeklyOffDay',
       type: IsarType.long,
     )
@@ -227,6 +232,13 @@ int _employeeEntityEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.assignedRoutes.length * 3;
+  {
+    for (var i = 0; i < object.assignedRoutes.length; i++) {
+      final value = object.assignedRoutes[i];
+      bytesCount += value.length * 3;
+    }
+  }
   {
     final value = object.bankDetails;
     if (value != null) {
@@ -261,33 +273,34 @@ void _employeeEntitySerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.bankDetails);
-  writer.writeDouble(offsets[1], object.baseMonthlySalary);
-  writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeDateTime(offsets[3], object.deletedAt);
-  writer.writeString(offsets[4], object.department);
-  writer.writeString(offsets[5], object.deviceId);
-  writer.writeString(offsets[6], object.employeeId);
-  writer.writeDateTime(offsets[7], object.exitDate);
-  writer.writeDouble(offsets[8], object.hourlyRate);
-  writer.writeString(offsets[9], object.id);
-  writer.writeBool(offsets[10], object.isActive);
-  writer.writeBool(offsets[11], object.isDeleted);
-  writer.writeBool(offsets[12], object.isSynced);
-  writer.writeDateTime(offsets[13], object.joiningDate);
-  writer.writeDateTime(offsets[14], object.lastSynced);
-  writer.writeString(offsets[15], object.linkedUserId);
-  writer.writeString(offsets[16], object.mobile);
-  writer.writeString(offsets[17], object.name);
-  writer.writeDouble(offsets[18], object.overtimeMultiplier);
-  writer.writeString(offsets[19], object.paymentMethod);
-  writer.writeString(offsets[20], object.roleType);
-  writer.writeLong(offsets[21], object.shiftStartHour);
-  writer.writeLong(offsets[22], object.shiftStartMinute);
-  writer.writeByte(offsets[23], object.syncStatus.index);
-  writer.writeDateTime(offsets[24], object.updatedAt);
-  writer.writeLong(offsets[25], object.version);
-  writer.writeLong(offsets[26], object.weeklyOffDay);
+  writer.writeStringList(offsets[0], object.assignedRoutes);
+  writer.writeString(offsets[1], object.bankDetails);
+  writer.writeDouble(offsets[2], object.baseMonthlySalary);
+  writer.writeDateTime(offsets[3], object.createdAt);
+  writer.writeDateTime(offsets[4], object.deletedAt);
+  writer.writeString(offsets[5], object.department);
+  writer.writeString(offsets[6], object.deviceId);
+  writer.writeString(offsets[7], object.employeeId);
+  writer.writeDateTime(offsets[8], object.exitDate);
+  writer.writeDouble(offsets[9], object.hourlyRate);
+  writer.writeString(offsets[10], object.id);
+  writer.writeBool(offsets[11], object.isActive);
+  writer.writeBool(offsets[12], object.isDeleted);
+  writer.writeBool(offsets[13], object.isSynced);
+  writer.writeDateTime(offsets[14], object.joiningDate);
+  writer.writeDateTime(offsets[15], object.lastSynced);
+  writer.writeString(offsets[16], object.linkedUserId);
+  writer.writeString(offsets[17], object.mobile);
+  writer.writeString(offsets[18], object.name);
+  writer.writeDouble(offsets[19], object.overtimeMultiplier);
+  writer.writeString(offsets[20], object.paymentMethod);
+  writer.writeString(offsets[21], object.roleType);
+  writer.writeLong(offsets[22], object.shiftStartHour);
+  writer.writeLong(offsets[23], object.shiftStartMinute);
+  writer.writeByte(offsets[24], object.syncStatus.index);
+  writer.writeDateTime(offsets[25], object.updatedAt);
+  writer.writeLong(offsets[26], object.version);
+  writer.writeLong(offsets[27], object.weeklyOffDay);
 }
 
 EmployeeEntity _employeeEntityDeserialize(
@@ -297,35 +310,36 @@ EmployeeEntity _employeeEntityDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = EmployeeEntity();
-  object.bankDetails = reader.readStringOrNull(offsets[0]);
-  object.baseMonthlySalary = reader.readDoubleOrNull(offsets[1]);
-  object.createdAt = reader.readDateTime(offsets[2]);
-  object.deletedAt = reader.readDateTimeOrNull(offsets[3]);
-  object.department = reader.readString(offsets[4]);
-  object.deviceId = reader.readString(offsets[5]);
-  object.employeeId = reader.readString(offsets[6]);
-  object.exitDate = reader.readDateTimeOrNull(offsets[7]);
-  object.hourlyRate = reader.readDoubleOrNull(offsets[8]);
-  object.id = reader.readString(offsets[9]);
-  object.isActive = reader.readBool(offsets[10]);
-  object.isDeleted = reader.readBool(offsets[11]);
-  object.isSynced = reader.readBool(offsets[12]);
-  object.joiningDate = reader.readDateTimeOrNull(offsets[13]);
-  object.lastSynced = reader.readDateTimeOrNull(offsets[14]);
-  object.linkedUserId = reader.readStringOrNull(offsets[15]);
-  object.mobile = reader.readString(offsets[16]);
-  object.name = reader.readString(offsets[17]);
-  object.overtimeMultiplier = reader.readDoubleOrNull(offsets[18]);
-  object.paymentMethod = reader.readStringOrNull(offsets[19]);
-  object.roleType = reader.readString(offsets[20]);
-  object.shiftStartHour = reader.readLongOrNull(offsets[21]);
-  object.shiftStartMinute = reader.readLongOrNull(offsets[22]);
+  object.assignedRoutes = reader.readStringList(offsets[0]) ?? [];
+  object.bankDetails = reader.readStringOrNull(offsets[1]);
+  object.baseMonthlySalary = reader.readDoubleOrNull(offsets[2]);
+  object.createdAt = reader.readDateTime(offsets[3]);
+  object.deletedAt = reader.readDateTimeOrNull(offsets[4]);
+  object.department = reader.readString(offsets[5]);
+  object.deviceId = reader.readString(offsets[6]);
+  object.employeeId = reader.readString(offsets[7]);
+  object.exitDate = reader.readDateTimeOrNull(offsets[8]);
+  object.hourlyRate = reader.readDoubleOrNull(offsets[9]);
+  object.id = reader.readString(offsets[10]);
+  object.isActive = reader.readBool(offsets[11]);
+  object.isDeleted = reader.readBool(offsets[12]);
+  object.isSynced = reader.readBool(offsets[13]);
+  object.joiningDate = reader.readDateTimeOrNull(offsets[14]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[15]);
+  object.linkedUserId = reader.readStringOrNull(offsets[16]);
+  object.mobile = reader.readString(offsets[17]);
+  object.name = reader.readString(offsets[18]);
+  object.overtimeMultiplier = reader.readDoubleOrNull(offsets[19]);
+  object.paymentMethod = reader.readStringOrNull(offsets[20]);
+  object.roleType = reader.readString(offsets[21]);
+  object.shiftStartHour = reader.readLongOrNull(offsets[22]);
+  object.shiftStartMinute = reader.readLongOrNull(offsets[23]);
   object.syncStatus = _EmployeeEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[23])] ??
+          reader.readByteOrNull(offsets[24])] ??
       SyncStatus.pending;
-  object.updatedAt = reader.readDateTime(offsets[24]);
-  object.version = reader.readLong(offsets[25]);
-  object.weeklyOffDay = reader.readLong(offsets[26]);
+  object.updatedAt = reader.readDateTime(offsets[25]);
+  object.version = reader.readLong(offsets[26]);
+  object.weeklyOffDay = reader.readLong(offsets[27]);
   return object;
 }
 
@@ -337,60 +351,62 @@ P _employeeEntityDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 1:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 3:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 8:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 9:
       return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 9:
+      return (reader.readDoubleOrNull(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 11:
       return (reader.readBool(offset)) as P;
     case 12:
       return (reader.readBool(offset)) as P;
     case 13:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 14:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 16:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 17:
       return (reader.readString(offset)) as P;
     case 18:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 19:
-      return (reader.readStringOrNull(offset)) as P;
-    case 20:
       return (reader.readString(offset)) as P;
+    case 19:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 20:
+      return (reader.readStringOrNull(offset)) as P;
     case 21:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 22:
       return (reader.readLongOrNull(offset)) as P;
     case 23:
+      return (reader.readLongOrNull(offset)) as P;
+    case 24:
       return (_EmployeeEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 24:
-      return (reader.readDateTime(offset)) as P;
     case 25:
-      return (reader.readLong(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 26:
+      return (reader.readLong(offset)) as P;
+    case 27:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -811,6 +827,232 @@ extension EmployeeEntityQueryWhere
 
 extension EmployeeEntityQueryFilter
     on QueryBuilder<EmployeeEntity, EmployeeEntity, QFilterCondition> {
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'assignedRoutes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'assignedRoutes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'assignedRoutes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'assignedRoutes',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'assignedRoutes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'assignedRoutes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'assignedRoutes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesElementMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'assignedRoutes',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'assignedRoutes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'assignedRoutes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'assignedRoutes',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'assignedRoutes',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'assignedRoutes',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'assignedRoutes',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'assignedRoutes',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      assignedRoutesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'assignedRoutes',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
       bankDetailsIsNull() {
     return QueryBuilder.apply(this, (query) {
@@ -4040,6 +4282,13 @@ extension EmployeeEntityQuerySortThenBy
 
 extension EmployeeEntityQueryWhereDistinct
     on QueryBuilder<EmployeeEntity, EmployeeEntity, QDistinct> {
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QDistinct>
+      distinctByAssignedRoutes() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'assignedRoutes');
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QDistinct> distinctByBankDetails(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -4232,6 +4481,13 @@ extension EmployeeEntityQueryProperty
   QueryBuilder<EmployeeEntity, int, QQueryOperations> isarIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isarId');
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, List<String>, QQueryOperations>
+      assignedRoutesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'assignedRoutes');
     });
   }
 

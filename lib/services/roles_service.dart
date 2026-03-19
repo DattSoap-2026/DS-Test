@@ -1,15 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:isar/isar.dart';
+import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
 import '../models/types/user_types.dart';
 import '../data/local/base_entity.dart';
 import '../data/local/entities/custom_role_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import 'database_service.dart';
 import 'base_service.dart';
-import 'outbox_codec.dart';
 
 const String customRolesCollection = 'custom_roles';
 
@@ -23,46 +22,25 @@ class RolesService extends BaseService {
     Map<String, dynamic> payload, {
     required String action,
   }) async {
-    final queueId = OutboxCodec.buildQueueId(
-      customRolesCollection,
-      payload,
-      explicitRecordKey: payload['id']?.toString(),
+    final roleId = payload['id']?.toString().trim() ?? '';
+    if (roleId.isEmpty) {
+      return '';
+    }
+    await SyncQueueService.instance.addToQueue(
+      collectionName: customRolesCollection,
+      documentId: roleId,
+      operation: action,
+      payload: payload,
     );
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = customRolesCollection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
-    return queueId;
+    return roleId;
   }
 
-  Future<void> _dequeueOutbox(String queueId) async {
-    final existing = await _dbService.syncQueue.getById(queueId);
-    if (existing == null) return;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.delete(existing.isarId);
-    });
+  Future<void> _dequeueOutbox(String roleId) async {
+    if (roleId.trim().isEmpty) return;
+    await SyncQueueService.instance.removeFromQueue(
+      collectionName: customRolesCollection,
+      documentId: roleId,
+    );
   }
 
   Future<void> _setLocalRoleSyncStatus(
@@ -89,34 +67,10 @@ class RolesService extends BaseService {
     String action,
     Map<String, dynamic> payload,
   ) async {
-    final firestore = db;
-    if (firestore == null) {
+    if (db == null) {
       throw Exception('Offline');
     }
-    final id = payload['id']?.toString();
-    if (id == null || id.trim().isEmpty) {
-      throw Exception('Role payload missing id for action: $action');
-    }
-
-    final docRef = firestore.collection(customRolesCollection).doc(id);
-    final remotePayload = Map<String, dynamic>.from(payload)..remove('id');
-
-    switch (action) {
-      case 'add':
-      case 'set':
-      case 'update':
-        await docRef.set(remotePayload, SetOptions(merge: true));
-        return;
-      case 'delete':
-        await docRef.set({
-          'isDeleted': true,
-          'updatedAt':
-              remotePayload['updatedAt'] ?? DateTime.now().toIso8601String(),
-        }, SetOptions(merge: true));
-        return;
-      default:
-        throw Exception('Unsupported custom role action: $action');
-    }
+    await SyncService.instance.pushAllPending();
   }
 
   Future<void> _upsertLocalRoleEntity(
@@ -181,6 +135,13 @@ class RolesService extends BaseService {
 
     try {
       await _performImmediateWrite(action, normalizedPayload);
+      final hasPending = await SyncQueueService.instance.hasPendingItem(
+        collectionName: customRolesCollection,
+        documentId: roleId,
+      );
+      if (hasPending) {
+        return;
+      }
       await _dequeueOutbox(queueId);
       await _setLocalRoleSyncStatus(
         roleId,
@@ -188,7 +149,7 @@ class RolesService extends BaseService {
         isDeleted: deletedOnSuccess,
       );
     } catch (_) {
-      // Keep queued outbox entry for SyncManager retry.
+      // Keep queued outbox entry for sync coordinator retry.
     }
   }
 

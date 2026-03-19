@@ -1,13 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
+import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
 import '../models/inventory/warehouse_transfer.dart';
 import 'database_service.dart';
+import 'delegates/firestore_query_delegate.dart';
 import 'inventory_movement_engine.dart';
 import '../utils/app_logger.dart';
 import '../data/local/entities/stock_balance_entity.dart';
 
 class WarehouseTransferService {
-  final FirebaseFirestore _firestore;
+  final FirestoreQueryDelegate _remote;
   final DatabaseService _dbService;
   final InventoryMovementEngine _inventoryMovementEngine;
   final Uuid _uuid = const Uuid();
@@ -16,10 +19,7 @@ class WarehouseTransferService {
     this._dbService,
     this._inventoryMovementEngine, [
     FirebaseFirestore? firestore,
-  ]) : _firestore = firestore ?? FirebaseFirestore.instance;
-
-  CollectionReference<Map<String, dynamic>> get _transfersRef =>
-      _firestore.collection('warehouse_transfers');
+  ]) : _remote = FirestoreQueryDelegate(firestore);
 
   /// Transfer stock from one warehouse to another
   Future<void> transferStock({
@@ -89,9 +89,14 @@ class WarehouseTransferService {
 
     await _inventoryMovementEngine.applyCommand(command);
 
-    // Save transfer record to Firestore
     try {
-      await _transfersRef.doc(transferId).set(transfer.toJson());
+      await SyncQueueService.instance.addToQueue(
+        collectionName: 'warehouse_transfers',
+        documentId: transferId,
+        operation: 'set',
+        payload: transfer.toJson(),
+      );
+      await SyncService.instance.pushAllPending();
       AppLogger.success(
         'Stock transferred: $quantity $unit of $productName from $fromWarehouseName to $toWarehouseName',
         tag: 'Warehouse',
@@ -113,33 +118,50 @@ class WarehouseTransferService {
     String? warehouseId,
   }) async {
     try {
-      Query query = _transfersRef.orderBy('transferDate', descending: true);
-
-      if (startDate != null) {
-        query = query.where(
-          'transferDate',
-          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
-        );
-      }
-
-      if (endDate != null) {
-        query = query.where(
-          'transferDate',
-          isLessThanOrEqualTo: Timestamp.fromDate(endDate),
-        );
-      }
+      final filters = <FirestoreQueryFilter>[
+        if (startDate != null)
+          FirestoreQueryFilter(
+            field: 'transferDate',
+            operator: FirestoreQueryOperator.isGreaterThanOrEqualTo,
+            value: Timestamp.fromDate(startDate),
+          ),
+        if (endDate != null)
+          FirestoreQueryFilter(
+            field: 'transferDate',
+            operator: FirestoreQueryOperator.isLessThanOrEqualTo,
+            value: Timestamp.fromDate(endDate),
+          ),
+      ];
 
       if (warehouseId != null) {
         // Get transfers where warehouse is either source or destination
-        final fromQuery = await _transfersRef
-            .where('fromWarehouseId', isEqualTo: warehouseId)
-            .orderBy('transferDate', descending: true)
-            .get();
+        final fromQuery = await _remote.getCollection(
+          collection: 'warehouse_transfers',
+          filters: <FirestoreQueryFilter>[
+            ...filters,
+            FirestoreQueryFilter(
+              field: 'fromWarehouseId',
+              operator: FirestoreQueryOperator.isEqualTo,
+              value: warehouseId,
+            ),
+          ],
+          orderBy: 'transferDate',
+          descending: true,
+        );
 
-        final toQuery = await _transfersRef
-            .where('toWarehouseId', isEqualTo: warehouseId)
-            .orderBy('transferDate', descending: true)
-            .get();
+        final toQuery = await _remote.getCollection(
+          collection: 'warehouse_transfers',
+          filters: <FirestoreQueryFilter>[
+            ...filters,
+            FirestoreQueryFilter(
+              field: 'toWarehouseId',
+              operator: FirestoreQueryOperator.isEqualTo,
+              value: warehouseId,
+            ),
+          ],
+          orderBy: 'transferDate',
+          descending: true,
+        );
 
         final allDocs = [...fromQuery.docs, ...toQuery.docs];
         final uniqueDocs = <String, QueryDocumentSnapshot>{};
@@ -155,10 +177,15 @@ class WarehouseTransferService {
             .toList();
       }
 
-      final snapshot = await query.get();
+      final snapshot = await _remote.getCollection(
+        collection: 'warehouse_transfers',
+        filters: filters,
+        orderBy: 'transferDate',
+        descending: true,
+      );
       return snapshot.docs
           .map((doc) => WarehouseTransfer.fromJson({
-                ...doc.data() as Map<String, dynamic>,
+                ...doc.data(),
                 'id': doc.id,
               }))
           .toList();

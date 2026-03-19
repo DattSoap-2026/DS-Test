@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_app/core/network/connectivity_service.dart';
+import 'package:flutter_app/core/sync/sync_service.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import '../utils/app_logger.dart';
 import 'package:isar/isar.dart' hide Query;
 import 'package:flutter_app/core/constants/collection_registry.dart';
@@ -13,7 +16,6 @@ import '../data/local/entities/payment_entity.dart';
 import '../data/local/entities/sale_entity.dart';
 import '../data/local/entities/customer_entity.dart';
 import '../data/local/base_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import 'outbox_codec.dart';
 
 const paymentLinksCollection = CollectionRegistry.paymentLinks;
@@ -196,13 +198,6 @@ class PaymentsService extends OfflineFirstService {
 
   bool _isSettled(double paid, double total) => _round2(paid) >= _round2(total);
 
-  String _normalizeIsoTimestamp(dynamic value, {required String fallback}) {
-    if (value is DateTime) return value.toIso8601String();
-    final str = value?.toString();
-    if (str != null && str.isNotEmpty) return str;
-    return fallback;
-  }
-
   Future<SaleEntity> _resolveSaleForPayment({
     required String customerId,
     String? saleId,
@@ -302,63 +297,124 @@ class PaymentsService extends OfflineFirstService {
     if (paymentId == null || paymentId.isEmpty) return '';
 
     final queueId = 'payments_$paymentId';
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
     final normalizedPayload = OutboxCodec.ensureCommandPayload(
       collection: paymentsCollection,
       action: 'add',
       payload: paymentData,
-      existingMeta: existingMeta,
       queueId: queueId,
     );
     paymentData
       ..clear()
       ..addAll(normalizedPayload);
 
-    final entity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = paymentsCollection
-      ..action = 'add'
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: normalizedPayload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(entity);
-    });
-    return queueId;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: paymentsCollection,
+      documentId: paymentId,
+      operation: 'add',
+      payload: normalizedPayload,
+    );
+    return paymentId;
   }
 
-  Future<void> _dequeuePaymentForSync(String queueId) async {
-    if (queueId.isEmpty) return;
-    final existing = await _dbService.syncQueue.getById(queueId);
-    if (existing == null) return;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.delete(existing.isarId);
-    });
+  Future<void> _enqueueCollectionWrite({
+    required String collectionName,
+    required String documentId,
+    required String operation,
+    required Map<String, dynamic> payload,
+  }) async {
+    if (documentId.trim().isEmpty) {
+      return;
+    }
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collectionName,
+      documentId: documentId,
+      operation: operation,
+      payload: payload,
+    );
+  }
+
+  Future<void> _enqueuePaymentSideEffects(
+    Map<String, dynamic> paymentData,
+  ) async {
+    final customerId = paymentData['customerId']?.toString().trim() ?? '';
+    if (customerId.isNotEmpty) {
+      final customer = await _dbService.customers
+          .filter()
+          .idEqualTo(customerId)
+          .findFirst();
+      if (customer != null) {
+        await _enqueueCollectionWrite(
+          collectionName: customersCollection,
+          documentId: customer.id,
+          operation: 'update',
+          payload: customer.toJson(),
+        );
+      }
+    }
+
+    final saleId = paymentData['saleId']?.toString().trim() ?? '';
+    if (saleId.isNotEmpty) {
+      final sale = await _dbService.sales.filter().idEqualTo(saleId).findFirst();
+      if (sale != null) {
+        await _enqueueCollectionWrite(
+          collectionName: salesCollection,
+          documentId: sale.id,
+          operation: 'update',
+          payload: sale.toJson(),
+        );
+      }
+    }
+  }
+
+  Future<bool> _syncQueuedDocument({
+    required String collectionName,
+    required String documentId,
+  }) async {
+    if (!ConnectivityService.instance.isOnline) {
+      return false;
+    }
+    await SyncService.instance.syncAllPending();
+    return !await SyncQueueService.instance.hasPendingItem(
+      collectionName: collectionName,
+      documentId: documentId,
+    );
+  }
+
+  Future<bool> _queueAndSyncPaymentLink({
+    required String operation,
+    required String linkId,
+    required Map<String, dynamic> payload,
+  }) async {
+    await _enqueueCollectionWrite(
+      collectionName: paymentLinksCollection,
+      documentId: linkId,
+      operation: operation,
+      payload: payload,
+    );
+    try {
+      return await _syncQueuedDocument(
+        collectionName: paymentLinksCollection,
+        documentId: linkId,
+      );
+    } catch (e) {
+      AppLogger.warning('Failed to sync payment link $linkId: $e', tag: 'Payments');
+      return false;
+    }
   }
 
   Future<bool> _queueAndSyncPayment(Map<String, dynamic> paymentData) async {
-    final queueId = await _enqueuePaymentForSync(paymentData);
-    if (db == null) return false;
+    final paymentId = await _enqueuePaymentForSync(paymentData);
+    if (paymentId.isEmpty) {
+      return false;
+    }
+    await _enqueuePaymentSideEffects(paymentData);
     try {
-      await performSync('add', paymentsCollection, paymentData);
-      await _dequeuePaymentForSync(queueId);
-      return true;
+      return await _syncQueuedDocument(
+        collectionName: paymentsCollection,
+        documentId: paymentId,
+      );
     } catch (e) {
-      debugPrint('Error syncing payment queueId $queueId: $e');
+      debugPrint('Error syncing payment $paymentId: $e');
       return false;
     }
   }
@@ -390,19 +446,7 @@ class PaymentsService extends OfflineFirstService {
     final existingPayments = await _dbService.payments.where().findAll();
     final existingIds = existingPayments.map((e) => e.id).toSet();
 
-    final existingQueueItems = await _dbService.syncQueue
-        .filter()
-        .collectionEqualTo(paymentsCollection)
-        .findAll();
-    final queuedIds = <String>{};
-    for (final item in existingQueueItems) {
-      final decoded = OutboxCodec.decode(
-        item.dataJson,
-        fallbackQueuedAt: item.createdAt,
-      );
-      final id = decoded.payload['id']?.toString();
-      if (id != null && id.isNotEmpty) queuedIds.add(id);
-    }
+    final pendingPayments = <Map<String, dynamic>>[];
 
     await _dbService.db.writeTxn(() async {
       for (final entry in legacyList) {
@@ -422,22 +466,8 @@ class PaymentsService extends OfflineFirstService {
         await _dbService.payments.put(entity);
         existingIds.add(id);
 
-        if (needsSync && !queuedIds.contains(id)) {
-          final queueEntity = SyncQueueEntity()
-            ..id = 'payments_$id'
-            ..collection = paymentsCollection
-            ..action = 'add'
-            ..dataJson = OutboxCodec.encodeEnvelope(
-              payload: data,
-              now: DateTime.now(),
-              resetRetryState: true,
-            )
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now()
-            ..syncStatus = SyncStatus.pending;
-          await _dbService.syncQueue.put(queueEntity);
-          queuedIds.add(id);
-
+        if (needsSync) {
+          pendingPayments.add(Map<String, dynamic>.from(data));
           // Apply local balance updates for unsynced legacy payments
           final customerId = data['customerId']?.toString();
           if (customerId != null && customerId.isNotEmpty) {
@@ -477,6 +507,22 @@ class PaymentsService extends OfflineFirstService {
       }
     });
 
+    for (final payment in pendingPayments) {
+      final paymentId = payment['id']?.toString();
+      if (paymentId == null || paymentId.isEmpty) {
+        continue;
+      }
+      final alreadyQueued = await SyncQueueService.instance.hasPendingItem(
+        collectionName: paymentsCollection,
+        documentId: paymentId,
+      );
+      if (!alreadyQueued) {
+        final payload = Map<String, dynamic>.from(payment);
+        await _enqueuePaymentForSync(payload);
+        await _enqueuePaymentSideEffects(payload);
+      }
+    }
+
     await prefs.remove(localStorageKey);
     await prefs.setBool(_legacyMigrationFlag, true);
   }
@@ -486,96 +532,7 @@ class PaymentsService extends OfflineFirstService {
     String action,
     String collection,
     Map<String, dynamic> data,
-  ) async {
-    final firestore = db;
-    if (firestore == null) return;
-
-    if (action == 'add' && collection == paymentsCollection) {
-      final paymentId = data['id']?.toString().trim();
-      if (paymentId == null || paymentId.isEmpty) {
-        throw Exception('Payment sync payload missing id.');
-      }
-      final commandKey =
-          OutboxCodec.readIdempotencyKey(data) ??
-          OutboxCodec.buildCommandKey(
-            collection: paymentsCollection,
-            action: action,
-            payload: data,
-          );
-
-      final batch = firestore.batch();
-      try {
-        final docRef = firestore.collection(collection).doc(paymentId);
-        final existingPaymentDoc = await docRef.get();
-        if (existingPaymentDoc.exists) {
-          // Idempotent replay guard: payment already applied in a previous commit.
-          return;
-        }
-
-        final nowIso = DateTime.now().toIso8601String();
-
-        // 1. Update Customer Balance
-        final custRef = firestore
-            .collection(customersCollection)
-            .doc(data['customerId']);
-        batch.update(custRef, {
-          'balance': FieldValue.increment(-(data['amount'] as num).toDouble()),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        // 2. Update Sale (if linked)
-        if (data['saleId'] != null) {
-          final saleRef = firestore
-              .collection(salesCollection)
-              .doc(data['saleId']);
-          final saleDoc = await saleRef.get();
-          if (saleDoc.exists) {
-            final saleData = saleDoc.data()!;
-            final total = (saleData['totalAmount'] as num).toDouble();
-            final currentPaid = (saleData['paidAmount'] as num? ?? 0)
-                .toDouble();
-            final newPaid = currentPaid + (data['amount'] as num).toDouble();
-            final status = _isSettled(newPaid, total) ? 'paid' : 'partial';
-
-            batch.update(saleRef, {
-              'paidAmount': newPaid,
-              'paymentStatus': status,
-              'updatedAt': FieldValue.serverTimestamp(),
-            });
-          }
-        }
-
-        // 3. Create Payment
-        final createdAt = _normalizeIsoTimestamp(
-          data['createdAt'],
-          fallback: nowIso,
-        );
-        final updatedAt = _normalizeIsoTimestamp(
-          data['updatedAt'],
-          fallback: nowIso,
-        );
-        final updatedAtEpoch =
-            DateTime.tryParse(updatedAt)?.millisecondsSinceEpoch ??
-            DateTime.now().millisecondsSinceEpoch;
-        batch.set(docRef, {
-          ...data,
-          OutboxCodec.idempotencyKeyField: commandKey,
-          'createdAt': createdAt,
-          'updatedAt': updatedAt,
-          'updatedAtEpoch': updatedAtEpoch,
-          'isSynced': true,
-        });
-
-        await batch.commit();
-      } catch (e) {
-        AppLogger.error('Payment sync batch failed', error: e, tag: 'Sync');
-        rethrow;
-      }
-      return;
-    }
-
-    await super.performSync(action, collection, data);
-  }
+  ) => super.performSync(action, collection, data);
 
   Future<String?> addManualPayment({
     required String customerId,
@@ -621,6 +578,7 @@ class PaymentsService extends OfflineFirstService {
 
       // 1. Update Local Customer/Sale + Add Local Payment (Isar-first)
       final paymentId = generateId();
+      late PaymentEntity paymentEntity;
       await _dbService.db.writeTxn(() async {
         final customer = await _dbService.customers
             .filter()
@@ -645,7 +603,7 @@ class PaymentsService extends OfflineFirstService {
           await _dbService.sales.put(sale);
         }
 
-        final paymentEntity = PaymentEntity()
+        paymentEntity = PaymentEntity()
           ..id = paymentId
           ..customerId = customerId
           ..customerName = customerName
@@ -663,21 +621,7 @@ class PaymentsService extends OfflineFirstService {
         await _dbService.payments.put(paymentEntity);
       });
 
-      final paymentData = {
-        'id': paymentId,
-        'customerId': customerId,
-        'customerName': customerName,
-        'saleId': resolvedSaleId,
-        'amount': amount,
-        'mode': mode.toString().split('.').last,
-        'date': date,
-        'reference': reference,
-        'notes': notes,
-        'collectorId': collectorId,
-        'collectorName': collectorName,
-        'createdAt': now,
-        'isSynced': false,
-      };
+      final paymentData = paymentEntity.toJson();
 
       final synced = await _queueAndSyncPayment(paymentData);
 
@@ -780,6 +724,7 @@ class PaymentsService extends OfflineFirstService {
       final expiresAt =
           payload.expiresAt ?? DateTime.now().add(const Duration(days: 7));
       final data = {
+        'id': generateId(),
         'saleId': payload.saleId,
         'customerId': payload.customerId,
         'amount': payload.amount,
@@ -790,13 +735,13 @@ class PaymentsService extends OfflineFirstService {
         'expiresAt': expiresAt.toIso8601String(),
       };
 
-      final firestore = db;
-      if (firestore == null) return null;
-
-      final docRef = await firestore
-          .collection(paymentLinksCollection)
-          .add(data);
-      return PaymentLink.fromJson({'id': docRef.id, ...data});
+      final linkId = data['id'] as String;
+      await _queueAndSyncPaymentLink(
+        operation: 'set',
+        linkId: linkId,
+        payload: data,
+      );
+      return PaymentLink.fromJson(data);
     } catch (e) {
       throw handleError(e, 'createPaymentLink');
     }
@@ -864,7 +809,12 @@ class PaymentsService extends OfflineFirstService {
         updates['paidAt'] = DateTime.now().toIso8601String();
       }
       if (paymentId != null) updates['paymentId'] = paymentId;
-      await docRef.update(updates);
+      final payload = <String, dynamic>{'id': linkId, ...updates};
+      await _queueAndSyncPaymentLink(
+        operation: 'update',
+        linkId: linkId,
+        payload: payload,
+      );
       return true;
     } catch (e) {
       throw handleError(e, 'updatePaymentStatus');

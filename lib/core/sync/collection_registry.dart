@@ -101,6 +101,12 @@ abstract final class CollectionRegistry {
     gpsLocations,
   ];
 
+  /// Collections written by server-side systems only and pulled to the client.
+  static const List<String> pullOnlyCollections = <String>[
+    auditLogs,
+    notificationEvents,
+  ];
+
   // Legacy aliases retained for controlled migration.
   static const String legacyOpeningStock = 'opening_stock';
   static const String legacyTrips = 'trips';
@@ -118,7 +124,6 @@ abstract final class CollectionRegistry {
     'AdvanceEntity': advances,
     'AlertEntity': alerts,
     'AttendanceEntity': attendances,
-    'AuditLogEntity': auditLogs,
     'BhattiBatchEntity': bhattiBatches,
     'BhattiDailyEntryEntity': bhattiDailyEntries,
     'CategoryEntity': productCategories,
@@ -251,6 +256,14 @@ abstract final class CollectionRegistry {
     return localOnlyCollections.contains(typeNameOrCollection) ||
         (firestoreMap.containsKey(typeNameOrCollection) &&
             firestoreMap[typeNameOrCollection] == null);
+  }
+
+  /// Returns whether the collection should only be pulled from Firebase.
+  static bool isPullOnly(String typeNameOrCollection) {
+    final normalized = canonical(typeNameOrCollection);
+    final mapped = firestoreCollectionForType(typeNameOrCollection);
+    return pullOnlyCollections.contains(normalized) ||
+        (mapped != null && pullOnlyCollections.contains(mapped));
   }
 
   /// Returns whether the entity/collection uses conflict logs for collisions.

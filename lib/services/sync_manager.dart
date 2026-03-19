@@ -33,6 +33,8 @@ import 'package:flutter_app/data/local/entities/product_type_entity.dart';
 import 'package:flutter_app/models/types/user_types.dart';
 import 'package:flutter_app/models/types/alert_types.dart';
 import 'package:flutter_app/core/constants/collection_registry.dart';
+import 'package:flutter_app/core/sync/sync_service.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 
 import 'package:flutter_app/services/database_service.dart';
 import 'package:flutter_app/services/inventory_service.dart';
@@ -127,6 +129,167 @@ class SyncRunResult {
       outboxPermanentFailureCount == 0 &&
       unresolvedConflictCount == 0;
 }
+
+/// Compatibility facade over [SyncService].
+///
+/// All outward sync entry points route through [SyncService]. The deprecated
+/// [SyncManager] implementation remains in this file only for legacy reference
+/// and should not be used by new callers.
+class AppSyncCoordinator extends ChangeNotifier {
+  AppSyncCoordinator(this._syncService);
+
+  final SyncService _syncService;
+
+  StreamSubscription<SyncStatusSnapshot>? _statusSubscription;
+  Timer? _debouncedSyncTimer;
+  AppUser? _currentUser;
+
+  bool get isSyncing => _syncService.currentStatus.isSyncing;
+  int get pendingCount => _syncService.currentStatus.pendingCount;
+  DateTime? get lastSyncTime => _syncService.currentStatus.lastSyncTime;
+  String get currentSyncStep => isSyncing ? 'syncing' : '';
+  double get syncStepProgress => isSyncing ? 0.5 : 0.0;
+  Stream<bool> get syncStream =>
+      _syncService.statusStream.map((status) => status.isSyncing).asBroadcastStream();
+
+  void initialize() {
+    _statusSubscription?.cancel();
+    _statusSubscription = _syncService.statusStream.listen((_) {
+      notifyListeners();
+    });
+    notifyListeners();
+  }
+
+  void setCurrentUser(AppUser user, {bool triggerBootstrap = true}) {
+    _currentUser = user;
+    if (triggerBootstrap) {
+      scheduleDebouncedSync(
+        forceRefresh: true,
+        debounce: const Duration(seconds: 2),
+      );
+    }
+  }
+
+  void scheduleDebouncedSync({
+    bool forceRefresh = false,
+    Duration debounce = const Duration(milliseconds: 500),
+  }) {
+    _debouncedSyncTimer?.cancel();
+    _debouncedSyncTimer = Timer(debounce, () {
+      unawaited(syncAll(_currentUser, forceRefresh: forceRefresh));
+    });
+  }
+
+  void handleAppLifecycle(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_syncService.syncAllPending());
+    }
+  }
+
+  Future<SyncRunResult> syncAll(
+    AppUser? user, {
+    bool forceRefresh = false,
+  }) async {
+    final now = DateTime.now();
+    if (isSyncing) {
+      return SyncRunResult.skipped('Sync already in progress');
+    }
+
+    if (user == null && _currentUser == null) {
+      return SyncRunResult.skipped('No authenticated app user context');
+    }
+
+    if (user != null) {
+      _currentUser = user;
+    }
+
+    try {
+      await _syncService.syncAllPending();
+      final status = _syncService.currentStatus;
+      return SyncRunResult(
+        executed: true,
+        skipped: false,
+        criticalErrors: const <String>[],
+        outboxPendingCount: status.pendingCount,
+        outboxPermanentFailureCount: 0,
+        unresolvedConflictCount: 0,
+        completedAt: status.lastSyncTime ?? now,
+      );
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'AppSyncCoordinator.syncAll failed',
+        error: error,
+        stackTrace: stackTrace,
+        tag: 'Sync',
+      );
+      return SyncRunResult(
+        executed: false,
+        skipped: false,
+        criticalErrors: <String>[error.toString()],
+        outboxPendingCount: pendingCount,
+        outboxPermanentFailureCount: 0,
+        unresolvedConflictCount: 0,
+        completedAt: DateTime.now(),
+      );
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> push() => _syncService.pushAllPending();
+
+  Future<void> pull() => _syncService.pullAllChanges();
+
+  Future<void> processSyncQueue() async {
+    await _syncService.pushAllPending();
+    notifyListeners();
+  }
+
+  Future<void> syncOfflineSalesViaService() => _syncService.syncAllPending();
+
+  Future<void> syncUsersViaDelegate({bool forceRefresh = true}) =>
+      _syncService.syncAllPending();
+
+  Future<int> resetStuckOpeningStockRetry() async => 0;
+
+  Future<void> fetchUserLiveUpdates(String userId) => _syncService.pullAllChanges();
+
+  void stopUserListener() {}
+
+  void cleanup({bool notify = true}) {
+    _debouncedSyncTimer?.cancel();
+    _debouncedSyncTimer = null;
+    _statusSubscription?.cancel();
+    _statusSubscription = null;
+    _currentUser = null;
+    if (notify) {
+      notifyListeners();
+    }
+  }
+}
+
+AppSyncCoordinator createAppSyncCoordinator(
+  DatabaseService dbService,
+  FirebaseServices firebase,
+  SuppliersService suppliersService,
+  AlertService alertService,
+  VehiclesService vehiclesService,
+  SyncAnalyticsService analyticsService,
+  SalesService salesService,
+  InventoryService inventoryService,
+  ReturnsService returnsService,
+  DispatchService dispatchService,
+  ProductionService productionService,
+  BhattiService bhattiService,
+  CuttingBatchService cuttingBatchService,
+  PayrollService payrollService,
+  AttendanceService attendanceService,
+  MasterDataService masterDataService,
+  RouteOrderService routeOrderService,
+  BhattiRepository bhattiRepo,
+  ProductionRepository productionRepo,
+  SyncCommonUtils utils,
+) => AppSyncCoordinator(SyncService.instance);
 
 /// [SyncManager] is the central orchestrator for data synchronization in the DattSoap ERP.
 ///
@@ -2149,24 +2312,17 @@ class SyncManager extends ChangeNotifier {
         final payload = Map<String, dynamic>.from(
           item['data'] as Map? ?? const <String, dynamic>{},
         );
-        final createdAt =
-            DateTime.tryParse(item['timestamp']?.toString() ?? '') ??
-            DateTime.now();
-        final entity = SyncQueueEntity()
-          ..id = (item['queueId']?.toString().trim().isNotEmpty ?? false)
-              ? item['queueId'].toString().trim()
-              : OutboxCodec.buildQueueId(item['collection'] as String, payload)
-          ..collection = item['collection'] as String
-          ..action = item['action'] as String
-          ..dataJson = OutboxCodec.encodeEnvelope(
-            payload: payload,
-            now: createdAt,
-            resetRetryState: true,
-          )
-          ..createdAt = createdAt
-          ..updatedAt = DateTime.now()
-          ..syncStatus = SyncStatus.pending;
-        await _dbService.syncQueue.put(entity);
+        final collection = item['collection']?.toString().trim() ?? '';
+        final documentId = payload['id']?.toString().trim() ?? '';
+        if (collection.isEmpty || documentId.isEmpty) {
+          continue;
+        }
+        await SyncQueueService.instance.addToQueue(
+          collectionName: collection,
+          documentId: documentId,
+          operation: item['action'] as String,
+          payload: payload,
+        );
       }
     });
 
@@ -2451,35 +2607,23 @@ class SyncManager extends ChangeNotifier {
   }
 
   /// Public method for services to enqueue items to the robust Isar queue.
-  Future<SyncQueueEntity> buildQueueEntity({
+  Future<Object?> buildQueueEntity({
     required String collection,
     required String action,
     required Map<String, dynamic> data,
     DateTime? now,
   }) async {
-    final queueId = OutboxCodec.buildQueueId(collection, data);
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final timestamp = now ?? DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    return SyncQueueEntity()
-      ..id = queueId
-      ..collection = collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: data,
-        existingMeta: existingMeta,
-        now: timestamp,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? timestamp
-      ..updatedAt = timestamp
-      ..syncStatus = SyncStatus.pending;
+    final documentId = data['id']?.toString().trim() ?? '';
+    if (documentId.isEmpty) {
+      return null;
+    }
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: data,
+    );
+    return null;
   }
 
   Future<void> enqueueItem({
@@ -2487,15 +2631,11 @@ class SyncManager extends ChangeNotifier {
     required String action,
     required Map<String, dynamic> data,
   }) async {
-    final entity = await buildQueueEntity(
+    await buildQueueEntity(
       collection: collection,
       action: action,
       data: data,
     );
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(entity);
-    });
     await _updatePendingCount();
   }
 

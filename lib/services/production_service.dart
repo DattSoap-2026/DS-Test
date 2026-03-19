@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:isar/isar.dart' hide Query;
 import 'package:flutter_app/core/constants/collection_registry.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import '../constants/role_access_matrix.dart';
 import 'package:flutter_app/services/outbox_codec.dart';
 import 'offline_first_service.dart';
 import 'inventory_service.dart';
 import 'inventory_movement_engine.dart';
 import 'inventory_projection_service.dart';
+import 'delegates/production_remote_write_delegate.dart';
 import 'database_service.dart';
 import 'service_capability_guard.dart';
 import '../data/local/entities/production_target_entity.dart';
@@ -15,7 +17,6 @@ import '../data/local/entities/production_entry_entity.dart';
 import '../data/local/base_entity.dart';
 import '../data/local/entities/stock_ledger_entity.dart';
 import '../data/local/entities/stock_balance_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import '../utils/app_logger.dart';
 
 const productionTargetsCollection = CollectionRegistry.productionTargets;
@@ -180,30 +181,20 @@ class ProductionService extends OfflineFirstService {
     required String action,
     required Map<String, dynamic> payload,
   }) async {
-    final now = DateTime.now();
     final commandPayload = OutboxCodec.ensureCommandPayload(
       collection: collection,
       action: action,
       payload: payload,
       queueId: queueId,
     );
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: commandPayload,
-        existingMeta: null,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
+    final documentId = payload['id']?.toString().trim() ?? '';
+    if (documentId.isEmpty) return;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: commandPayload,
+    );
     if (_centralQueueSync != null) {
       await _centralQueueSync!.call();
     }
@@ -435,68 +426,16 @@ class ProductionService extends OfflineFirstService {
           );
         }
 
-        // 3. Prepare Batch
-        final batch = firestore.batch();
-
-        // T9-P4 REMOVED: direct Firestore stock mutations now flow through
-        // InventoryMovementEngine commands (`bhatti:{batchId}` and
-        // `cutting:{batchId}`) with durable inventory outbox handling.
-        // for (var rm in rawMaterials) {
-        //   final rmRef = firestore
-        //       .collection(productsCollection)
-        //       .doc(rm['productId']);
-        //   batch.update(rmRef, {
-        //     'stock': fs.FieldValue.increment(-(rm['quantity'] as double)),
-        //   });
-        // }
-        // final fgRef = firestore.collection(productsCollection).doc(productId);
-        // batch.update(fgRef, {
-        //   'stock': fs.FieldValue.increment(totalBatchQuantity),
-        // });
-        // if (data['cuttingWastage'] != null &&
-        //     (data['cuttingWastage']['quantity'] as num) > 0) {
-        //   final wId = data['cuttingWastage']['materialId'];
-        //   final wQty = (data['cuttingWastage']['quantity'] as num).toDouble();
-        //   final wRef = firestore.collection(productsCollection).doc(wId);
-        //   batch.update(wRef, {'stock': fs.FieldValue.increment(wQty)});
-        // }
-
-        // 7. Update Production Target (Find by Product + Date)
-        String dateStr;
-        if (rawCreatedAt is fs.Timestamp) {
-          dateStr = rawCreatedAt.toDate().toIso8601String().split('T')[0];
-        } else if (rawCreatedAt is String) {
-          dateStr = rawCreatedAt.split('T')[0];
-        } else {
-          dateStr = DateTime.now().toIso8601String().split('T')[0];
-        }
-
-        // Target fetch (Read outside batch)
-        final targetQuery = await firestore
-            .collection(productionTargetsCollection)
-            .where('productId', isEqualTo: productId)
-            .where('targetDate', isEqualTo: dateStr)
-            .limit(1)
-            .get();
-
-        if (targetQuery.docs.isNotEmpty) {
-          final tRef = targetQuery.docs.first.reference;
-          batch.update(tRef, {
-            'achievedQuantity': fs.FieldValue.increment(totalBatchQuantity),
-          });
-        }
-
-        // 8. Apply Log with Metadata
-        batch.set(docRef, {
-          ...data,
-          OutboxCodec.idempotencyKeyField: commandKey,
-          'createdAt': data['createdAt'] ?? fs.FieldValue.serverTimestamp(),
-          'updatedAt': fs.FieldValue.serverTimestamp(),
-          'isSynced': true,
-        }, fs.SetOptions(merge: true));
-
-        // 9. Atomic Commit
-        await batch.commit();
+        await ProductionRemoteWriteDelegate(firestore).syncDetailedProductionLog(
+          collection: collection,
+          logId: logId,
+          data: data,
+          commandKey: commandKey,
+          rawCreatedAt: rawCreatedAt,
+          productId: productId,
+          totalBatchQuantity: totalBatchQuantity,
+          productionTargetsCollection: productionTargetsCollection,
+        );
         return;
       }
 
@@ -1138,14 +1077,13 @@ class ProductionService extends OfflineFirstService {
         await _dbService.productionEntries.put(entity);
       });
 
-      // 2. Sync
-      final firestore = db;
-      if (firestore != null) {
-        await firestore
-            .collection(productionEntriesCollection)
-            .doc(normalizedData['id'])
-            .set(normalizedData, fs.SetOptions(merge: true));
-      }
+      // 2. Queue for sync
+      await _enqueueSyncCommand(
+        queueId: 'production_entry_${normalizedData['id']}',
+        collection: productionEntriesCollection,
+        action: 'set',
+        payload: normalizedData,
+      );
     } catch (e) {
       // Offline fallback is already handled by local Isar save
       handleError(e, 'saveProductionDailyEntry');

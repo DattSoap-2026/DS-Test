@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../services/audit_logs_service.dart';
-import '../../models/types/user_types.dart';
+import '../../services/audit_logs_service.dart' show AuditLog, AuditLogsService;
+import '../../models/types/user_types.dart' show UserRole;
 import '../../providers/auth/auth_provider.dart';
 import '../../widgets/ui/animated_card.dart';
 import '../../widgets/ui/glass_container.dart';

@@ -1,8 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import 'package:flutter_app/data/local/base_entity.dart';
 import 'package:flutter_app/data/local/entities/sync_metric_entity.dart';
-import 'package:flutter_app/data/local/entities/sync_queue_entity.dart'; // Added
 import 'package:flutter_app/services/database_service.dart';
 import 'package:flutter_app/services/sync_analytics_service.dart';
 import 'package:flutter_app/services/outbox_codec.dart';
@@ -214,26 +214,21 @@ class SyncCommonUtils {
     }
   }
 
-  String _partnerOutboxId(String collection, String recordId) {
-    return 'partner_outbox_${collection}_$recordId';
-  }
-
   Future<bool> isPartnerOutboxQueued(String collection, String recordId) async {
-    final queueId = _partnerOutboxId(collection, recordId);
-    final existing = await dbService.syncQueue.getById(queueId);
-    return existing != null;
+    return SyncQueueService.instance.hasPendingItem(
+      collectionName: collection,
+      documentId: recordId,
+    );
   }
 
   Future<void> deletePartnerOutboxItem(
     String collection,
     String recordId,
   ) async {
-    final queueId = _partnerOutboxId(collection, recordId);
-    final existing = await dbService.syncQueue.getById(queueId);
-    if (existing == null) return;
-    await dbService.db.writeTxn(() async {
-      await dbService.syncQueue.delete(existing.isarId);
-    });
+    await SyncQueueService.instance.removeFromQueue(
+      collectionName: collection,
+      documentId: recordId,
+    );
   }
 
   Future<void> upsertPartnerOutboxItem({
@@ -242,31 +237,11 @@ class SyncCommonUtils {
     required String recordId,
     required Map<String, dynamic> data,
   }) async {
-    final queueId = _partnerOutboxId(collection, recordId);
-    final existing = await dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-    final entity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: data,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await dbService.db.writeTxn(() async {
-      await dbService.syncQueue.put(entity);
-    });
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: recordId,
+      operation: action,
+      payload: data,
+    );
   }
 }

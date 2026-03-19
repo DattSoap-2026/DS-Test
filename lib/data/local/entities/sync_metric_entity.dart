@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'sync_metric_entity.g.dart';
 
@@ -64,6 +65,77 @@ class SyncMetricEntity extends BaseEntity {
       ..syncStatus = metric.syncStatus
       ..createdAt = metric.createdAt
       ..updatedAt = metric.updatedAt;
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'metricId': metricId,
+      'timestamp': timestamp.toIso8601String(),
+      'userId': userId,
+      'entityType': entityType,
+      'operation': operation.name,
+      'recordCount': recordCount,
+      'duration': duration,
+      'success': success,
+      'errorMessage': errorMessage,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
+  static SyncMetricEntity fromJson(Map<String, dynamic> json) {
+    final id = parseString(json['id']);
+    final metricId = parseString(json['metricId'], fallback: id).trim();
+
+    return SyncMetricEntity()
+      ..id = id.isEmpty ? metricId : id
+      ..metricId = metricId.isEmpty ? id : metricId
+      ..timestamp = parseDate(json['timestamp'])
+      ..userId = parseString(json['userId'])
+      ..entityType = parseString(json['entityType'])
+      ..operation = _parseOperation(json['operation'])
+      ..recordCount = parseInt(json['recordCount'])
+      ..duration = parseInt(json['duration'])
+      ..success = parseBool(json['success'])
+      ..errorMessage = _nullableString(json['errorMessage'])
+      ..createdAt = parseDate(json['createdAt'] ?? json['timestamp'])
+      ..updatedAt = parseDate(
+        json['updatedAt'] ?? json['lastModified'] ?? json['createdAt'],
+      )
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
+  }
+
+  static String? _nullableString(dynamic value) {
+    final normalized = parseString(value).trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  static SyncOperation _parseOperation(dynamic value) {
+    final normalized = parseString(value, fallback: SyncOperation.pull.name)
+        .trim()
+        .toLowerCase()
+        .replaceFirst('syncoperation.', '');
+    for (final candidate in SyncOperation.values) {
+      if (candidate.name.toLowerCase() == normalized) {
+        return candidate;
+      }
+    }
+    return SyncOperation.pull;
   }
 }
 

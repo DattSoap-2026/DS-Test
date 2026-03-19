@@ -8,6 +8,7 @@ import '../../models/types/user_types.dart';
 import 'database_service.dart';
 import '../core/firebase/firebase_config.dart';
 import '../data/local/entities/alert_entity.dart';
+import '../data/repositories/alerts_repository.dart';
 import '../services/vehicles_service.dart';
 import '../utils/app_logger.dart';
 import 'package:isar/isar.dart' hide Query;
@@ -16,6 +17,7 @@ import 'package:uuid/uuid.dart';
 class AlertService with ChangeNotifier {
   final DatabaseService _db;
   final FirebaseServices _firebase;
+  final AlertsRepository _alertsRepository;
   static const Duration _permissionDeniedRetryBackoff = Duration(minutes: 10);
   static const Set<UserRole> routeOrderNotificationTargetRoles = {
     UserRole.owner,
@@ -35,8 +37,12 @@ class AlertService with ChangeNotifier {
   static const String _notificationEventsCollection = 'notification_events';
   static const String _routeOrdersCollection = 'route_orders';
 
-  AlertService(this._db, [FirebaseServices? firebase])
-    : _firebase = firebase ?? firebaseServices;
+  AlertService(
+    this._db, [
+    FirebaseServices? firebase,
+    AlertsRepository? alertsRepository,
+  ]) : _firebase = firebase ?? firebaseServices,
+       _alertsRepository = alertsRepository ?? AlertsRepository(_db);
 
   String? _notificationEventsDeniedScope;
   DateTime? _notificationEventsDeniedAtUtc;
@@ -141,6 +147,19 @@ class AlertService with ChangeNotifier {
   Map<String, dynamic>? _asMetadata(dynamic raw) {
     if (raw is Map<String, dynamic>) return Map<String, dynamic>.from(raw);
     if (raw is Map) return Map<String, dynamic>.from(raw);
+    if (raw is String && raw.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map<String, dynamic>) {
+          return Map<String, dynamic>.from(decoded);
+        }
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        return null;
+      }
+    }
     return null;
   }
 
@@ -922,67 +941,7 @@ class AlertService with ChangeNotifier {
       metadata: mergedMetadata.isEmpty ? null : mergedMetadata,
     );
 
-    await _db.db.writeTxn(() async {
-      await _db.alerts.put(AlertEntity.fromDomain(alert));
-    });
-
-    final firestore = _firebase.db;
-    if (firestore != null) {
-      try {
-        await firestore.collection(_alertsCollection).doc(alert.id).set({
-          'id': alert.id,
-          'title': alert.title,
-          'message': alert.message,
-          'type': alert.type.name,
-          'severity': alert.severity.name,
-          'isRead': false,
-          'createdAt': FieldValue.serverTimestamp(),
-          'createdAtEpoch': alert.createdAt.millisecondsSinceEpoch,
-          if (alert.relatedId != null) 'relatedId': alert.relatedId,
-          if (mergedMetadata.isNotEmpty) 'metadata': mergedMetadata,
-          if (normalizedTargetRoles.isNotEmpty)
-            'targetRoles': normalizedTargetRoles,
-          if (normalizedTargetUserIds.isNotEmpty)
-            'targetUserIds': normalizedTargetUserIds,
-          'createdByUid': _firebase.auth?.currentUser?.uid,
-          'createdByEmail': _firebase.auth?.currentUser?.email,
-        }, SetOptions(merge: true));
-      } catch (e) {
-        AppLogger.warning('Cloud alert write failed: $e', tag: 'AlertService');
-      }
-
-      final eventType = mergedMetadata[routeOrderEventTypeKey]
-          ?.toString()
-          .trim();
-      if (eventType != null &&
-          eventType.isNotEmpty &&
-          (normalizedTargetRoles.isNotEmpty ||
-              normalizedTargetUserIds.isNotEmpty)) {
-        try {
-          await firestore.collection(_notificationEventsCollection).add({
-            'alertId': alert.id,
-            'title': alert.title,
-            'body': alert.message,
-            'eventType': eventType,
-            'severity': alert.severity.name,
-            'targetRoles': normalizedTargetRoles,
-            'targetUserIds': normalizedTargetUserIds,
-            'forceSound': true,
-            'route': '/dashboard/orders/route-management',
-            'data': mergedMetadata,
-            'createdAt': FieldValue.serverTimestamp(),
-            'createdAtEpoch': alert.createdAt.millisecondsSinceEpoch,
-            'createdByUid': _firebase.auth?.currentUser?.uid,
-            'createdByEmail': _firebase.auth?.currentUser?.email,
-          });
-        } catch (e) {
-          AppLogger.warning(
-            'notification_events write failed: $e',
-            tag: 'AlertService',
-          );
-        }
-      }
-    }
+    await _alertsRepository.saveAlert(AlertEntity.fromDomain(alert));
 
     notifyListeners();
   }
@@ -994,34 +953,32 @@ class AlertService with ChangeNotifier {
 
     final readerUserId = user?.id.trim();
     final readerAuthUid = _firebase.auth?.currentUser?.uid.trim();
-    final now = DateTime.now();
+    final alert = await _db.alerts
+        .filter()
+        .alertIdEqualTo(normalizedAlertId)
+        .findFirst();
+    if (alert == null) {
+      return;
+    }
 
-    await _db.db.writeTxn(() async {
-      final alert = await _db.alerts
-          .filter()
-          .alertIdEqualTo(normalizedAlertId)
-          .findFirst();
-      if (alert != null) {
-        // LOCKED: read state is user-scoped (not global) so one user's read
-        // action never clears unread badge for other roles/users.
-        final metadata = <String, dynamic>{};
-        final existingMetadata = alert.toDomain().metadata;
-        if (existingMetadata != null) {
-          metadata.addAll(existingMetadata);
-        }
-        if (readerUserId != null && readerUserId.isNotEmpty) {
-          _addMarkerToMetadata(metadata, _metaReadByUserIds, readerUserId);
-        }
-        if (readerAuthUid != null && readerAuthUid.isNotEmpty) {
-          _addMarkerToMetadata(metadata, _metaReadByAuthUids, readerAuthUid);
-        }
+    // LOCKED: read state is user-scoped (not global) so one user's read
+    // action never clears unread badge for other roles/users.
+    final metadata = <String, dynamic>{};
+    final existingMetadata = alert.toDomain().metadata;
+    if (existingMetadata != null) {
+      metadata.addAll(existingMetadata);
+    }
+    if (readerUserId != null && readerUserId.isNotEmpty) {
+      _addMarkerToMetadata(metadata, _metaReadByUserIds, readerUserId);
+    }
+    if (readerAuthUid != null && readerAuthUid.isNotEmpty) {
+      _addMarkerToMetadata(metadata, _metaReadByAuthUids, readerAuthUid);
+    }
 
-        alert.isRead = true;
-        alert.metadataJson = metadata.isEmpty ? null : jsonEncode(metadata);
-        alert.updatedAt = now;
-        await _db.alerts.put(alert);
-      }
-    });
+    alert
+      ..isRead = true
+      ..metadataJson = metadata.isEmpty ? null : jsonEncode(metadata);
+    await _alertsRepository.saveAlert(alert);
     notifyListeners();
   }
 
@@ -1030,29 +987,25 @@ class AlertService with ChangeNotifier {
     if (normalizedOrderId.isEmpty) return;
 
     var didUpdate = false;
-    final now = DateTime.now();
-    await _db.db.writeTxn(() async {
-      final linked = await _db.alerts
-          .filter()
-          .relatedIdEqualTo(normalizedOrderId)
-          .findAll();
-      for (final entity in linked) {
-        final metadata = <String, dynamic>{};
-        final existingMetadata = entity.toDomain().metadata;
-        if (existingMetadata != null) {
-          metadata.addAll(existingMetadata);
-        }
-        final eventType = metadata[routeOrderEventTypeKey];
-        if (eventType is String && eventType == routeOrderCreatedEvent) {
-          entity.isRead = true;
-          metadata[_metaRouteOrderResolved] = true;
-          entity.metadataJson = jsonEncode(metadata);
-          entity.updatedAt = now;
-          await _db.alerts.put(entity);
-          didUpdate = true;
-        }
+    final linked = await _db.alerts
+        .filter()
+        .relatedIdEqualTo(normalizedOrderId)
+        .findAll();
+    for (final entity in linked) {
+      final metadata = <String, dynamic>{};
+      final existingMetadata = entity.toDomain().metadata;
+      if (existingMetadata != null) {
+        metadata.addAll(existingMetadata);
       }
-    });
+      final eventType = metadata[routeOrderEventTypeKey];
+      if (eventType is String && eventType == routeOrderCreatedEvent) {
+        entity.isRead = true;
+        metadata[_metaRouteOrderResolved] = true;
+        entity.metadataJson = jsonEncode(metadata);
+        await _alertsRepository.saveAlert(entity);
+        didUpdate = true;
+      }
+    }
 
     if (didUpdate) {
       notifyListeners();
@@ -1061,17 +1014,16 @@ class AlertService with ChangeNotifier {
 
   // Delete all read alerts
   Future<void> clearReadAlerts() async {
-    await _db.db.writeTxn(() async {
-      await _db.alerts.filter().isReadEqualTo(true).deleteAll();
-    });
+    await _alertsRepository.deleteOldReadAlerts(0);
     notifyListeners();
   }
 
   // Delete ALL alerts
   Future<void> clearAllAlerts() async {
-    await _db.db.writeTxn(() async {
-      await _db.alerts.where().deleteAll();
-    });
+    final alerts = await _alertsRepository.getAllAlerts();
+    for (final alert in alerts) {
+      await _alertsRepository.deleteAlert(alert.id);
+    }
     notifyListeners();
   }
 

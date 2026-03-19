@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'package:isar/isar.dart';
+import '../core/sync/sync_queue_service.dart';
 import 'offline_first_service.dart';
 import '../models/customer.dart';
 import '../data/local/entities/customer_entity.dart';
 import '../data/local/base_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
-import 'outbox_codec.dart';
 export '../models/customer.dart';
 
 const customersCollection = 'customers';
@@ -21,40 +20,19 @@ class CustomersService extends OfflineFirstService {
   @override
   bool get useIsar => true;
 
-  String _queueId(String id) => 'outbox_${_outboxCollection}_$id';
-
   Future<void> _upsertOutboxInTxn(
     CustomerEntity entity, {
     required String action,
   }) async {
-    final queueId = _queueId(entity.id);
-    final existing = await dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
     final payload = entity.toDomain().toJson()
       ..['updatedAt'] = entity.updatedAt.toIso8601String()
       ..['isDeleted'] = entity.isDeleted;
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    final queue = SyncQueueEntity()
-      ..id = queueId
-      ..collection = _outboxCollection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await dbService.syncQueue.put(queue);
+    await SyncQueueService.instance.addToQueue(
+      collectionName: _outboxCollection,
+      documentId: entity.id,
+      operation: action,
+      payload: payload,
+    );
   }
 
   // Get customers with filters (offline-first via Isar)

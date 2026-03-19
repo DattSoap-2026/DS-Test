@@ -69,7 +69,7 @@ class ConflictService {
   Future<bool> resolveConflict(
     String conflictId,
     ResolutionStrategy strategy, {
-    dynamic syncManager, // Optional for manual triggering
+    dynamic syncCoordinator, // Optional for manual triggering
   }) async {
     try {
       final conflict = await _dbService.conflicts.get(fastHash(conflictId));

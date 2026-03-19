@@ -117,7 +117,7 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
 
   Future<void> _runBackgroundSync() async {
     try {
-      await context.read<SyncManager>().syncOfflineSalesViaService();
+      await context.read<AppSyncCoordinator>().syncOfflineSalesViaService();
     } catch (_) {
       // Best-effort sync only; dashboard should remain responsive.
     }
@@ -1029,4 +1029,3 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
     return DateFormat(pattern).format(parsed);
   }
 }
-

@@ -8,11 +8,11 @@ class OfflineSyncIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SyncManager>(
-      builder: (context, syncManager, _) {
-        final pendingCount = syncManager.pendingCount;
-        final isSyncing = syncManager.isSyncing;
-        // Note: lastSyncTime not available in current SyncManager
+    return Consumer<AppSyncCoordinator>(
+      builder: (context, appSyncCoordinator, _) {
+        final pendingCount = appSyncCoordinator.pendingCount;
+        final isSyncing = appSyncCoordinator.isSyncing;
+        // Note: lastSyncTime not available in the current sync coordinator
         // Using placeholder for now
         final DateTime? lastSynced = null;
 
@@ -71,7 +71,7 @@ class OfflineSyncIndicator extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.sync, size: 18),
                   onPressed: () {
-                    syncManager.syncAll(null);
+                    appSyncCoordinator.syncAll(null);
                   },
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),

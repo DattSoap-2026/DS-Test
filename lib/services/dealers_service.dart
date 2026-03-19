@@ -1,11 +1,10 @@
 // LOCKED: DealersService offline-first caching - 2026-02-05
 import 'package:isar/isar.dart';
+import '../core/sync/sync_queue_service.dart';
 import 'offline_first_service.dart';
 import '../data/local/base_entity.dart';
 import '../data/local/entities/dealer_entity.dart';
 import '../data/local/entities/route_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
-import 'outbox_codec.dart';
 
 const dealersCollection = 'dealers';
 
@@ -141,43 +140,22 @@ class DealersService extends OfflineFirstService {
   @override
   bool get useIsar => true;
 
-  String _queueId(String id) => 'outbox_${_outboxCollection}_$id';
-
   Future<void> _upsertOutboxInTxn(
     DealerEntity entity, {
     required String action,
   }) async {
-    final queueId = _queueId(entity.id);
-    final existing = await dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
     final payload = {
       ...entity.toDomain().toJson(),
       'contactNumber': entity.mobile,
       'updatedAt': entity.updatedAt.toIso8601String(),
       'isDeleted': entity.isDeleted,
     };
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    final queue = SyncQueueEntity()
-      ..id = queueId
-      ..collection = _outboxCollection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await dbService.syncQueue.put(queue);
+    await SyncQueueService.instance.addToQueue(
+      collectionName: _outboxCollection,
+      documentId: entity.id,
+      operation: action,
+      payload: payload,
+    );
   }
 
   Future<List<Dealer>> _fetchDealersFromFirebase({

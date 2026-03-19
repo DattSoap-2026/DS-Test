@@ -1,15 +1,14 @@
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:crypto/crypto.dart';
 import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import '../models/types/cutting_types.dart';
 import 'offline_first_service.dart';
 import 'database_service.dart';
 import 'inventory_movement_engine.dart';
 import 'inventory_projection_service.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import '../data/local/entities/cutting_batch_entity.dart';
 import '../data/local/base_entity.dart';
 import '../utils/unit_scope_utils.dart';
@@ -59,30 +58,20 @@ class CuttingBatchService extends OfflineFirstService {
     required String action,
     required Map<String, dynamic> payload,
   }) async {
-    final now = DateTime.now();
     final commandPayload = OutboxCodec.ensureCommandPayload(
       collection: collection,
       action: action,
       payload: payload,
       queueId: queueId,
     );
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: commandPayload,
-        existingMeta: null,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
+    final documentId = payload['id']?.toString().trim() ?? '';
+    if (documentId.isEmpty) return;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: commandPayload,
+    );
     if (_centralQueueSync != null) {
       await _centralQueueSync!.call();
     }
@@ -93,33 +82,7 @@ class CuttingBatchService extends OfflineFirstService {
     String action,
     String collection,
     Map<String, dynamic> data,
-  ) async {
-    final firestore = db;
-    if (firestore == null) return;
-
-    final docId = data['id']?.toString();
-    if (docId == null || docId.isEmpty) return;
-
-    final payload = Map<String, dynamic>.from(data)..remove('id');
-    switch (action) {
-      case 'add':
-      case 'set':
-      case 'update':
-        await firestore
-            .collection(collection)
-            .doc(docId)
-            .set(payload, fs.SetOptions(merge: true));
-        return;
-      case 'delete':
-        await firestore.collection(collection).doc(docId).set({
-          'isDeleted': true,
-          'updatedAt': payload['updatedAt'] ?? DateTime.now().toIso8601String(),
-        }, fs.SetOptions(merge: true));
-        return;
-    }
-
-    await super.performSync(action, collection, data);
-  }
+  ) => super.performSync(action, collection, data);
 
   bool _matchesBatchUnitScope(CuttingBatch batch, UserUnitScope? unitScope) {
     if (unitScope == null) return true;
@@ -372,7 +335,7 @@ class CuttingBatchService extends OfflineFirstService {
     }
   }
 
-  /// Generate batch number: CTYYMMDD-XXXRND
+  /// Generate batch number: CTYYMMDD-RAND
   String generateBatchNumber() {
     final now = DateTime.now();
     final year = now.year.toString().substring(2);

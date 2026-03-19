@@ -6,6 +6,7 @@ class Employee {
   final String roleType;
   final String? linkedUserId;
   final String department;
+  final List<String> assignedRoutes;
   final String mobile;
   final bool isActive;
   final DateTime createdAt;
@@ -34,6 +35,7 @@ class Employee {
     required this.roleType,
     this.linkedUserId,
     required this.department,
+    this.assignedRoutes = const <String>[],
     required this.mobile,
     this.isActive = true,
     required this.createdAt,
@@ -64,6 +66,7 @@ class Employee {
       'roleType': roleType,
       'linkedUserId': linkedUserId,
       'department': department,
+      'assignedRoutes': assignedRoutes,
       'mobile': mobile,
       'isActive': isActive,
       'createdAt': createdAt.toIso8601String(),
@@ -91,6 +94,9 @@ class Employee {
       roleType: map['roleType'] ?? 'worker',
       linkedUserId: map['linkedUserId'],
       department: map['department'] ?? '',
+      assignedRoutes: (map['assignedRoutes'] as List? ?? const <dynamic>[])
+          .map((item) => item.toString())
+          .toList(growable: false),
       mobile: map['mobile'] ?? '',
       isActive: map['isActive'] ?? true,
       createdAt: map['createdAt'] != null
@@ -106,17 +112,19 @@ class Employee {
       panNumber: map['panNumber'],
       isTdsApplicable: map['isTdsApplicable'] ?? false,
       tdsPercentage: (map['tdsPercentage'] as num?)?.toDouble() ?? 0.0,
-      weeklyOffDay:
-          (map['weeklyOffDay'] as num?)?.toInt() ?? DateTime.sunday,
+      weeklyOffDay: (map['weeklyOffDay'] as num?)?.toInt() ?? DateTime.sunday,
       shiftStartHour: (map['shiftStartHour'] as num?)?.toInt() ?? 9,
       shiftStartMinute: (map['shiftStartMinute'] as num?)?.toInt() ?? 0,
       joiningDate: map['joiningDate'] != null
           ? DateTime.parse(map['joiningDate'])
           : (map['createdAt'] != null
-              ? DateTime.parse(map['createdAt'])
-              : DateTime.now()),
-      exitDate: map['exitDate'] != null ? DateTime.parse(map['exitDate']) : null,
-      overtimeMultiplier: (map['overtimeMultiplier'] as num?)?.toDouble() ?? 1.0,
+                ? DateTime.parse(map['createdAt'])
+                : DateTime.now()),
+      exitDate: map['exitDate'] != null
+          ? DateTime.parse(map['exitDate'])
+          : null,
+      overtimeMultiplier:
+          (map['overtimeMultiplier'] as num?)?.toDouble() ?? 1.0,
     );
   }
 

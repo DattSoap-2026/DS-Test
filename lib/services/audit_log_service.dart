@@ -2,7 +2,7 @@ import '../models/audit_log_model.dart';
 import 'database_service.dart';
 import '../data/local/entities/audit_log_entity.dart';
 import 'package:isar/isar.dart';
-import 'package:uuid/uuid.dart';
+import '../utils/app_logger.dart';
 
 class AuditLogService {
   final DatabaseService _db;
@@ -20,26 +20,10 @@ class AuditLogService {
     Map<String, dynamic>? changes,
     String? notes,
   }) async {
-    final audit = AuditLog(
-      id: const Uuid().v4(),
-      userId: userId,
-      userName: userName,
-      userRole: userRole,
-      action: action,
-      collectionName: collectionName,
-      documentId: documentId,
-      changes: changes,
-      notes: notes,
-      createdAt: DateTime.now(),
+    AppLogger.debug(
+      'Skipped client audit log write for $collectionName/$documentId (${action.name}). audit_logs are pull-only.',
+      tag: 'Audit',
     );
-
-    // Save Local
-    await _db.db.writeTxn(() async {
-      await _db.auditLogs.put(AuditLogEntity.fromDomain(audit));
-    });
-
-    // Best effort sync is handled by SyncManager (if included in sync)
-    // For now, keep it local-primary for performance.
   }
 
   // QUERY LOGS

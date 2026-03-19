@@ -124,7 +124,8 @@ class SettingsAuditService extends BaseService {
               userId: entity.userId,
               module: changes['module']?.toString() ?? 'unknown',
               settingKey:
-                  changes['setting_key']?.toString() ?? entity.documentId,
+                  changes['setting_key']?.toString() ??
+                  (entity.documentId ?? ''),
               oldValue: changes['old_value'],
               newValue: changes['new_value'],
               source: changes['source']?.toString() ?? 'system',

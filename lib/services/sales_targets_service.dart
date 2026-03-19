@@ -5,12 +5,12 @@ import 'package:uuid/uuid.dart';
 
 import 'base_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
 import '../data/local/base_entity.dart';
 import '../data/local/entities/sale_entity.dart';
 import '../data/local/entities/sales_target_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import 'database_service.dart';
-import 'outbox_codec.dart';
 
 const targetsCollection = 'sales_targets';
 
@@ -87,34 +87,12 @@ class SalesTargetsService extends BaseService {
       data['routeTargets'] = _decodeRouteTargets(target.routeTargetsJson);
     }
     data['updatedAt'] = target.updatedAt.toIso8601String();
-
-    final queueId = OutboxCodec.buildQueueId(targetsCollection, data);
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    final entity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = targetsCollection
-      ..action = target.isDeleted ? 'delete' : 'set'
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: data,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(entity);
-    });
+    await SyncQueueService.instance.addToQueue(
+      collectionName: targetsCollection,
+      documentId: target.id,
+      operation: target.isDeleted ? 'delete' : 'set',
+      payload: data,
+    );
   }
 
   Map<String, dynamic>? _decodeRouteTargets(String? json) {
@@ -164,9 +142,6 @@ class SalesTargetsService extends BaseService {
       return;
     }
 
-    final firestoreDb = db;
-    if (firestoreDb == null) return;
-
     final pending = await _dbService.salesTargets
         .filter()
         .syncStatusEqualTo(SyncStatus.pending)
@@ -175,23 +150,32 @@ class SalesTargetsService extends BaseService {
 
     for (final target in pending) {
       try {
-        final data = target.toFirebaseJson();
-        if (target.routeTargetsJson != null) {
-          data['routeTargets'] = _decodeRouteTargets(target.routeTargetsJson);
-        }
-        data['updatedAt'] = target.updatedAt.toIso8601String();
-        await firestoreDb
-            .collection(targetsCollection)
-            .doc(target.id)
-            .set(data, firestore.SetOptions(merge: true));
-
-        target.syncStatus = SyncStatus.synced;
-        await _dbService.db.writeTxn(() async {
-          await _dbService.salesTargets.put(target);
-        });
+        await _enqueueTargetForSync(target);
       } catch (_) {
         // Keep pending; will retry on next call
       }
+    }
+
+    if (db != null) {
+      try {
+        await SyncService.instance.pushAllPending();
+      } catch (_) {
+        return;
+      }
+    }
+
+    for (final target in pending) {
+      final hasPending = await SyncQueueService.instance.hasPendingItem(
+        collectionName: targetsCollection,
+        documentId: target.id,
+      );
+      if (hasPending) {
+        continue;
+      }
+      target.syncStatus = SyncStatus.synced;
+      await _dbService.db.writeTxn(() async {
+        await _dbService.salesTargets.put(target);
+      });
     }
   }
 
@@ -261,7 +245,6 @@ class SalesTargetsService extends BaseService {
   Future<bool> setSalesTarget(AddSalesTargetPayload target) async {
     try {
       final now = DateTime.now();
-      final firestoreDb = db;
       SalesTargetEntity? existingLocal = await _dbService.salesTargets
           .filter()
           .salesmanIdEqualTo(target.salesmanId)
@@ -274,48 +257,7 @@ class SalesTargetsService extends BaseService {
           .findFirst();
 
       String? docId;
-      double achievedAmount =
-          existingLocal?.achievedAmount ?? 0; // Default if new
-      bool remoteSynced = false;
-
-      if (firestoreDb != null) {
-        final q = firestoreDb
-            .collection(targetsCollection)
-            .where('salesmanId', isEqualTo: target.salesmanId)
-            .where('month', isEqualTo: target.month)
-            .where('year', isEqualTo: target.year);
-
-        final existing = await q.get();
-        if (existing.docs.isNotEmpty) {
-          final doc = existing.docs.first;
-          docId = doc.id;
-          achievedAmount =
-              (doc.data()['achievedAmount'] as num? ?? achievedAmount)
-                  .toDouble();
-          await doc.reference.update({
-            'targetAmount': target.targetAmount,
-            'routeTargets': target.routeTargets,
-            'updatedAt': now.toIso8601String(),
-          });
-          remoteSynced = true;
-        } else {
-          final docRef = firestoreDb.collection(targetsCollection).doc();
-          docId = docRef.id;
-          await docRef.set({
-            'salesmanId': target.salesmanId,
-            'salesmanName': target.salesmanName,
-            'month': target.month,
-            'year': target.year,
-            'targetAmount': target.targetAmount,
-            'routeTargets': target.routeTargets,
-            'achievedAmount': 0,
-            'createdAt': now.toIso8601String(),
-            'updatedAt': now.toIso8601String(),
-          });
-          achievedAmount = 0;
-          remoteSynced = true;
-        }
-      }
+      final achievedAmount = existingLocal?.achievedAmount ?? 0;
 
       // Ensure we have a stable local ID (for offline use)
       docId ??= existingLocal?.id ?? const Uuid().v4();
@@ -332,16 +274,14 @@ class SalesTargetsService extends BaseService {
       entity.createdAt = entity.createdAt ?? now.toIso8601String();
       entity.updatedAt = now;
       entity.isDeleted = false;
-      entity.syncStatus = remoteSynced ? SyncStatus.synced : SyncStatus.pending;
+      entity.syncStatus = SyncStatus.pending;
 
       await _dbService.db.writeTxn(() async {
         await _dbService.salesTargets.put(entity);
       });
 
-      // If we couldn't sync now, try to push pending later when online
-      if (!remoteSynced) {
-        await syncPendingTargets();
-      }
+      await _enqueueTargetForSync(entity);
+      await syncPendingTargets();
 
       return true;
     } catch (e) {

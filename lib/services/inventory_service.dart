@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:isar/isar.dart' as isar;
-import 'package:synchronized/synchronized.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:flutter/foundation.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import '../constants/role_access_matrix.dart';
 import 'offline_first_service.dart';
 import '../services/database_service.dart';
+import '../services/delegates/firestore_query_delegate.dart';
 import '../services/field_encryption_service.dart';
 import '../services/notification_service.dart';
 import 'service_capability_guard.dart';
@@ -17,9 +18,10 @@ import '../utils/app_logger.dart';
 import '../models/inventory/stock_dispatch.dart'; // New Model
 import '../data/local/entities/dispatch_entity.dart';
 import '../data/local/entities/department_stock_entity.dart';
+import '../data/local/entities/sync_queue_entity.dart';
+import 'delegates/inventory_queue_sync_delegate.dart';
 import 'outbox_codec.dart';
 import '../data/local/entities/stock_ledger_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import '../models/types/user_types.dart';
 import '../models/types/sales_types.dart';
 import '../models/types/inventory_types.dart';
@@ -180,14 +182,6 @@ class InventoryService extends OfflineFirstService {
   // NOTE: This prevents complex Firestore transactions on Windows to ensure stability.
   static bool safeMode = true;
 
-  /// Windows Safe Mode Mutex (Audit Recommendation #3)
-  ///
-  /// Serializes concurrent stock write operations on Windows to prevent
-  /// race conditions in the read-then-write batch pattern used by safe mode.
-  /// Static so it is shared across all InventoryService instances within
-  /// the same Dart isolate (single-process assumption on Windows).
-  static final Lock _windowsStockMutex = Lock();
-
   InventoryService(super.firebase, this._dbService);
 
   Future<AppUser> _requireInventoryMutationActor(
@@ -257,19 +251,6 @@ class InventoryService extends OfflineFirstService {
         ? normalized.substring(0, 12)
         : normalized.padRight(12, 'X');
     return 'DSP-$suffix';
-  }
-
-  String _normalizeDispatchStatus(dynamic value) {
-    final raw = value?.toString().trim().toLowerCase();
-    if (raw == null || raw.isEmpty) {
-      return DispatchStatus.received.name;
-    }
-    for (final status in DispatchStatus.values) {
-      if (status.name == raw) {
-        return raw;
-      }
-    }
-    return DispatchStatus.received.name;
   }
 
   /// Canonical department key used for all local department stock rows.
@@ -359,15 +340,6 @@ class InventoryService extends OfflineFirstService {
     return '${_sanitizeDeterministicToken(collection)}_${_sanitizeDeterministicToken(action)}_$digest';
   }
 
-  String _commandAuditDocId(String commandKey) {
-    final token = _sanitizeDeterministicToken(commandKey);
-    if (token.length <= 480) {
-      return 'cmd_$token';
-    }
-    final digest = fastHash(commandKey).toString();
-    return 'cmd_${token.substring(0, 420)}_$digest';
-  }
-
   String _deterministicDispatchMovementId({
     required String dispatchId,
     required String productId,
@@ -378,28 +350,6 @@ class InventoryService extends OfflineFirstService {
         '${_sanitizeDeterministicToken(dispatchId)}_${_sanitizeDeterministicToken(productId)}_${isFree ? 'free' : 'paid'}_$itemIndex';
     final digest = fastHash(token).toString();
     return 'dispatch_move_$digest';
-  }
-
-  String? _resolveDispatchMovementId({
-    required Map<String, dynamic> item,
-    required Map<String, dynamic> movementIds,
-  }) {
-    final inlineId = item['movementId']?.toString().trim();
-    if (inlineId != null && inlineId.isNotEmpty) {
-      return inlineId;
-    }
-
-    final productId = item['productId']?.toString().trim();
-    if (productId == null || productId.isEmpty) {
-      return null;
-    }
-
-    final fallbackId = movementIds[productId]?.toString().trim();
-    if (fallbackId != null && fallbackId.isNotEmpty) {
-      return fallbackId;
-    }
-
-    return null;
   }
 
   @override
@@ -595,10 +545,10 @@ class InventoryService extends OfflineFirstService {
       // Refresh from Firestore when available, then mirror locally.
       final firestoreRef = db;
       if (firestoreRef != null) {
-        final doc = await firestoreRef
-            .collection('users')
-            .doc(salesmanId)
-            .get();
+        final doc = await FirestoreQueryDelegate(firestoreRef).getDocument(
+          collection: 'users',
+          documentId: salesmanId,
+        );
         if (doc.exists && doc.data() != null) {
           final data = doc.data()!;
           if (data['allocatedStock'] != null) {
@@ -636,74 +586,48 @@ class InventoryService extends OfflineFirstService {
   /// - Increments Salesman Stock
   /// - Idempotent (Checks status first)
   Future<void> receiveDispatch(String dispatchId) async {
-    final firestoreRef = db;
-    if (firestoreRef == null) throw Exception('Online required to receive');
-
     try {
       await _requireInventoryMutationActor(
         'receive dispatch',
         requireInventoryCapability: false,
         allowedRoles: _dispatchReceiveRoleOverrides,
       );
-      await firestoreRef.runTransaction((transaction) async {
-        final dispatchRef = firestoreRef
-            .collection(dispatchesCollection)
-            .doc(dispatchId);
-        final dispatchSnap = await transaction.get(dispatchRef);
+      final dispatchEntity = await _dbService.dispatches.getById(dispatchId);
+      if (dispatchEntity == null || dispatchEntity.isDeleted) {
+        throw Exception('Dispatch $dispatchId not found locally');
+      }
 
-        if (!dispatchSnap.exists) {
-          throw Exception('Dispatch $dispatchId not found');
-        }
+      final currentStatus = dispatchEntity.status.trim().toLowerCase();
+      if (currentStatus == 'received' ||
+          currentStatus == 'closed' ||
+          currentStatus == 'completed') {
+        return;
+      }
 
-        final dispatchData = dispatchSnap.data()!;
-        final currentStatus = dispatchData['status'] as String? ?? 'created';
-
-        if (currentStatus == 'received' ||
-            currentStatus == 'closed' ||
-            currentStatus == 'completed') {
-          return;
-        }
-
-        final salesmanId = dispatchData['salesmanId'] as String;
-        final items = (dispatchData['items'] as List)
-            .map((e) => DispatchItem.fromJson(e as Map<String, dynamic>))
-            .toList();
-
-        transaction.update(dispatchRef, {
-          'status': 'received',
-          'receivedAt': firestore.FieldValue.serverTimestamp(),
-          'updatedAt': firestore.FieldValue.serverTimestamp(),
-        });
-
-        final userRef = firestoreRef.collection('users').doc(salesmanId);
-        for (final item in items) {
-          final Map<String, dynamic> itemUpdate = {
-            'productId': item.productId,
-            'name': item.productName,
-            'baseUnit': item.unit,
-          };
-          itemUpdate['quantity'] = firestore.FieldValue.increment(
-            item.quantity,
-          );
-
-          transaction.set(userRef, {
-            'allocatedStock': {item.productId: itemUpdate},
-          }, firestore.SetOptions(merge: true));
-        }
-
-        final auditRef = firestoreRef.collection('audit_logs').doc();
-        transaction.set(auditRef, {
-          'collection': dispatchesCollection,
-          'docId': dispatchId,
-          'action': 'receive',
-          'salesmanId': salesmanId,
-          'timestamp': firestore.FieldValue.serverTimestamp(),
-        });
+      final receivedAt = DateTime.now();
+      Map<String, dynamic>? queuePayload;
+      await _dbService.db.writeTxn(() async {
+        dispatchEntity
+          ..status = DispatchStatus.received.name
+          ..receivedAt = receivedAt
+          ..updatedAt = receivedAt
+          ..syncStatus = SyncStatus.pending;
+        await _dbService.dispatches.put(dispatchEntity);
+        queuePayload = dispatchEntity.toDomain().toJson()
+          ..['id'] = dispatchEntity.id
+          ..['status'] = DispatchStatus.received.name
+          ..['receivedAt'] = receivedAt.toIso8601String()
+          ..['updatedAt'] = receivedAt.toIso8601String()
+          ..['isSynced'] = false;
       });
-
-      // Update local if possible (optimistic)
-      // This usually requires a re-fetch of user data or manual local update.
-      // We will rely on Sync or explicit refresh.
+      if (queuePayload != null) {
+        await SyncQueueService.instance.addToQueue(
+          collectionName: dispatchesCollection,
+          documentId: dispatchId,
+          operation: 'update',
+          payload: queuePayload!,
+        );
+      }
     } catch (e) {
       throw handleError(e, 'receiveDispatch');
     }
@@ -734,536 +658,20 @@ class InventoryService extends OfflineFirstService {
       );
     }
 
-    if (_isWindowsSafeMode) {
-      final handled = await _performSafeModeSync(action, collection, data);
-      if (handled) return;
-    }
-
     final firestoreRef = db;
     if (firestoreRef == null) return;
-
-    // 0. Handle Stock Ledger Sync (New)
-    if (collection == stockLedgerCollection) {
-      // SyncManager handles pull/push via batch, but if this is called via queue (legacy)
-      // we just do a standard set.
-      await firestoreRef.collection(collection).doc(data['id']).set(data);
-      return;
-    }
-
-    // 1. Handle Stock Movement (Adjustments/Issues)
-    if (action == 'add' && collection == stockMovementsCollection) {
-      final movementId = data['id']?.toString().trim();
-      if (movementId == null || movementId.isEmpty) {
-        throw Exception(
-          'Deterministic stock movement id is required for sync payload',
-        );
-      }
-      await firestoreRef.runTransaction((transaction) async {
-        final productId = data['productId'];
-        final quantity = (data['quantity'] as num).toDouble();
-        final movementType = data['movementType'];
-        final docRef = firestoreRef.collection(collection).doc(movementId);
-        final existingMovement = await transaction.get(docRef);
-        if (existingMovement.exists) {
-          return;
-        }
-
-        // IDEMPOTENCY CHECK:
-        // If this is a 'dispatch' or 'sale' movement, the Parent Transaction (Dispatch/Sale)
-        // is responsible for the STOCK ADJUSTMENT.
-        // This sync action is merely ensuring the LOG exists (Upsert).
-        final refType = data['referenceType'];
-        if (refType == 'dispatch' ||
-            refType == 'sale' ||
-            refType == 'production' ||
-            refType == 'sales_return') {
-          transaction.set(docRef, {
-            ...data,
-            'id': movementId,
-            'createdAt':
-                data['createdAt'] ?? firestore.FieldValue.serverTimestamp(),
-          }, firestore.SetOptions(merge: true));
-          return;
-        }
-
-        // STANDARD ADJUSTMENT (Independent):
-        // 1. Update Product Stock
-        final productRef = firestoreRef.collection('products').doc(productId);
-        final productSnap = await transaction.get(productRef);
-
-        if (productSnap.exists) {
-          final pData = productSnap.data() as Map<String, dynamic>;
-          final currentStock = (pData['stock'] as num? ?? 0).toDouble();
-
-          if (movementType == 'out') {
-            if (currentStock < quantity) {
-              throw Exception(
-                'Insufficient stock for product ${pData['name']}. Available: $currentStock',
-              );
-            }
-          }
-
-          final change = movementType == 'in' ? quantity : -quantity;
-          transaction.update(productRef, {
-            'stock': firestore.FieldValue.increment(change),
-          });
-        }
-
-        // 2. Create Movement Record
-        transaction.set(docRef, {
-          ...data,
-          'id': movementId,
-          'createdAt':
-              data['createdAt'] ?? firestore.FieldValue.serverTimestamp(),
-        });
-      });
-      return;
-    }
-
-    // 2. Handle Department Stock Issue / Return
-    if (collection == 'department_stocks' &&
-        (action == 'issue_to_department' ||
-            action == 'return_from_department')) {
-      final deptName = data['departmentName']?.toString().trim();
-      final productId = data['productId']?.toString().trim();
-      final payloadId = data['id']?.toString().trim();
-      if (deptName == null ||
-          deptName.isEmpty ||
-          productId == null ||
-          productId.isEmpty) {
-        throw Exception(
-          'Department stock issue payload must include departmentName and productId',
-        );
-      }
-      final expectedId = '${deptName}_$productId';
-      if (payloadId == null || payloadId.isEmpty) {
-        throw Exception(
-          'Deterministic issue payload id is required for department stock sync',
-        );
-      }
-      await firestoreRef.runTransaction((transaction) async {
-        final qty = (data['quantity'] as num).toDouble();
-        final docId = expectedId;
-        if (payloadId != docId) {
-          throw Exception(
-            'Department stock payload id mismatch. expected=$docId, received=$payloadId',
-          );
-        }
-        final deptStockRef = firestoreRef.collection(collection).doc(docId);
-        final commandKey = _buildStockMutationCommandKey(
-          collection: collection,
-          action: action,
-          payload: data,
-        );
-        final commandRef = firestoreRef
-            .collection('audit_logs')
-            .doc(_commandAuditDocId(commandKey));
-        final existingCommand = await transaction.get(commandRef);
-        if (existingCommand.exists) {
-          return;
-        }
-
-        final isReturn = action == 'return_from_department';
-
-        // 1. Update Main Stock
-        final productRef = firestoreRef.collection('products').doc(productId);
-        final pSnap = await transaction.get(productRef);
-        if (!pSnap.exists) throw Exception('Product $productId not found');
-
-        final pData = pSnap.data() as Map<String, dynamic>;
-        final currentMainStock = (pData['stock'] as num? ?? 0).toDouble();
-        if (!isReturn && currentMainStock < qty) {
-          throw Exception(
-            'Insufficient warehouse stock for $productId. Available: $currentMainStock',
-          );
-        }
-        if (isReturn) {
-          transaction.update(productRef, {
-            'stock': firestore.FieldValue.increment(qty),
-          });
-        } else {
-          transaction.update(productRef, {
-            'stock': firestore.FieldValue.increment(-qty),
-          });
-        }
-
-        // 2. Update Department Stock
-        if (isReturn) {
-          final deptSnap = await transaction.get(deptStockRef);
-          final currentDeptStock = (deptSnap.data()?['stock'] as num? ?? 0)
-              .toDouble();
-          if (currentDeptStock < qty) {
-            throw Exception(
-              'Insufficient department stock for $productId in $deptName. Available: $currentDeptStock',
-            );
-          }
-          transaction.set(deptStockRef, {
-            'departmentName': deptName,
-            'productId': productId,
-            'productName': data['productName'],
-            'stock': firestore.FieldValue.increment(-qty),
-            'unit': data['unit'],
-            'updatedAt': DateTime.now().toIso8601String(),
-          }, firestore.SetOptions(merge: true));
-        } else {
-          transaction.set(deptStockRef, {
-            'departmentName': deptName,
-            'productId': productId,
-            'productName': data['productName'],
-            'stock': firestore.FieldValue.increment(qty),
-            'unit': data['unit'],
-            'updatedAt': DateTime.now().toIso8601String(),
-          }, firestore.SetOptions(merge: true));
-        }
-
-        // Create deterministic command audit marker (replay guard).
-        transaction.set(commandRef, {
-          'collectionName': collection,
-          'docId': docId,
-          'action': isReturn ? 'return_stock_command' : 'issue_stock_command',
-          'commandKey': commandKey,
-          'timestamp': DateTime.now().toIso8601String(),
-        });
-
-        final auditRef = firestoreRef.collection('audit_logs').doc();
-        transaction.set(auditRef, {
-          'collectionName': collection,
-          'docId': docId,
-          'action': isReturn ? 'return_stock' : 'issue_stock',
-          'changes': isReturn
-              ? {'returned': qty, 'from': deptName}
-              : {'issued': qty, 'to': deptName},
-          'timestamp': DateTime.now().toIso8601String(),
-        });
-      });
-      return;
-    }
-
-    // 3. Handle Dispatch (Van Loading)
-    if (action == 'add' && collection == dispatchesCollection) {
-      final dispatchDocId = data['id']?.toString().trim();
-      if (dispatchDocId == null || dispatchDocId.isEmpty) {
-        throw Exception(
-          'Deterministic dispatch id is required for sync payload',
-        );
-      }
-      await firestoreRef.runTransaction((transaction) async {
-        final docRef = firestoreRef.collection(collection).doc(dispatchDocId);
-        final existingDispatch = await transaction.get(docRef);
-        if (existingDispatch.exists) {
-          return;
-        }
-
-        // 1. Transaction Series (for Dispatch ID)
-        final seriesRef = firestoreRef
-            .collection('transaction_series')
-            .doc('Dispatch');
-        final seriesSnap = await transaction.get(seriesRef);
-
-        int nextNumber = 1;
-        String prefix = "DSP-";
-        if (seriesSnap.exists) {
-          final sData = seriesSnap.data() as Map<String, dynamic>;
-          nextNumber = (sData['current'] as num? ?? 0).toInt() + 1;
-          prefix = sData['prefix'] ?? "DSP-";
-          transaction.update(seriesRef, {'current': nextNumber});
-        }
-
-        final humanReadableId = "$prefix$nextNumber";
-
-        // 2. Process Items
-        final items = (data['items'] as List).cast<Map<String, dynamic>>();
-        final movementIds = Map<String, dynamic>.from(
-          data['movementIds'] ?? {},
-        );
-
-        for (var item in items) {
-          final productId = item['productId'];
-          final quantity = (item['quantity'] as num).toDouble();
-
-          // A. Deduct from Warehouse (Product)
-          final pRef = firestoreRef.collection('products').doc(productId);
-          final pSnap = await transaction.get(pRef);
-
-          if (!pSnap.exists) {
-            throw Exception('Product $productId not found');
-          }
-          final pData = pSnap.data() as Map<String, dynamic>;
-          final currentStock = (pData['stock'] as num? ?? 0).toDouble();
-          if (currentStock < quantity) {
-            throw Exception(
-              'Insufficient stock for ${item['name']}. Available: $currentStock',
-            );
-          }
-          // B. Add to Salesman (User) - allocate stock
-          final uRef = firestoreRef.collection('users').doc(data['salesmanId']);
-          final isFree = item['isFree'] == true;
-
-          final Map<String, dynamic> itemUpdate = {
-            'productId': productId,
-            'name': item['name'],
-            'price': item['price'] ?? 0.0,
-            'baseUnit': item['baseUnit'] ?? '',
-            'secondaryUnit': item['secondaryUnit'],
-            'conversionFactor': item['conversionFactor'] ?? 1.0,
-          };
-
-          if (isFree) {
-            itemUpdate['freeQuantity'] = firestore.FieldValue.increment(
-              quantity,
-            );
-          } else {
-            itemUpdate['quantity'] = firestore.FieldValue.increment(quantity);
-          }
-
-          transaction.set(uRef, {
-            'allocatedStock': {productId: itemUpdate},
-          }, firestore.SetOptions(merge: true));
-
-          // C. Create Movement Record (Server Side using Client ID)
-          final mId = _resolveDispatchMovementId(
-            item: item,
-            movementIds: movementIds,
-          );
-          if (mId == null || mId.isEmpty) {
-            throw Exception(
-              'Deterministic movement id missing for dispatch=$dispatchDocId product=$productId',
-            );
-          }
-
-          final moveRef = firestoreRef
-              .collection(stockMovementsCollection)
-              .doc(mId);
-          transaction.set(moveRef, {
-            'id': mId,
-            'productId': productId, // REQUIRED
-            'productName': item['name'],
-            'quantity': quantity,
-            'type': 'out', // REQUIRED field in some views? Matches 'out'
-            'movementType': 'out', // Consistency
-            'source': 'dispatch',
-            'reason': 'dispatch',
-            'referenceId': data['id'], // Offline Dispatch ID
-            'referenceNumber': humanReadableId, // Official Dispatch ID
-            'referenceType': 'dispatch',
-            'notes': 'Dispatch: $humanReadableId',
-            'userId': data['createdBy'],
-            'userName': data['createdByName'],
-            'createdBy': data['createdBy'],
-            'createdAt': firestore.FieldValue.serverTimestamp(),
-            'isSynced': true,
-          }, firestore.SetOptions(merge: true));
-        }
-
-        // 3. Create Dispatch Record
-        final normalizedStatus = _normalizeDispatchStatus(data['status']);
-        transaction.set(docRef, {
-          ...data,
-          'dispatchId': humanReadableId, // Override with server serial
-          'status': normalizedStatus,
-          if (normalizedStatus == DispatchStatus.received.name)
-            'receivedAt':
-                data['receivedAt'] ?? firestore.FieldValue.serverTimestamp(),
-          'isSynced': true,
-        });
-
-        // 4. Update Route Order (T13: Atomic Transaction)
-        final sourceOrderId = data['orderId']?.toString().trim();
-        if (sourceOrderId != null && sourceOrderId.isNotEmpty) {
-          final routeOrderRef = firestoreRef
-              .collection('route_orders')
-              .doc(sourceOrderId);
-          final routeOrderSnap = await transaction.get(routeOrderRef);
-          
-          if (routeOrderSnap.exists) {
-            transaction.update(routeOrderRef, {
-              'dispatchStatus': 'dispatched',
-              'dispatchId': humanReadableId,
-              'dispatchedAt': firestore.FieldValue.serverTimestamp(),
-              'dispatchedById': data['createdBy'],
-              'dispatchedByName': data['createdByName'],
-              'updatedAt': firestore.FieldValue.serverTimestamp(),
-            });
-          }
-        }
-
-        // 5. Audit
-        final auditRef = firestoreRef.collection('audit_logs').doc();
-        transaction.set(auditRef, {
-          'collectionName': dispatchesCollection,
-          'docId': data['id'],
-          'action': 'create',
-          'userId': data['createdBy'],
-          'timestamp': DateTime.now().toIso8601String(),
-        });
-      });
-      return;
-    }
-
-    // 4. Handle Salesman Return
-    if (action == 'add' && collection == 'salesman_returns') {
-      final returnId = data['id']?.toString().trim();
-      if (returnId == null || returnId.isEmpty) {
-        throw Exception('Return ID required for salesman return sync');
-      }
-
-      final salesmanId = data['salesmanId']?.toString().trim();
-      if (salesmanId == null || salesmanId.isEmpty) {
-        throw Exception('Salesman ID required for return sync');
-      }
-
-      final items = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-      if (items.isEmpty) {
-        throw Exception('Return must include at least one item');
-      }
-
-      await firestoreRef.runTransaction((transaction) async {
-        final userRef = firestoreRef.collection('users').doc(salesmanId);
-        final userSnap = await transaction.get(userRef);
-        if (!userSnap.exists) {
-          throw Exception('Salesman $salesmanId not found');
-        }
-
-        for (final item in items) {
-          final productId = item['productId']?.toString().trim();
-          if (productId == null || productId.isEmpty) continue;
-
-          final returnQty = (item['quantity'] as num?)?.toDouble() ?? 0.0;
-          if (returnQty <= 0) continue;
-
-          final isFree = item['isFree'] == true;
-
-          // Decrement salesman allocated stock
-          final field = isFree
-              ? 'allocatedStock.$productId.freeQuantity'
-              : 'allocatedStock.$productId.quantity';
-          transaction.update(userRef, {
-            field: firestore.FieldValue.increment(-returnQty),
-          });
-
-          // Increment warehouse stock
-          final productRef = firestoreRef.collection('products').doc(productId);
-          transaction.update(productRef, {
-            'stock': firestore.FieldValue.increment(returnQty),
-          });
-        }
-
-        // Audit log
-        final auditRef = firestoreRef.collection('audit_logs').doc();
-        transaction.set(auditRef, {
-          'collectionName': 'salesman_returns',
-          'docId': returnId,
-          'action': 'return_stock',
-          'salesmanId': salesmanId,
-          'timestamp': DateTime.now().toIso8601String(),
-        });
-      });
+    final delegate = InventoryQueueSyncDelegate(firestoreRef);
+    final handled = await delegate.performSync(
+      action,
+      collection,
+      data,
+      useWindowsSafeMode: _isWindowsSafeMode,
+    );
+    if (handled) {
       return;
     }
 
     await super.performSync(action, collection, data);
-  }
-
-  Future<bool> _performSafeModeSync(
-    String action,
-    String collection,
-    Map<String, dynamic> data,
-  ) async {
-    final firestoreRef = db;
-    if (firestoreRef == null) return true;
-
-    if (collection == stockLedgerCollection) {
-      await firestoreRef.collection(collection).doc(data['id']).set(data);
-      return true;
-    }
-
-    // Safe-mode dispatch: use batch-based _safeDispatchSync instead of
-    // runTransaction, which is known to crash on the Windows Firebase C++ SDK.
-    // This ONLY applies to salesman dispatch (dispatches/add).
-    // Dealer dispatch and inventory sync are NOT affected.
-    if (action == 'add' && collection == dispatchesCollection) {
-      await _safeDispatchSync(firestoreRef, data);
-      return true;
-    }
-
-    return false;
-  }
-
-  // ignore: unused_element
-  Future<void> _safeSyncStockMovement(
-    firestore.FirebaseFirestore firestoreRef,
-    Map<String, dynamic> data,
-  ) async {
-    final refType = data['referenceType'];
-    final movementId = data['id']?.toString().trim();
-    if (movementId == null || movementId.isEmpty) {
-      throw Exception(
-        'Deterministic stock movement id is required in safe mode sync payload',
-      );
-    }
-    final docRef = firestoreRef
-        .collection(stockMovementsCollection)
-        .doc(movementId);
-
-    if (refType == 'dispatch' ||
-        refType == 'sale' ||
-        refType == 'production' ||
-        refType == 'sales_return') {
-      await docRef.set({
-        ...data,
-        'createdAt':
-            data['createdAt'] ?? firestore.FieldValue.serverTimestamp(),
-      }, firestore.SetOptions(merge: true));
-      return;
-    }
-
-    final productId = data['productId'];
-    final quantity = (data['quantity'] as num? ?? 0).toDouble();
-    final movementType = data['movementType'];
-    final change = movementType == 'in' ? quantity : -quantity;
-
-    final productRef = firestoreRef.collection('products').doc(productId);
-
-    final productSnap = await productRef.get();
-    if (!productSnap.exists) {
-      throw Exception('Product $productId not found in safe mode.');
-    }
-
-    final currentStock = (productSnap.data()?['stock'] as num? ?? 0).toDouble();
-    if (movementType == 'out' && currentStock + change < -1e-9) {
-      throw Exception(
-        'Insufficient stock for $productId in safe mode. Available: $currentStock, requested: $quantity',
-      );
-    }
-
-    // --- WINDOWS MUTEX LOCK (Audit Recommendation #3) ---
-    // Acquire lock BEFORE the read-then-write to prevent concurrent
-    // stock deductions from racing on Windows (no runTransaction support).
-    await _windowsStockMutex.synchronized(() async {
-      // Re-read stock inside the lock to get the freshest value
-      final lockedSnap = await productRef.get();
-      if (!lockedSnap.exists) {
-        throw Exception('Product $productId disappeared during safe sync.');
-      }
-      final lockedStock = (lockedSnap.data()?['stock'] as num? ?? 0).toDouble();
-      if (movementType == 'out' && lockedStock + change < -1e-9) {
-        throw Exception(
-          'Insufficient stock for $productId (mutex-guarded). '
-          'Available: $lockedStock, requested: $quantity',
-        );
-      }
-      final batch = firestoreRef.batch();
-      batch.update(productRef, {
-        'stock': firestore.FieldValue.increment(change),
-      });
-      batch.set(docRef, {
-        ...data,
-        'createdAt':
-            data['createdAt'] ?? firestore.FieldValue.serverTimestamp(),
-      }, firestore.SetOptions(merge: true));
-      await batch.commit();
-    });
-    // ---------------------------------------------------
   }
 
   /// Issues stock to a department via Firestore Batch (safe mode, Windows only).
@@ -1273,54 +681,6 @@ class InventoryService extends OfflineFirstService {
   /// limitations on Windows. The read (get product stock) and write (batch.commit)
   /// are NOT atomic. Risk is accepted under single-user-device assumption.
   // ignore: unused_element
-  Future<void> _safeIssueToDepartment(
-    firestore.FirebaseFirestore firestoreRef,
-    Map<String, dynamic> data,
-  ) async {
-    final deptName = data['departmentName'];
-    final productId = data['productId'];
-    final qty = (data['quantity'] as num? ?? 0).toDouble();
-
-    final docId = '${deptName}_$productId';
-    final deptStockRef = firestoreRef
-        .collection('department_stocks')
-        .doc(docId);
-    final productRef = firestoreRef.collection('products').doc(productId);
-
-    final productSnap = await productRef.get();
-    if (!productSnap.exists) {
-      throw Exception('Product $productId not found.');
-    }
-
-    final currentStock = (productSnap.data()?['stock'] as num? ?? 0).toDouble();
-    if (currentStock - qty < -1e-9) {
-      throw Exception(
-        'Insufficient warehouse stock for $productId. Available: $currentStock, requested: $qty',
-      );
-    }
-
-    final batch = firestoreRef.batch();
-    batch.update(productRef, {'stock': firestore.FieldValue.increment(-qty)});
-    batch.set(deptStockRef, {
-      'departmentName': deptName,
-      'productId': productId,
-      'productName': data['productName'],
-      'stock': firestore.FieldValue.increment(qty),
-      'unit': data['unit'],
-      'updatedAt': DateTime.now().toIso8601String(),
-    }, firestore.SetOptions(merge: true));
-
-    final auditRef = firestoreRef.collection('audit_logs').doc();
-    batch.set(auditRef, {
-      'collectionName': 'department_stocks',
-      'docId': docId,
-      'action': 'issue_stock',
-      'changes': {'issued': qty, 'to': deptName},
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-    await batch.commit();
-  }
-
   /// Syncs a dispatch to Firestore using a Firestore Batch (not a Transaction).
   ///
   /// BUG 4 NOTE (Documented Limitation): This uses `firestore.batch()` instead of
@@ -1336,137 +696,6 @@ class InventoryService extends OfflineFirstService {
   /// If concurrent dispatch on Windows is ever needed, replace with a Cloud
   /// Function or a server-side transaction.
   // ignore: unused_element
-  Future<void> _safeDispatchSync(
-    firestore.FirebaseFirestore firestoreRef,
-    Map<String, dynamic> data,
-  ) async {
-    final dispatchId = data['id'];
-    if (dispatchId == null) return;
-
-    final dispatchRef = firestoreRef
-        .collection(dispatchesCollection)
-        .doc(dispatchId);
-
-    final items = (data['items'] as List).cast<Map<String, dynamic>>();
-    final movementIds = Map<String, dynamic>.from(data['movementIds'] ?? {});
-
-    final salesmanId = data['salesmanId'];
-    final normalizedStatus = _normalizeDispatchStatus(data['status']);
-
-    final existing = await dispatchRef.get();
-    if (existing.exists) return;
-
-    final batch = firestoreRef.batch();
-
-    for (final item in items) {
-      final productId = item['productId'];
-      final quantity = (item['quantity'] as num? ?? 0).toDouble();
-      final isFree = item['isFree'] == true;
-
-      final productRef = firestoreRef.collection('products').doc(productId);
-      final productSnap = await productRef.get();
-      if (!productSnap.exists) {
-        throw Exception('Product $productId not found during safe dispatch.');
-      }
-
-      final currentStock = (productSnap.data()?['stock'] as num? ?? 0)
-          .toDouble();
-      if (currentStock - quantity < -1e-9) {
-        throw Exception(
-          'Insufficient stock for $productId during safe dispatch. Available: $currentStock, requested: $quantity',
-        );
-      }
-
-      batch.update(productRef, {
-        'stock': firestore.FieldValue.increment(-quantity),
-      });
-
-      final userRef = firestoreRef.collection('users').doc(salesmanId);
-
-      final Map<String, dynamic> itemUpdate = {
-        'productId': productId,
-        'name': item['name'],
-        'price': item['price'] ?? 0.0,
-        'baseUnit': item['baseUnit'] ?? '',
-        'secondaryUnit': item['secondaryUnit'],
-        'conversionFactor': item['conversionFactor'] ?? 1.0,
-      };
-
-      if (isFree) {
-        itemUpdate['freeQuantity'] = firestore.FieldValue.increment(quantity);
-      } else {
-        itemUpdate['quantity'] = firestore.FieldValue.increment(quantity);
-      }
-
-      batch.set(userRef, {
-        'allocatedStock': {productId: itemUpdate},
-      }, firestore.SetOptions(merge: true));
-
-      final moveId = _resolveDispatchMovementId(
-        item: item,
-        movementIds: movementIds,
-      );
-      if (moveId == null || moveId.isEmpty) {
-        throw Exception(
-          'Deterministic movement id missing in safe dispatch payload for product=$productId',
-        );
-      }
-      final moveRef = firestoreRef
-          .collection(stockMovementsCollection)
-          .doc(moveId);
-      batch.set(moveRef, {
-        'id': moveId,
-        'productId': productId,
-        'productName': item['name'],
-        'quantity': quantity,
-        'type': 'out',
-        'movementType': 'out',
-        'source': 'dispatch',
-        'reason': 'dispatch',
-        'referenceId': dispatchId,
-        'referenceNumber': data['dispatchId'],
-        'referenceType': 'dispatch',
-        'notes': 'Dispatch: ${data['dispatchId']}',
-        'userId': data['createdBy'],
-        'userName': data['createdByName'],
-        'createdBy': data['createdBy'],
-        'createdAt': firestore.FieldValue.serverTimestamp(),
-        'isSynced': true,
-      }, firestore.SetOptions(merge: true));
-    }
-
-    batch.set(dispatchRef, {
-      ...data,
-      'status': normalizedStatus,
-      if (normalizedStatus == DispatchStatus.received.name)
-        'receivedAt':
-            data['receivedAt'] ?? firestore.FieldValue.serverTimestamp(),
-      'isSynced': true,
-    }, firestore.SetOptions(merge: true));
-
-    // T13: Update Route Order atomically (safe mode)
-    final sourceOrderId = data['orderId']?.toString().trim();
-    if (sourceOrderId != null && sourceOrderId.isNotEmpty) {
-      final routeOrderRef = firestoreRef
-          .collection('route_orders')
-          .doc(sourceOrderId);
-      final routeOrderSnap = await routeOrderRef.get();
-      
-      if (routeOrderSnap.exists) {
-        batch.update(routeOrderRef, {
-          'dispatchStatus': 'dispatched',
-          'dispatchId': data['dispatchId'],
-          'dispatchedAt': firestore.FieldValue.serverTimestamp(),
-          'dispatchedById': data['createdBy'],
-          'dispatchedByName': data['createdByName'],
-          'updatedAt': firestore.FieldValue.serverTimestamp(),
-        });
-      }
-    }
-
-    await batch.commit();
-  }
-
   /// Calculates the real-time stock usage for a specific [salesmanId].
   ///
   /// This aggregates local sales data against the [allocatedStock] to determine
@@ -2156,32 +1385,23 @@ class InventoryService extends OfflineFirstService {
         }
       });
 
-      await _dbService.db.writeTxn(() async {
-        for (final payload in syncPayloads) {
-          final commandKey = _buildStockMutationCommandKey(
-            collection: 'department_stocks',
-            action: 'issue_to_department',
-            payload: payload,
-          );
-          final queuePayload = <String, dynamic>{
-            ...payload,
-            OutboxCodec.idempotencyKeyField: commandKey,
-          };
-          final syncEntity = SyncQueueEntity()
-            ..id = 'sync_issue_dept_${fastHash(commandKey)}'
-            ..collection = 'department_stocks'
-            ..action = 'issue_to_department'
-            ..dataJson = OutboxCodec.encodeEnvelope(
-              payload: queuePayload,
-              now: now,
-              resetRetryState: true,
-            )
-            ..createdAt = now
-            ..updatedAt = now
-            ..syncStatus = SyncStatus.pending;
-          await _dbService.syncQueue.put(syncEntity);
-        }
-      });
+      for (final payload in syncPayloads) {
+        final commandKey = _buildStockMutationCommandKey(
+          collection: 'department_stocks',
+          action: 'issue_to_department',
+          payload: payload,
+        );
+        final queuePayload = <String, dynamic>{
+          ...payload,
+          OutboxCodec.idempotencyKeyField: commandKey,
+        };
+        await SyncQueueService.instance.addToQueue(
+          collectionName: 'department_stocks',
+          documentId: payload['id']?.toString() ?? '',
+          operation: 'issue_to_department',
+          payload: queuePayload,
+        );
+      }
 
       return true;
     } catch (e) {
@@ -2266,32 +1486,23 @@ class InventoryService extends OfflineFirstService {
         }
       });
 
-      await _dbService.db.writeTxn(() async {
-        for (final payload in syncPayloads) {
-          final commandKey = _buildStockMutationCommandKey(
-            collection: 'department_stocks',
-            action: 'return_from_department',
-            payload: payload,
-          );
-          final queuePayload = <String, dynamic>{
-            ...payload,
-            OutboxCodec.idempotencyKeyField: commandKey,
-          };
-          final syncEntity = SyncQueueEntity()
-            ..id = 'sync_return_dept_${fastHash(commandKey)}'
-            ..collection = 'department_stocks'
-            ..action = 'return_from_department'
-            ..dataJson = OutboxCodec.encodeEnvelope(
-              payload: queuePayload,
-              now: now,
-              resetRetryState: true,
-            )
-            ..createdAt = now
-            ..updatedAt = now
-            ..syncStatus = SyncStatus.pending;
-          await _dbService.syncQueue.put(syncEntity);
-        }
-      });
+      for (final payload in syncPayloads) {
+        final commandKey = _buildStockMutationCommandKey(
+          collection: 'department_stocks',
+          action: 'return_from_department',
+          payload: payload,
+        );
+        final queuePayload = <String, dynamic>{
+          ...payload,
+          OutboxCodec.idempotencyKeyField: commandKey,
+        };
+        await SyncQueueService.instance.addToQueue(
+          collectionName: 'department_stocks',
+          documentId: payload['id']?.toString() ?? '',
+          operation: 'return_from_department',
+          payload: queuePayload,
+        );
+      }
 
       return true;
     } catch (e) {
@@ -2337,6 +1548,7 @@ class InventoryService extends OfflineFirstService {
     try {
       debugPrint('[InventoryService] adjustStock called. SafeMode=\$safeMode');
       final now = DateTime.now();
+      final movementPayloads = <Map<String, dynamic>>[];
 
       // 1. ATOMIC TRANSACTION: Stock Update + Ledger Entry
       debugPrint('[InventoryService] Starting Isar Write Transaction...');
@@ -2423,23 +1635,17 @@ class InventoryService extends OfflineFirstService {
             ..syncStatus = SyncStatus.pending;
 
           await _dbService.stockMovements.put(entity);
-
-          final syncEntity = SyncQueueEntity()
-            ..id = 'sync_movement_${movementData['id']}'
-            ..collection = stockMovementsCollection
-            ..action = 'add'
-            ..dataJson = OutboxCodec.encodeEnvelope(
-              payload: movementData,
-              now: now,
-              resetRetryState: true,
-            )
-            ..createdAt = now
-            ..updatedAt = now
-            ..syncStatus = SyncStatus.pending;
-
-          await _dbService.syncQueue.put(syncEntity);
+          movementPayloads.add(Map<String, dynamic>.from(movementData));
         }
       });
+      for (final movementData in movementPayloads) {
+        await SyncQueueService.instance.addToQueue(
+          collectionName: stockMovementsCollection,
+          documentId: movementData['id']?.toString() ?? '',
+          operation: 'add',
+          payload: movementData,
+        );
+      }
       return true;
     } catch (e) {
       debugPrint('[InventoryService] CRASH/ERROR in adjustStock: $e');
@@ -2528,6 +1734,7 @@ class InventoryService extends OfflineFirstService {
       });
 
       // 3. Sync Legacy Logs (Outside Transaction) - Converted to Outbox
+      final queuedMovements = <Map<String, dynamic>>[];
       await _dbService.db.writeTxn(() async {
         for (final m in movementsForSync) {
           final entity = StockMovementEntity()
@@ -2547,23 +1754,17 @@ class InventoryService extends OfflineFirstService {
             ..syncStatus = SyncStatus.pending;
 
           await _dbService.stockMovements.put(entity);
-
-          final syncEntity = SyncQueueEntity()
-            ..id = 'sync_reconciliation_${m['id']}'
-            ..collection = stockMovementsCollection
-            ..action = 'add'
-            ..dataJson = OutboxCodec.encodeEnvelope(
-              payload: m,
-              now: DateTime.now(),
-              resetRetryState: true,
-            )
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now()
-            ..syncStatus = SyncStatus.pending;
-
-          await _dbService.syncQueue.put(syncEntity);
+          queuedMovements.add(Map<String, dynamic>.from(m));
         }
       });
+      for (final movement in queuedMovements) {
+        await SyncQueueService.instance.addToQueue(
+          collectionName: stockMovementsCollection,
+          documentId: movement['id']?.toString() ?? '',
+          operation: 'add',
+          payload: movement,
+        );
+      }
 
       return {
         'success': true,
@@ -2738,21 +1939,12 @@ class InventoryService extends OfflineFirstService {
         'createdAt': now.toIso8601String(),
       };
 
-      await _dbService.db.writeTxn(() async {
-        final syncEntity = SyncQueueEntity()
-          ..id = 'sync_return_salesman_$returnId'
-          ..collection = 'salesman_returns'
-          ..action = 'add'
-          ..dataJson = OutboxCodec.encodeEnvelope(
-            payload: returnData,
-            now: now,
-            resetRetryState: true,
-          )
-          ..createdAt = now
-          ..updatedAt = now
-          ..syncStatus = SyncStatus.pending;
-        await _dbService.syncQueue.put(syncEntity);
-      });
+      await SyncQueueService.instance.addToQueue(
+        collectionName: 'salesman_returns',
+        documentId: returnId,
+        operation: 'add',
+        payload: returnData,
+      );
 
       AppLogger.success(
         'Stock returned from salesman: $salesmanId',
@@ -3058,44 +2250,29 @@ class InventoryService extends OfflineFirstService {
           'dealerName': sourceDealerName.trim(),
       };
 
+      Map<String, dynamic>? queuedDispatchData;
+
       // Save to true Isar via Outbox
       await _dbService.db.writeTxn(() async {
         try {
-          final authUser = auth?.currentUser;
-          final actorMeta = <String, dynamic>{
-            OutboxCodec.actorIdMetaField: userId,
-            if (authUser?.uid != null && authUser!.uid.trim().isNotEmpty)
-              OutboxCodec.actorUidMetaField: authUser.uid.trim(),
-            if (authUser?.email != null && authUser!.email!.trim().isNotEmpty)
-              OutboxCodec.actorEmailMetaField: authUser.email!
-                  .trim()
-                  .toLowerCase(),
-          };
           final dispatchEntity = DispatchEntity.fromDomain(
             StockDispatch.fromJson(dispatchData),
           )..syncStatus = SyncStatus.pending;
           await _dbService.dispatches.put(dispatchEntity);
-
-          final syncEntity = SyncQueueEntity()
-            ..id = 'sync_dispatch_${dispatchData['id']}'
-            ..collection = dispatchesCollection
-            ..action = 'add'
-            ..dataJson = OutboxCodec.encodeEnvelope(
-              payload: dispatchData,
-              existingMeta: actorMeta,
-              now: now,
-              resetRetryState: true,
-            )
-            ..createdAt = now
-            ..updatedAt = now
-            ..syncStatus = SyncStatus.pending;
-
-          await _dbService.syncQueue.put(syncEntity);
+          queuedDispatchData = Map<String, dynamic>.from(dispatchData);
         } catch (e) {
           AppLogger.error('Dispatch entity creation failed', error: e, tag: 'Inventory');
           rethrow;
         }
       });
+      if (queuedDispatchData != null) {
+        await SyncQueueService.instance.addToQueue(
+          collectionName: dispatchesCollection,
+          documentId: queuedDispatchData!['id']?.toString() ?? '',
+          operation: 'add',
+          payload: queuedDispatchData!,
+        );
+      }
 
       await NotificationService().publishNotificationEvent(
         title: 'Dispatch Assigned',

@@ -267,8 +267,8 @@ final syncCommonUtilsProvider = Provider<SyncCommonUtils>((ref) {
   return SyncCommonUtils(dbService: db, analyticsService: analyticsService);
 });
 
-final ChangeNotifierProvider<SyncManager> syncManagerProvider =
-    ChangeNotifierProvider<SyncManager>((ref) {
+final ChangeNotifierProvider<AppSyncCoordinator> appSyncCoordinatorProvider =
+    ChangeNotifierProvider<AppSyncCoordinator>((ref) {
       final db = ref.watch(databaseServiceProvider);
       final suppliersService = ref.watch(suppliersServiceProvider);
       final alertService = ref.watch(alertServiceProvider);
@@ -289,7 +289,7 @@ final ChangeNotifierProvider<SyncManager> syncManagerProvider =
       final productionRepo = ref.watch(productionRepositoryProvider);
       final syncUtils = ref.watch(syncCommonUtilsProvider);
 
-      final syncManager = SyncManager(
+      final appSyncCoordinator = createAppSyncCoordinator(
         db,
         firebaseServices,
         suppliersService,
@@ -311,11 +311,13 @@ final ChangeNotifierProvider<SyncManager> syncManagerProvider =
         productionRepo,
         syncUtils,
       );
-      salesService.bindCentralQueueSync(syncManager.processSyncQueue);
-      productionService.bindCentralQueueSync(syncManager.processSyncQueue);
-      bhattiService.bindCentralQueueSync(syncManager.processSyncQueue);
-      cuttingBatchService.bindCentralQueueSync(syncManager.processSyncQueue);
-      return syncManager;
+      salesService.bindCentralQueueSync(appSyncCoordinator.processSyncQueue);
+      productionService.bindCentralQueueSync(appSyncCoordinator.processSyncQueue);
+      bhattiService.bindCentralQueueSync(appSyncCoordinator.processSyncQueue);
+      cuttingBatchService.bindCentralQueueSync(
+        appSyncCoordinator.processSyncQueue,
+      );
+      return appSyncCoordinator;
     });
 
 final tasksServiceProvider = Provider<TasksService>((ref) {

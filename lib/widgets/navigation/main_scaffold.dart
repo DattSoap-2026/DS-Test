@@ -553,16 +553,16 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
   void _checkAndStartListener() {
     final user = ref.read(authProviderProvider).state.user;
     final authUser = fb_auth.FirebaseAuth.instance.currentUser;
-    final syncManager = ref.read(syncManagerProvider);
+    final appSyncCoordinator = ref.read(appSyncCoordinatorProvider);
     if (user == null || authUser == null) {
       _stopUserSessionListeners();
       return;
     }
-    syncManager.setCurrentUser(user, triggerBootstrap: true);
+    appSyncCoordinator.setCurrentUser(user, triggerBootstrap: true);
     if (user.id != _lastUserId || authUser.uid != _lastAuthUid) {
       _lastUserId = user.id;
       _lastAuthUid = authUser.uid;
-      syncManager.fetchUserLiveUpdates(user.id);
+      appSyncCoordinator.fetchUserLiveUpdates(user.id);
 
       // Start listening to unread task count
       _listenToUnreadTasks(user.id);
@@ -570,7 +570,7 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
   }
 
   void _stopUserSessionListeners() {
-    ref.read(syncManagerProvider).stopUserListener();
+    ref.read(appSyncCoordinatorProvider).stopUserListener();
     _unreadTaskSubscription?.cancel();
     _unreadTaskSubscription = null;
     _lastUserId = null;
@@ -619,11 +619,11 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
   }
 
   void handleManualSync({bool forceRefresh = false}) async {
-    final syncManager = ref.read(syncManagerProvider);
+    final appSyncCoordinator = ref.read(appSyncCoordinatorProvider);
     final authProvider = ref.read(authProviderProvider);
     final user = authProvider.state.user;
 
-    if (user == null || syncManager.isSyncing) return;
+    if (user == null || appSyncCoordinator.isSyncing) return;
 
     // Show feedback
     ScaffoldMessenger.of(context).showSnackBar(
@@ -641,7 +641,7 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
       // Defer heavy sync to the next frame to avoid mouse tracker assertions
       await Future<void>.delayed(Duration.zero);
       if (!mounted) return;
-      final result = await syncManager.syncAll(
+      final result = await appSyncCoordinator.syncAll(
         user,
         forceRefresh: forceRefresh,
       );
@@ -1599,7 +1599,7 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
 
     if (user == null && _lastUserId != null) {
       // Defensive cleanup: sign-out can be triggered from multiple entry points.
-      ref.read(syncManagerProvider).stopUserListener();
+      ref.read(appSyncCoordinatorProvider).stopUserListener();
       _unreadTaskSubscription?.cancel();
       _unreadTaskSubscription = null;
       _lastUserId = null;
@@ -1908,7 +1908,7 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
   }
 
   Widget _buildSyncButton() {
-    final isSyncing = ref.watch(syncManagerProvider).isSyncing;
+    final isSyncing = ref.watch(appSyncCoordinatorProvider).isSyncing;
 
     return GestureDetector(
       onLongPress: isSyncing

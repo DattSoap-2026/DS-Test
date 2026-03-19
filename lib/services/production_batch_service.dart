@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'base_service.dart';
 import '../models/types/production_types.dart';
 import '../data/local/base_entity.dart';
@@ -9,6 +8,8 @@ import 'database_service.dart';
 import 'department_master_service.dart';
 import 'inventory_movement_engine.dart';
 import 'inventory_projection_service.dart';
+import 'delegates/firestore_query_delegate.dart';
+import 'delegates/production_batch_remote_write_delegate.dart';
 import '../data/local/entities/stock_balance_entity.dart';
 
 const String productionBatchesCollection = 'production_batches';
@@ -312,103 +313,46 @@ class ProductionBatchService extends BaseService {
       final firestore = db;
       if (firestore == null) return false;
 
-      final batchRef = firestore.collection(productionBatchesCollection).doc();
-      final semiProductRef = firestore
-          .collection('products')
-          .doc(semiFinishedProductId);
-
-      final bool isWindows =
-          defaultTargetPlatform == TargetPlatform.windows && !kIsWeb;
-
-      if (isWindows) {
-        // Windows Desktop: Use Batch instead of Transaction to avoid FFI segfault
-        final semiProductDoc = await semiProductRef.get();
-        if (!semiProductDoc.exists) {
-          throw Exception('Semi-finished product not found');
-        }
-
-        final currentStock = (semiProductDoc.data()?['stock'] ?? 0) as int;
-        if (currentStock < numberOfBatches) {
-          throw Exception(
-            'Insufficient stock. Available: $currentStock, Required: $numberOfBatches',
-          );
-        }
-
-        final batch = firestore.batch();
-        batch.set(batchRef, newBatch);
-        // T9-P4 REMOVED: direct Firestore semi-finished stock decrement is
-        // replaced by the InventoryMovementEngine department_issue command.
-        // batch.update(semiProductRef, {
-        //   'stock': FieldValue.increment(-numberOfBatches),
-        //   'updatedAt': FieldValue.serverTimestamp(),
-        // });
-        await batch.commit();
-
-        // Audit log (outside batch since it's a separate collection/add)
-        await createAuditLog(
-          collectionName: productionBatchesCollection,
-          docId: batchRef.id,
-          action: 'create',
-          changes: {
-            'batchNumber': {'oldValue': null, 'newValue': batchNumber},
-            'finishedGoodName': {
-              'oldValue': null,
-              'newValue': finishedGoodName,
-            },
-            'semiFinishedStockReduced': {
-              'oldValue': currentStock,
-              'newValue': currentStock - numberOfBatches,
-            },
-          },
-          userId: authUser.uid,
-          userName: authUser.displayName,
-        );
-      } else {
-        await firestore.runTransaction((transaction) async {
-          // Get current semi-finished product stock
-          final semiProductDoc = await transaction.get(semiProductRef);
-          if (!semiProductDoc.exists) {
-            throw Exception('Semi-finished product not found');
-          }
-
-          final currentStock = (semiProductDoc.data()?['stock'] ?? 0) as int;
-          if (currentStock < numberOfBatches) {
-            throw Exception(
-              'Insufficient stock. Available: $currentStock, Required: $numberOfBatches',
-            );
-          }
-
-          // Create the production batch
-          transaction.set(batchRef, newBatch);
-
-          // T9-P4 REMOVED: direct Firestore semi-finished stock decrement is
-          // replaced by the InventoryMovementEngine department_issue command.
-          // transaction.update(semiProductRef, {
-          //   'stock': FieldValue.increment(-numberOfBatches),
-          //   'updatedAt': FieldValue.serverTimestamp(),
-          // });
-
-          // Audit log
-          await createAuditLog(
-            collectionName: productionBatchesCollection,
-            docId: batchRef.id,
-            action: 'create',
-            changes: {
-              'batchNumber': {'oldValue': null, 'newValue': batchNumber},
-              'finishedGoodName': {
-                'oldValue': null,
-                'newValue': finishedGoodName,
-              },
-              'semiFinishedStockReduced': {
-                'oldValue': currentStock,
-                'newValue': currentStock - numberOfBatches,
-              },
-            },
-            userId: authUser.uid,
-            userName: authUser.displayName,
-          );
-        });
+      final remoteQuery = FirestoreQueryDelegate(firestore);
+      final batchRef = remoteQuery.newDocument(productionBatchesCollection);
+      final semiProductDoc = await remoteQuery.getDocument(
+        collection: 'products',
+        documentId: semiFinishedProductId,
+      );
+      if (!semiProductDoc.exists) {
+        throw Exception('Semi-finished product not found');
       }
+
+      final currentStock = (semiProductDoc.data()?['stock'] ?? 0) as int;
+      if (currentStock < numberOfBatches) {
+        throw Exception(
+          'Insufficient stock. Available: $currentStock, Required: $numberOfBatches',
+        );
+      }
+
+      await ProductionBatchRemoteWriteDelegate(firestore).createBatch(
+        batchRef,
+        newBatch,
+      );
+
+      await createAuditLog(
+        collectionName: productionBatchesCollection,
+        docId: batchRef.id,
+        action: 'create',
+        changes: {
+          'batchNumber': {'oldValue': null, 'newValue': batchNumber},
+          'finishedGoodName': {
+            'oldValue': null,
+            'newValue': finishedGoodName,
+          },
+          'semiFinishedStockReduced': {
+            'oldValue': currentStock,
+            'newValue': currentStock - numberOfBatches,
+          },
+        },
+        userId: authUser.uid,
+        userName: authUser.displayName,
+      );
 
       await _applyCuttingBatchIssueInventory(
         batchId: batchRef.id,
@@ -449,103 +393,47 @@ class ProductionBatchService extends BaseService {
           .collection(productionBatchesCollection)
           .doc(id);
 
-      final bool isWindows =
-          defaultTargetPlatform == TargetPlatform.windows && !kIsWeb;
       ProductionBatch? readyBatch;
       var readyFinishedQty = 0;
+      final batchDoc = await batchRef.get();
+      if (!batchDoc.exists) throw Exception('Batch not found');
 
-      if (isWindows) {
-        final batchDoc = await batchRef.get();
-        if (!batchDoc.exists) throw Exception('Batch not found');
+      final batchData = batchDoc.data();
+      final batch = ProductionBatch.fromJson({
+        'id': batchDoc.id,
+        ...batchData!,
+      });
 
-        final batchData = batchDoc.data();
-        final batch = ProductionBatch.fromJson({
-          'id': batchDoc.id,
-          ...batchData!,
-        });
+      final updates = _prepareBatchUpdates(
+        batch,
+        cuttingQty,
+        physicalFinishedQty,
+        cuttingWastageDrums,
+        stage,
+      );
 
-        final updates = _prepareBatchUpdates(
-          batch,
-          cuttingQty,
-          physicalFinishedQty,
-          cuttingWastageDrums,
-          stage,
-        );
-
-        final writeBatch = firestore.batch();
-        writeBatch.update(batchRef, updates);
-
-        // Handle inventory logic for READY stage
-        if (stage == ProductionStage.ready) {
-          final finishedQty = physicalFinishedQty ?? batch.physicalFinishedQty;
-          if (finishedQty > 0 && batch.finishedGoodId.isNotEmpty) {
-            readyBatch = batch;
-            readyFinishedQty = finishedQty;
-            // T9-P4 REMOVED: direct Firestore finished-good stock increment is
-            // replaced by the InventoryMovementEngine cutting_production_complete
-            // output command after the batch update commits.
-            // final finishedProductRef = firestore
-            //     .collection('products')
-            //     .doc(batch.finishedGoodId);
-            // writeBatch.update(finishedProductRef, {
-            //   'stock': FieldValue.increment(finishedQty),
-            //   'updatedAt': FieldValue.serverTimestamp(),
-            // });
-          }
+      if (stage == ProductionStage.ready) {
+        final finishedQty = physicalFinishedQty ?? batch.physicalFinishedQty;
+        if (finishedQty > 0 && batch.finishedGoodId.isNotEmpty) {
+          readyBatch = batch;
+          readyFinishedQty = finishedQty;
         }
-
-        await writeBatch.commit();
-      } else {
-        await firestore.runTransaction((transaction) async {
-          final batchDoc = await transaction.get(batchRef);
-          if (!batchDoc.exists) throw Exception('Batch not found');
-
-          final batchData = batchDoc.data();
-          final batch = ProductionBatch.fromJson({
-            'id': batchDoc.id,
-            ...batchData!,
-          });
-
-          final updates = _prepareBatchUpdates(
-            batch,
-            cuttingQty,
-            physicalFinishedQty,
-            cuttingWastageDrums,
-            stage,
-          );
-
-          transaction.update(batchRef, updates);
-
-          // Handle inventory logic for READY stage
-          if (stage == ProductionStage.ready) {
-            final finishedQty =
-                physicalFinishedQty ?? batch.physicalFinishedQty;
-            if (finishedQty > 0 && batch.finishedGoodId.isNotEmpty) {
-              readyBatch = batch;
-              readyFinishedQty = finishedQty;
-              // T9-P4 REMOVED: direct Firestore finished-good stock increment is
-              // replaced by the InventoryMovementEngine cutting_production_complete
-              // output command after the batch update commits.
-              // final finishedProductRef = firestore
-              //     .collection('products')
-              //     .doc(batch.finishedGoodId);
-              // transaction.update(finishedProductRef, {
-              //   'stock': FieldValue.increment(finishedQty),
-              //   'updatedAt': FieldValue.serverTimestamp(),
-              // });
-            }
-          }
-        });
       }
 
-      if (readyBatch != null &&
+      await ProductionBatchRemoteWriteDelegate(firestore).updateBatch(
+        batchRef,
+        updates,
+      );
+
+      final ready = readyBatch;
+      if (ready != null &&
           readyFinishedQty > 0 &&
-          readyBatch!.finishedGoodId.isNotEmpty) {
+          ready.finishedGoodId.isNotEmpty) {
         await _applyCuttingBatchReadyInventory(
           batchId: id,
-          departmentId: readyBatch!.departmentId,
-          departmentName: readyBatch!.departmentName,
-          productId: readyBatch!.finishedGoodId,
+          departmentId: ready.departmentId,
+          departmentName: ready.departmentName,
+          productId: ready.finishedGoodId,
           quantity: readyFinishedQty.toDouble(),
           actorUid: authUser.uid,
           occurredAt: DateTime.now(),

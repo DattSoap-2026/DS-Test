@@ -55,7 +55,7 @@ TONE & STYLE:
 - If unsure, ask for the specific Product or Salesman name.
 
 TECHNICAL ARCHITECTURE FOR AUDIT:
-- All audit data is synced via 'SyncManager' using an Outbox pattern.
+- All audit data is synced via the app sync coordinator using an Outbox pattern.
 - 'StockLedger' is the source of truth for all inventory movements.
 - 'ReportsService' aggregates data from Isar (Local) and Firestore (Cloud).
 

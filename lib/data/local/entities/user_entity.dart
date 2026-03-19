@@ -153,9 +153,7 @@ class UserEntity extends BaseEntity {
       try {
         final List<dynamic> decoded = jsonDecode(departmentsJson!);
         depts = decoded.map((e) => UserDepartment.fromJson(e)).toList();
-      } catch (e) {
-        // print('Error decoding user departments json: $e');
-      }
+      } catch (_) {}
     }
 
     final resolvedStatus =

@@ -369,39 +369,6 @@ void main() {
           analyticsService: syncAnalyticsService,
         );
 
-        final syncManager = SyncManager(
-          databaseService,
-          firebaseServices,
-          suppliersService,
-          alertService,
-          vehiclesService,
-          syncAnalyticsService,
-          salesService,
-          inventoryService,
-          returnsService,
-          dispatchService,
-          productionService,
-          bhattiService,
-          cuttingService,
-          payrollService, // Added
-          attendanceService, // Injected
-          masterDataService, // Injected
-          routeOrderService,
-          bhattiRepo,
-          productionRepo,
-          syncUtils,
-        );
-
-        // Legacy service entry points are routed via SyncManager delegates/queue.
-        usersService.bindCentralUsersSync(
-          () => syncManager.syncUsersViaDelegate(forceRefresh: true),
-        );
-        salesTargetsService.bindCentralQueueSync(syncManager.processSyncQueue);
-        salesService.bindCentralQueueSync(syncManager.processSyncQueue);
-        productionService.bindCentralQueueSync(syncManager.processSyncQueue);
-        bhattiService.bindCentralQueueSync(syncManager.processSyncQueue);
-        cuttingService.bindCentralQueueSync(syncManager.processSyncQueue);
-
         final authProvider = AuthProvider(firebaseServices, authRepo);
         fieldEncryptionService.scheduleMigration(databaseService);
 
@@ -415,47 +382,51 @@ void main() {
           productsService,
           salesService,
         );
-        // Moved above SyncManager instantiation
+        // Moved above sync orchestrator instantiation
         // final hrService = HrService(databaseService);
         // final payrollService = PayrollService(...);
 
+        final container = rp.ProviderContainer(
+          overrides: [
+            authProviderProvider.overrideWith((ref) => authProvider),
+            tasksServiceProvider.overrideWith((ref) => tasksService),
+            databaseServiceProvider.overrideWith((ref) => databaseService),
+            alertServiceProvider.overrideWith((ref) => alertService),
+            inventoryServiceProvider.overrideWith((ref) => inventoryService),
+            salesServiceProvider.overrideWith((ref) => salesService),
+            returnsServiceProvider.overrideWith((ref) => returnsService),
+            dispatchServiceProvider.overrideWith((ref) => dispatchService),
+            productionServiceProvider.overrideWith((ref) => productionService),
+            payrollServiceProvider.overrideWith((ref) => payrollService),
+            attendanceServiceProvider.overrideWith((ref) => attendanceService),
+            masterDataServiceProvider.overrideWith((ref) => masterDataService),
+            vehiclesServiceProvider.overrideWith((ref) => vehiclesService),
+            suppliersServiceProvider.overrideWith((ref) => suppliersService),
+            customersServiceProvider.overrideWith((ref) => customersService),
+            usersServiceProvider.overrideWith((ref) => usersService),
+            productsServiceProvider.overrideWith((ref) => productsService),
+            routeOrderServiceProvider.overrideWith((ref) => routeOrderService),
+          ],
+        );
+
+        final appSyncCoordinator = container.read(appSyncCoordinatorProvider);
+
+        // Legacy service entry points still routed via the compatibility provider
+        // until all remaining sync orchestrator call sites are retired.
+        usersService.bindCentralUsersSync(
+          () => appSyncCoordinator.syncUsersViaDelegate(forceRefresh: true),
+        );
+        salesTargetsService.bindCentralQueueSync(
+          appSyncCoordinator.processSyncQueue,
+        );
+
         runApp(
-          rp.ProviderScope(
-            overrides: [
-              authProviderProvider.overrideWith((ref) => authProvider),
-              syncManagerProvider.overrideWith((ref) => syncManager),
-              tasksServiceProvider.overrideWith((ref) => tasksService),
-              databaseServiceProvider.overrideWith((ref) => databaseService),
-              alertServiceProvider.overrideWith((ref) => alertService),
-              inventoryServiceProvider.overrideWith((ref) => inventoryService),
-              salesServiceProvider.overrideWith((ref) => salesService),
-              returnsServiceProvider.overrideWith((ref) => returnsService),
-              dispatchServiceProvider.overrideWith((ref) => dispatchService),
-              productionServiceProvider.overrideWith(
-                (ref) => productionService,
-              ),
-              payrollServiceProvider.overrideWith(
-                (ref) => payrollService,
-              ), // Wait, payrollService variable exists
-              attendanceServiceProvider.overrideWith(
-                (ref) => attendanceService,
-              ),
-              masterDataServiceProvider.overrideWith(
-                (ref) => masterDataService,
-              ),
-              vehiclesServiceProvider.overrideWith((ref) => vehiclesService),
-              suppliersServiceProvider.overrideWith((ref) => suppliersService),
-              customersServiceProvider.overrideWith((ref) => customersService),
-              usersServiceProvider.overrideWith((ref) => usersService),
-              productsServiceProvider.overrideWith((ref) => productsService),
-              routeOrderServiceProvider.overrideWith(
-                (ref) => routeOrderService,
-              ),
-            ],
+          rp.UncontrolledProviderScope(
+            container: container,
             child: MultiProvider(
               providers: [
                 ChangeNotifierProvider.value(value: authProvider),
-                ChangeNotifierProvider(create: (_) => syncManager),
+                ChangeNotifierProvider(create: (_) => appSyncCoordinator),
                 Provider.value(value: databaseService),
                 Provider.value(value: tripsRepo),
                 Provider.value(value: inventoryRepo),
@@ -565,7 +536,7 @@ void main() {
         unawaited(
           _postRunBootstrap(
             authProvider: authProvider,
-            syncManager: syncManager,
+            appSyncCoordinator: appSyncCoordinator,
             gpsService: gpsService,
             usersService: usersService,
             notificationService: notificationService,
@@ -618,14 +589,14 @@ Future<void> _awaitAuthReady(AuthProvider authProvider) async {
 
 Future<void> _postRunBootstrap({
   required AuthProvider authProvider,
-  required SyncManager syncManager,
+  required AppSyncCoordinator appSyncCoordinator,
   required GpsService gpsService,
   required UsersService usersService,
   required NotificationService notificationService,
 }) async {
   // [CLEANUP] Wire logout cleanup early
   authProvider.setOnSignOut(() async {
-    syncManager.cleanup();
+    appSyncCoordinator.cleanup();
     gpsService.stopTracking();
     unawaited(() async {
       try {
@@ -671,8 +642,8 @@ Future<void> _postRunBootstrap({
     }
   }
 
-  AppLogger.info('SyncManager: Initializing...', tag: 'App');
-  syncManager.initialize();
+  AppLogger.info('AppSyncCoordinator: Initializing...', tag: 'App');
+  appSyncCoordinator.initialize();
   String? lastBootstrappedUserId;
   Timer? deferredSyncBootstrapTimer;
 
@@ -681,7 +652,7 @@ Future<void> _postRunBootstrap({
     deferredSyncBootstrapTimer = Timer(const Duration(seconds: 4), () {
       final latestUser = authProvider.state.user;
       if (latestUser == null || latestUser.id != user.id) return;
-      syncManager.setCurrentUser(latestUser, triggerBootstrap: true);
+      appSyncCoordinator.setCurrentUser(latestUser, triggerBootstrap: true);
     });
   }
 
@@ -690,12 +661,12 @@ Future<void> _postRunBootstrap({
     if (user == null) {
       lastBootstrappedUserId = null;
       deferredSyncBootstrapTimer?.cancel();
-      syncManager.cleanup(notify: false);
+      appSyncCoordinator.cleanup(notify: false);
       return;
     }
 
     // Update role context immediately, but don't kick heavy bootstrap yet.
-    syncManager.setCurrentUser(user, triggerBootstrap: false);
+    appSyncCoordinator.setCurrentUser(user, triggerBootstrap: false);
 
     // CRITICAL FIX: Always bootstrap if user changed, even if same ID
     // (handles logout -> login with same user scenario)
@@ -725,7 +696,7 @@ Future<void> _postRunBootstrap({
 
   authProvider.addListener(wireNotificationUserContext);
   wireNotificationUserContext();
-  AppLogger.success('SyncManager: Initialized', tag: 'App');
+  AppLogger.success('AppSyncCoordinator: Initialized', tag: 'App');
 }
 
 Future<void> _bootstrapCanonicalInventory(
@@ -778,8 +749,8 @@ class _DattSoapAppState extends rp.ConsumerState<DattSoapApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (!mounted) return;
-    final syncManager = context.read<SyncManager>();
-    syncManager.handleAppLifecycle(state);
+    final appSyncCoordinator = context.read<AppSyncCoordinator>();
+    appSyncCoordinator.handleAppLifecycle(state);
     if (state == AppLifecycleState.detached) {
       unawaited(_shutdownAppServices());
     }
@@ -853,7 +824,7 @@ class _DattSoapAppState extends rp.ConsumerState<DattSoapApp>
     _shutdownStarted = true;
 
     try {
-      context.read<SyncManager>().cleanup(notify: false);
+      context.read<AppSyncCoordinator>().cleanup(notify: false);
     } catch (e) {
       AppLogger.warning(
         'Sync cleanup during app shutdown failed: $e',
@@ -960,9 +931,9 @@ class _DattSoapAppState extends rp.ConsumerState<DattSoapApp>
             },
             // Ctrl + R: Manual Sync
             onSync: (ctx) {
-              final syncManager = ctx.read<SyncManager>();
+              final appSyncCoordinator = ctx.read<AppSyncCoordinator>();
               final authProvider = ctx.read<AuthProvider>();
-              syncManager.syncAll(authProvider.currentUser);
+              appSyncCoordinator.syncAll(authProvider.currentUser);
               ScaffoldMessenger.of(ctx).showSnackBar(
                 const SnackBar(
                   content: Text('Sync started...'),

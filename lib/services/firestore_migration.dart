@@ -1,11 +1,15 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'delegates/firestore_query_delegate.dart';
+import 'delegates/firestore_migration_delegate.dart';
+import '../utils/app_logger.dart';
 
 /// Firestore Schema Migration Script
 /// Version: 2.7
 /// Date: March 2026
 
 class FirestoreMigration {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreQueryDelegate _queryDelegate = FirestoreQueryDelegate();
+  late final FirestoreMigrationDelegate _delegate =
+      FirestoreMigrationDelegate();
   
   static const int currentSchemaVersion = 3;
   static const String schemaVersionDoc = 'schema_version';
@@ -13,30 +17,32 @@ class FirestoreMigration {
   /// Run all pending migrations
   Future<void> runMigrations() async {
     final currentVersion = await _getCurrentVersion();
-    // ignore: avoid_print
-    print('Current schema version: $currentVersion');
+    AppLogger.info('Current schema version: $currentVersion', tag: 'Migration');
     
     if (currentVersion < currentSchemaVersion) {
-      // ignore: avoid_print
-      print('Running migrations from v$currentVersion to v$currentSchemaVersion');
+      AppLogger.info(
+        'Running migrations from v$currentVersion to v$currentSchemaVersion',
+        tag: 'Migration',
+      );
       
       for (int version = currentVersion + 1; version <= currentSchemaVersion; version++) {
         await _runMigration(version);
       }
       
       await _setVersion(currentSchemaVersion);
-      // ignore: avoid_print
-      print('Migration complete!');
+      AppLogger.info('Migration complete!', tag: 'Migration');
     } else {
-      // ignore: avoid_print
-      print('Schema is up to date');
+      AppLogger.info('Schema is up to date', tag: 'Migration');
     }
   }
   
   /// Get current schema version
   Future<int> _getCurrentVersion() async {
     try {
-      final doc = await _firestore.collection('settings').doc(schemaVersionDoc).get();
+      final doc = await _queryDelegate.getDocument(
+        collection: 'settings',
+        documentId: schemaVersionDoc,
+      );
       return doc.data()?['version'] ?? 0;
     } catch (e) {
       return 0;
@@ -45,16 +51,12 @@ class FirestoreMigration {
   
   /// Set schema version
   Future<void> _setVersion(int version) async {
-    await _firestore.collection('settings').doc(schemaVersionDoc).set({
-      'version': version,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _delegate.setVersion(schemaVersionDoc, version);
   }
   
   /// Run specific migration
   Future<void> _runMigration(int version) async {
-    // ignore: avoid_print
-    print('Running migration v$version...');
+    AppLogger.info('Running migration v$version...', tag: 'Migration');
     
     switch (version) {
       case 1:
@@ -67,101 +69,46 @@ class FirestoreMigration {
         await _migrateV3();
         break;
       default:
-        // ignore: avoid_print
-        print('No migration for version $version');
+        AppLogger.warning('No migration for version $version', tag: 'Migration');
     }
   }
   
   /// Migration V1: Add isDeleted field to all collections
   Future<void> _migrateV1() async {
     final collections = ['sales', 'products', 'customers', 'route_orders'];
-    
-    for (final collection in collections) {
-      final snapshot = await _firestore.collection(collection)
-          .where('isDeleted', isNull: true)
-          .limit(500)
-          .get();
-      
-      final batch = _firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.update(doc.reference, {'isDeleted': false});
-      }
-      await batch.commit();
-      // ignore: avoid_print
-      print('  - Updated ${snapshot.docs.length} documents in $collection');
-    }
+    final updated = await _delegate.migrateAddIsDeleted(collections);
+    AppLogger.info(
+      'Updated $updated documents with isDeleted defaults',
+      tag: 'Migration',
+    );
   }
   
   /// Migration V2: Canonical Firebase UID for sales
   Future<void> _migrateV2() async {
-    final snapshot = await _firestore.collection('sales')
-        .where('salesmanId', isNull: false)
-        .limit(500)
-        .get();
-    
-    final batch = _firestore.batch();
-    int updated = 0;
-    
-    for (final doc in snapshot.docs) {
-      final salesmanId = doc.data()['salesmanId'];
-      if (salesmanId != null && !salesmanId.toString().contains('@')) {
-        // Already using UID, skip
-        continue;
-      }
-      
-      // Get user by email to find UID
-      final userSnapshot = await _firestore.collection('users')
-          .where('email', isEqualTo: salesmanId)
-          .limit(1)
-          .get();
-      
-      if (userSnapshot.docs.isNotEmpty) {
-        final uid = userSnapshot.docs.first.id;
-        batch.update(doc.reference, {
-          'salesmanId': uid,
-          'migratedToUid': true,
-        });
-        updated++;
-      }
-    }
-    
-    await batch.commit();
-    // ignore: avoid_print
-    print('  - Migrated $updated sales to use Firebase UID');
+    final updated = await _delegate.migrateSalesmanUid();
+    AppLogger.info(
+      'Migrated $updated sales to use Firebase UID',
+      tag: 'Migration',
+    );
   }
   
   /// Migration V3: Add syncStatus to transaction collections
   Future<void> _migrateV3() async {
     final collections = ['sales', 'dispatches', 'returns', 'payments'];
-    
-    for (final collection in collections) {
-      final snapshot = await _firestore.collection(collection)
-          .where('syncStatus', isNull: true)
-          .limit(500)
-          .get();
-      
-      final batch = _firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.update(doc.reference, {
-          'syncStatus': 'synced',
-          'syncedAt': FieldValue.serverTimestamp(),
-        });
-      }
-      await batch.commit();
-      // ignore: avoid_print
-      print('  - Added syncStatus to ${snapshot.docs.length} documents in $collection');
-    }
+    final updated = await _delegate.migrateSyncStatus(collections);
+    AppLogger.info(
+      'Added syncStatus to $updated transaction documents',
+      tag: 'Migration',
+    );
   }
 }
 
 /// Run migration from command line
 void main() async {
-  // ignore: avoid_print
-  print('=== Firestore Schema Migration ===');
+  AppLogger.info('=== Firestore Schema Migration ===', tag: 'Migration');
   
   final migration = FirestoreMigration();
   await migration.runMigrations();
   
-  // ignore: avoid_print
-  print('=== Migration Complete ===');
+  AppLogger.info('=== Migration Complete ===', tag: 'Migration');
 }

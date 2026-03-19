@@ -3,7 +3,8 @@ import 'dart:developer' as developer;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:isar/isar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
 import 'database_service.dart';
 import '../data/local/entities/unit_entity.dart';
 import '../data/local/entities/category_entity.dart';
@@ -12,6 +13,8 @@ import '../data/local/base_entity.dart';
 import '../data/local/entities/product_entity.dart';
 import 'offline_first_service.dart';
 import '../core/firebase/firebase_config.dart';
+import 'delegates/firestore_query_delegate.dart';
+import 'delegates/master_data_remote_write_delegate.dart';
 
 // Cache structure
 class _CacheEntry<T> {
@@ -103,52 +106,28 @@ class MasterDataService extends OfflineFirstService {
     String collection,
     Map<String, dynamic> data,
   ) async {
-    final firestore = db;
-    if (firestore == null) return;
+    final documentId = collection == 'units'
+        ? data['name']?.toString().trim() ?? ''
+        : data['id']?.toString().trim() ?? '';
+    if (documentId.isEmpty) return;
 
-    if (collection == 'product_categories') {
-      if (action == 'set') {
-        // Create
-        await firestore.collection(collection).doc(data['id']).set(data);
-      } else if (action == 'delete') {
-        await firestore.collection(collection).doc(data['id']).set({
-          'id': data['id'],
-          'isDeleted': true,
-          'updatedAt': data['updatedAt'] ?? DateTime.now().toIso8601String(),
-        }, SetOptions(merge: true));
-      } else if (action == 'update') {
-        await firestore
-            .collection(collection)
-            .doc(data['id'])
-            .set(data, SetOptions(merge: true));
-      }
-    } else if (collection == 'product_types') {
-      if (action == 'set') {
-        await firestore.collection(collection).doc(data['id']).set(data);
-      } else if (action == 'delete') {
-        await firestore.collection(collection).doc(data['id']).set({
-          'id': data['id'],
-          'isDeleted': true,
-          'updatedAt': data['updatedAt'] ?? DateTime.now().toIso8601String(),
-        }, SetOptions(merge: true));
-      } else if (action == 'update') {
-        await firestore
-            .collection(collection)
-            .doc(data['id'])
-            .set(data, SetOptions(merge: true));
-      }
-    } else if (collection == 'units') {
-      if (action == 'set') {
-        await firestore.collection(collection).doc(data['name']).set(data);
-      } else if (action == 'delete') {
-        await firestore.collection(collection).doc(data['name']).set({
-          'id': data['id'] ?? data['name'],
-          'name': data['name'],
-          'isDeleted': true,
-          'updatedAt': data['updatedAt'] ?? DateTime.now().toIso8601String(),
-        }, SetOptions(merge: true));
-      }
-    }
+    final payload = action == 'delete'
+        ? <String, dynamic>{
+            ...data,
+            'id': data['id'] ?? documentId,
+            if (collection == 'units') 'name': data['name'],
+            'isDeleted': true,
+            'updatedAt': data['updatedAt'] ?? DateTime.now().toIso8601String(),
+          }
+        : data;
+
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: payload,
+    );
+    await SyncService.instance.pushAllPending();
   }
 
   // Cache storage
@@ -194,10 +173,10 @@ class MasterDataService extends OfflineFirstService {
       final firestore = db;
       if (firestore != null) {
         try {
-          final snapshot = await firestore
-              .collection("units")
-              .orderBy("name")
-              .get();
+          final snapshot = await FirestoreQueryDelegate(firestore).getCollection(
+            collection: 'units',
+            orderBy: 'name',
+          );
           remoteItems = snapshot.docs
               .where((doc) => doc.data()['isDeleted'] != true)
               .map((doc) => doc['name'] as String)
@@ -386,10 +365,10 @@ class MasterDataService extends OfflineFirstService {
       List<ProductCategory> remoteItems = [];
       final firestore = db;
       if (firestore != null) {
-        final snapshot = await firestore
-            .collection("product_categories")
-            .orderBy("name")
-            .get();
+        final snapshot = await FirestoreQueryDelegate(firestore).getCollection(
+          collection: 'product_categories',
+          orderBy: 'name',
+        );
         remoteItems = snapshot.docs
             .where((doc) => doc.data()['isDeleted'] != true)
             .map(
@@ -569,10 +548,10 @@ class MasterDataService extends OfflineFirstService {
       List<DynamicProductType> remoteItems = [];
       final firestore = db;
       if (firestore != null) {
-        final snapshot = await firestore
-            .collection("product_types")
-            .orderBy("name")
-            .get();
+        final snapshot = await FirestoreQueryDelegate(firestore).getCollection(
+          collection: 'product_types',
+          orderBy: 'name',
+        );
         remoteItems = snapshot.docs
             .where((doc) => doc.data()['isDeleted'] != true)
             .map(
@@ -809,23 +788,42 @@ class MasterDataService extends OfflineFirstService {
     if (firestore == null) return;
 
     try {
-      final products = await firestore
-          .collection('products')
-          .where('itemType', isEqualTo: oldName)
-          .get();
+      final remote = FirestoreQueryDelegate(firestore);
+      final products = await remote.getCollection(
+        collection: 'products',
+        filters: <FirestoreQueryFilter>[
+          FirestoreQueryFilter(
+            field: 'itemType',
+            operator: FirestoreQueryOperator.isEqualTo,
+            value: oldName,
+          ),
+        ],
+      );
 
       for (final doc in products.docs) {
-        await doc.reference.update({'itemType': newName});
+        await const MasterDataRemoteWriteDelegate().updateDocument(
+          doc.reference,
+          {'itemType': newName},
+        );
       }
 
       // Also update categories that reference this type
-      final cats = await firestore
-          .collection('product_categories')
-          .where('itemType', isEqualTo: oldName)
-          .get();
+      final cats = await remote.getCollection(
+        collection: 'product_categories',
+        filters: <FirestoreQueryFilter>[
+          FirestoreQueryFilter(
+            field: 'itemType',
+            operator: FirestoreQueryOperator.isEqualTo,
+            value: oldName,
+          ),
+        ],
+      );
 
       for (final doc in cats.docs) {
-        await doc.reference.update({'itemType': newName});
+        await const MasterDataRemoteWriteDelegate().updateDocument(
+          doc.reference,
+          {'itemType': newName},
+        );
       }
     } catch (e) {
       developer.log('Propagation failed: $e');
@@ -973,14 +971,27 @@ class MasterDataService extends OfflineFirstService {
 
     try {
       // Find products that match both old name and old type to be safe
-      final products = await firestore
-          .collection('products')
-          .where('category', isEqualTo: oldName)
-          .where('itemType', isEqualTo: oldType)
-          .get();
+      final products = await FirestoreQueryDelegate(firestore).getCollection(
+        collection: 'products',
+        filters: <FirestoreQueryFilter>[
+          FirestoreQueryFilter(
+            field: 'category',
+            operator: FirestoreQueryOperator.isEqualTo,
+            value: oldName,
+          ),
+          FirestoreQueryFilter(
+            field: 'itemType',
+            operator: FirestoreQueryOperator.isEqualTo,
+            value: oldType,
+          ),
+        ],
+      );
 
       for (final doc in products.docs) {
-        await doc.reference.update({'category': newName, 'itemType': newType});
+        await const MasterDataRemoteWriteDelegate().updateDocument(
+          doc.reference,
+          {'category': newName, 'itemType': newType},
+        );
       }
     } catch (e) {
       developer.log('Category propagation failed: $e');
@@ -1187,27 +1198,50 @@ class MasterDataService extends OfflineFirstService {
     try {
       final firestore = db;
       if (firestore == null) return {'products': 0, 'formulas': 0};
+      final remote = FirestoreQueryDelegate(firestore);
 
       // 1. Update Products
-      final productSnap = await firestore
-          .collection('products')
-          .where('itemType', isEqualTo: 'Semi-Finished Good')
-          .where('category', isEqualTo: 'Semi-Finished Good')
-          .get();
+      final productSnap = await remote.getCollection(
+        collection: 'products',
+        filters: <FirestoreQueryFilter>[
+          FirestoreQueryFilter(
+            field: 'itemType',
+            operator: FirestoreQueryOperator.isEqualTo,
+            value: 'Semi-Finished Good',
+          ),
+          FirestoreQueryFilter(
+            field: 'category',
+            operator: FirestoreQueryOperator.isEqualTo,
+            value: 'Semi-Finished Good',
+          ),
+        ],
+      );
 
       for (final doc in productSnap.docs) {
-        await doc.reference.update({'category': 'Soap Base'});
+        await const MasterDataRemoteWriteDelegate().updateDocument(
+          doc.reference,
+          {'category': 'Soap Base'},
+        );
         productsUpdated++;
       }
 
       // 2. Update Formulas
-      final formulaSnap = await firestore
-          .collection('formulas')
-          .where('category', isEqualTo: 'Semi-Finished Good')
-          .get();
+      final formulaSnap = await remote.getCollection(
+        collection: 'formulas',
+        filters: <FirestoreQueryFilter>[
+          FirestoreQueryFilter(
+            field: 'category',
+            operator: FirestoreQueryOperator.isEqualTo,
+            value: 'Semi-Finished Good',
+          ),
+        ],
+      );
 
       for (final doc in formulaSnap.docs) {
-        await doc.reference.update({'category': 'Soap Base'});
+        await const MasterDataRemoteWriteDelegate().updateDocument(
+          doc.reference,
+          {'category': 'Soap Base'},
+        );
         formulasUpdated++;
       }
 
@@ -1223,9 +1257,10 @@ class MasterDataService extends OfflineFirstService {
     try {
       final firestore = db;
       if (firestore == null) return 0;
+      final remote = FirestoreQueryDelegate(firestore);
 
       // 1. Update Users
-      final userSnap = await firestore.collection('users').get();
+      final userSnap = await remote.getCollection(collection: 'users');
       for (final doc in userSnap.docs) {
         final data = doc.data();
         bool changed = false;
@@ -1246,18 +1281,30 @@ class MasterDataService extends OfflineFirstService {
         }
 
         if (changed) {
-          await doc.reference.update(data);
+          await const MasterDataRemoteWriteDelegate().updateDocument(
+            doc.reference,
+            data,
+          );
           total++;
         }
       }
 
       // 2. Update Bhatti Batches
-      final bhattiSnap = await firestore
-          .collection('bhatti_batches')
-          .where('bhattiName', isEqualTo: 'Geeta Bhatti')
-          .get();
+      final bhattiSnap = await remote.getCollection(
+        collection: 'bhatti_batches',
+        filters: <FirestoreQueryFilter>[
+          FirestoreQueryFilter(
+            field: 'bhattiName',
+            operator: FirestoreQueryOperator.isEqualTo,
+            value: 'Geeta Bhatti',
+          ),
+        ],
+      );
       for (final doc in bhattiSnap.docs) {
-        await doc.reference.update({'bhattiName': 'Gita Bhatti'});
+        await const MasterDataRemoteWriteDelegate().updateDocument(
+          doc.reference,
+          {'bhattiName': 'Gita Bhatti'},
+        );
         total++;
       }
 
@@ -1325,12 +1372,13 @@ class MasterDataService extends OfflineFirstService {
     try {
       final firestore = db;
       if (firestore == null) return {'fixed': 0};
+      final remote = FirestoreQueryDelegate(firestore);
 
       final types = await getProductTypes();
       final cats = await getCategories();
       final typeNames = types.map((e) => e.name).toList();
 
-      final productSnap = await firestore.collection('products').get();
+      final productSnap = await remote.getCollection(collection: 'products');
 
       for (final doc in productSnap.docs) {
         final data = doc.data();
@@ -1370,7 +1418,10 @@ class MasterDataService extends OfflineFirstService {
         }
 
         if (needsFix) {
-          await doc.reference.update(updates);
+          await const MasterDataRemoteWriteDelegate().updateDocument(
+            doc.reference,
+            updates,
+          );
           fixed++;
         }
       }
@@ -1391,10 +1442,10 @@ class MasterDataService extends OfflineFirstService {
     try {
       final firestore = db;
       if (firestore != null) {
-        final doc = await firestore
-            .collection('public_settings')
-            .doc('routes')
-            .get();
+        final doc = await FirestoreQueryDelegate(firestore).getDocument(
+          collection: 'public_settings',
+          documentId: 'routes',
+        );
         if (doc.exists && doc.data()?['list'] != null) {
           final routes = List<String>.from(doc.data()!['list']);
           _setCache(key, routes);

@@ -8,9 +8,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/firebase/firebase_config.dart';
 import '../../data/local/base_entity.dart';
+import '../../data/local/entities/alert_entity.dart';
+import '../../data/local/entities/audit_log_entity.dart';
 import '../../data/local/entities/product_entity.dart';
 import '../../data/local/entities/stock_movement_entity.dart';
+import '../../data/local/entities/sync_metric_entity.dart';
+import '../../data/local/entities/task_entity.dart';
 import '../../features/inventory/models/sync_queue.dart';
+import '../../services/database_service.dart';
 import '../database/isar_service.dart';
 import '../utils/device_id_service.dart';
 import '../utils/sync_logger.dart';
@@ -156,7 +161,8 @@ class SyncService {
           operation['payload'] as Map<dynamic, dynamic>,
         );
 
-        if (CollectionRegistry.isLocalOnly(collectionName)) {
+        if (CollectionRegistry.isLocalOnly(collectionName) ||
+            CollectionRegistry.isPullOnly(collectionName)) {
           final queueId = operation['queueId'] as int?;
           if (queueId != null) {
             await _queueService.markProcessed(queueId);
@@ -255,11 +261,25 @@ class SyncService {
         firestore,
         lastSyncTime,
       );
+      final latestAlertChange = await _pullAlerts(firestore, lastSyncTime);
+      final latestAuditLogChange = await _pullAuditLogs(
+        firestore,
+        lastSyncTime,
+      );
+      final latestTaskChange = await _pullTasks(firestore, lastSyncTime);
+      final latestMetricChange = await _pullSyncMetrics(
+        firestore,
+        lastSyncTime,
+      );
 
       final latestRemoteChange = <DateTime>[
         lastSyncTime,
         if (latestProductChange != null) latestProductChange,
         if (latestMovementChange != null) latestMovementChange,
+        if (latestAlertChange != null) latestAlertChange,
+        if (latestAuditLogChange != null) latestAuditLogChange,
+        if (latestTaskChange != null) latestTaskChange,
+        if (latestMetricChange != null) latestMetricChange,
       ].reduce((value, element) => value.isAfter(element) ? value : element);
 
       await preferences.setInt(
@@ -430,6 +450,127 @@ class SyncService {
     return latestRemoteChange;
   }
 
+  Future<DateTime?> _pullAlerts(
+    FirebaseFirestore firestore,
+    DateTime lastSyncTime,
+  ) {
+    return _pullFlexibleCollection<AlertEntity>(
+      firestore: firestore,
+      collectionName: CollectionRegistry.alerts,
+      lastSyncTime: lastSyncTime,
+      fromJson: AlertEntity.fromJson,
+      collectionOf: (database) => database.alerts,
+      timestampOf: (entity) => entity.updatedAt,
+    );
+  }
+
+  Future<DateTime?> _pullAuditLogs(
+    FirebaseFirestore firestore,
+    DateTime lastSyncTime,
+  ) {
+    return _pullFlexibleCollection<AuditLogEntity>(
+      firestore: firestore,
+      collectionName: CollectionRegistry.auditLogs,
+      lastSyncTime: lastSyncTime,
+      fromJson: AuditLogEntity.fromJson,
+      collectionOf: (database) => database.auditLogs,
+      timestampOf: (entity) => entity.createdAt,
+      allowPushLocalResolution: false,
+    );
+  }
+
+  Future<DateTime?> _pullTasks(
+    FirebaseFirestore firestore,
+    DateTime lastSyncTime,
+  ) {
+    return _pullFlexibleCollection<TaskEntity>(
+      firestore: firestore,
+      collectionName: CollectionRegistry.tasks,
+      lastSyncTime: lastSyncTime,
+      fromJson: TaskEntity.fromJson,
+      collectionOf: (database) => database.tasks,
+      timestampOf: (entity) => entity.updatedAt,
+    );
+  }
+
+  Future<DateTime?> _pullSyncMetrics(
+    FirebaseFirestore firestore,
+    DateTime lastSyncTime,
+  ) {
+    return _pullFlexibleCollection<SyncMetricEntity>(
+      firestore: firestore,
+      collectionName: CollectionRegistry.syncMetrics,
+      lastSyncTime: lastSyncTime,
+      fromJson: SyncMetricEntity.fromJson,
+      collectionOf: (database) => database.syncMetrics,
+      timestampOf: (entity) => entity.updatedAt,
+    );
+  }
+
+  Future<DateTime?> _pullFlexibleCollection<TEntity extends BaseEntity>({
+    required FirebaseFirestore firestore,
+    required String collectionName,
+    required DateTime lastSyncTime,
+    required TEntity Function(Map<String, dynamic>) fromJson,
+    required IsarCollection<TEntity> Function(DatabaseService database)
+    collectionOf,
+    required DateTime Function(TEntity entity) timestampOf,
+    bool allowPushLocalResolution = true,
+  }) async {
+    final snapshot = await firestore.collection(collectionName).limit(500).get();
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    final collection = collectionOf(DatabaseService.instance);
+    DateTime? latestRemoteChange;
+    for (final doc in snapshot.docs) {
+      final data = Map<String, dynamic>.from(doc.data());
+      data['id'] = doc.id;
+
+      final remote = fromJson(_normalizeFlexiblePayload(data))
+        ..syncStatus = SyncStatus.synced
+        ..isSynced = true
+        ..lastSynced = DateTime.now();
+      final remoteChangedAt = timestampOf(remote);
+      if (remoteChangedAt.isBefore(lastSyncTime) &&
+          !remoteChangedAt.isAtSameMomentAs(lastSyncTime)) {
+        continue;
+      }
+
+      final local = await collection.get(remote.isarId);
+      if (allowPushLocalResolution && local != null) {
+        final resolution = await ConflictResolver.resolve(
+          localRecord: local,
+          firebaseRecord: remote,
+          collectionName: collectionName,
+          documentId: remote.id,
+        );
+
+        if (resolution.action == SyncConflictAction.pushLocal) {
+          await _queueService.addToQueue(
+            collectionName: collectionName,
+            documentId: local.id,
+            operation: local.isDeleted ? 'delete' : 'update',
+            payload: _serializeEntity(local),
+          );
+          continue;
+        }
+      }
+
+      await _isarService.isar.writeTxn(() async {
+        await collection.put(remote);
+      });
+
+      if (latestRemoteChange == null ||
+          remoteChangedAt.isAfter(latestRemoteChange)) {
+        latestRemoteChange = remoteChangedAt;
+      }
+    }
+
+    return latestRemoteChange;
+  }
+
   Future<void> _applySuccessfulOperations(
     List<Map<String, dynamic>> operations,
   ) async {
@@ -551,6 +692,18 @@ class SyncService {
       'entryDate',
       'transactionDate',
       'expiryDate',
+      'dueDate',
+      'viewedAt',
+      'notificationReadAt',
+      'resolvedAt',
+      'conflictDate',
+      'paidAt',
+      'verifiedDate',
+      'approvedAt',
+      'reviewDate',
+      'requestDate',
+      'approvedDate',
+      'generatedAt',
     ];
 
     for (final field in timestampFields) {
@@ -601,6 +754,49 @@ class SyncService {
       _statusController.add(_status);
     }
   }
+}
+
+Map<String, dynamic> _normalizeFlexiblePayload(Map<String, dynamic> data) {
+  final normalized = Map<String, dynamic>.from(data);
+  for (final field in <String>[
+    'createdAt',
+    'updatedAt',
+    'lastModified',
+    'deletedAt',
+    'lastSynced',
+    'dueDate',
+    'viewedAt',
+    'notificationReadAt',
+    'timestamp',
+    'requestDate',
+    'approvedDate',
+    'paidAt',
+  ]) {
+    normalized[field] = _normalizeDate(normalized[field]);
+  }
+  return normalized;
+}
+
+Map<String, dynamic> _serializeEntity(BaseEntity entity) {
+  if (entity is ProductEntity) {
+    return entity.toJson();
+  }
+  if (entity is StockMovementEntity) {
+    return entity.toJson();
+  }
+  if (entity is AlertEntity) {
+    return entity.toJson();
+  }
+  if (entity is TaskEntity) {
+    return entity.toJson();
+  }
+  if (entity is SyncMetricEntity) {
+    return entity.toJson();
+  }
+  if (entity is AuditLogEntity) {
+    return entity.toJson();
+  }
+  return <String, dynamic>{'id': entity.id};
 }
 
 List<Map<String, dynamic>> _dedupeOperations(

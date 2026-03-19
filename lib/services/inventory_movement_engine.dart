@@ -1,17 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter_app/core/constants/collection_registry.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import 'package:flutter_app/data/local/base_entity.dart';
 import 'package:flutter_app/data/local/entities/inventory_command_entity.dart';
 import 'package:flutter_app/data/local/entities/inventory_location_entity.dart';
 import 'package:flutter_app/data/local/entities/product_entity.dart';
-import 'package:flutter_app/data/local/entities/sync_queue_entity.dart';
 import 'package:flutter_app/data/local/entities/stock_balance_entity.dart';
 import 'package:flutter_app/data/local/entities/stock_movement_entity.dart';
 
 import 'database_service.dart';
 import 'inventory_projection_service.dart';
-import 'outbox_codec.dart';
 
 enum InventoryCommandType {
   internalTransfer('internal_transfer'),
@@ -481,11 +480,7 @@ class InventoryMovementEngine {
       );
     }
 
-    final queueEntity = await _buildQueueEntity(
-      command,
-      now: command.createdAt,
-    );
-    await _dbService.syncQueue.put(queueEntity);
+    await _enqueueCommand(command);
     return true;
   }
 
@@ -1049,47 +1044,14 @@ class InventoryMovementEngine {
     }
   }
 
-  Future<SyncQueueEntity> _buildQueueEntity(
-    InventoryCommand command, {
-    required DateTime now,
-  }) async {
+  Future<void> _enqueueCommand(InventoryCommand command) async {
     final payload = command.toOutboxPayload();
-    final queueId = OutboxCodec.buildQueueId(
-      CollectionRegistry.inventoryCommands,
-      payload,
+    await SyncQueueService.instance.addToQueue(
+      collectionName: CollectionRegistry.inventoryCommands,
+      documentId: command.commandId,
+      operation: 'set',
+      payload: payload,
     );
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    Map<String, dynamic>? mergedMeta;
-    final actorMeta = {
-      OutboxCodec.actorUidMetaField: command.actorUid,
-    };
-    if (existingMeta != null) {
-      mergedMeta = {...existingMeta, ...actorMeta};
-    } else {
-      mergedMeta = actorMeta;
-    }
-
-    return SyncQueueEntity()
-      ..id = queueId
-      ..collection = CollectionRegistry.inventoryCommands
-      ..action = 'set'
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: mergedMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending
-      ..isDeleted = false;
   }
 
   bool _allowsNegativeSourceBalance(String locationId) {

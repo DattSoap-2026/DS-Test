@@ -33,7 +33,7 @@ class ReportingService {
                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
                       ),
                       pw.Text('Industrial Area, City'),
-                      pw.Text('GSTIN: 24XXXXXXXXXXXXX'),
+                      pw.Text('GSTIN: 24AAAAA0000A1Z5'),
                     ],
                   ),
                   pw.Column(

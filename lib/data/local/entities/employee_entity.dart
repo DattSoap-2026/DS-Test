@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import '../base_entity.dart';
+import '../entity_json_utils.dart';
 import '../../../../modules/hr/models/employee_model.dart';
 
 part 'employee_entity.g.dart';
@@ -23,6 +24,7 @@ class EmployeeEntity extends BaseEntity {
   String? linkedUserId; // Firebase Auth UID if applicable
 
   late String department;
+  List<String> assignedRoutes = <String>[];
   late String mobile;
   late bool isActive;
   late DateTime createdAt;
@@ -49,7 +51,7 @@ class EmployeeEntity extends BaseEntity {
 
   /// Shift start minute.
   int? shiftStartMinute; // e.g. 0
-  
+
   DateTime? joiningDate;
   DateTime? exitDate;
   double? overtimeMultiplier;
@@ -66,6 +68,7 @@ class EmployeeEntity extends BaseEntity {
       roleType: roleType,
       linkedUserId: linkedUserId,
       department: department,
+      assignedRoutes: List<String>.from(assignedRoutes),
       mobile: mobile,
       isActive: isActive,
       createdAt: createdAt,
@@ -92,6 +95,7 @@ class EmployeeEntity extends BaseEntity {
       ..roleType = model.roleType
       ..linkedUserId = model.linkedUserId
       ..department = model.department
+      ..assignedRoutes = List<String>.from(model.assignedRoutes)
       ..mobile = model.mobile
       ..isActive = model.isActive
       ..createdAt = model.createdAt
@@ -109,5 +113,90 @@ class EmployeeEntity extends BaseEntity {
       ..overtimeMultiplier = model.overtimeMultiplier;
 
     return entity;
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'employeeId': employeeId,
+      'name': name,
+      'roleType': roleType,
+      'linkedUserId': linkedUserId,
+      'department': department,
+      'assignedRoutes': assignedRoutes,
+      'mobile': mobile,
+      'isActive': isActive,
+      'createdAt': createdAt.toIso8601String(),
+      'weeklyOffDay': weeklyOffDay,
+      'baseMonthlySalary': baseMonthlySalary,
+      'hourlyRate': hourlyRate,
+      'paymentMethod': paymentMethod,
+      'bankDetails': bankDetails,
+      'shiftStartHour': shiftStartHour,
+      'shiftStartMinute': shiftStartMinute,
+      'joiningDate': joiningDate?.toIso8601String(),
+      'exitDate': exitDate?.toIso8601String(),
+      'overtimeMultiplier': overtimeMultiplier,
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
+  static EmployeeEntity fromJson(Map<String, dynamic> json) {
+    final createdAt = parseDateOrNull(json['createdAt']) ?? DateTime.now();
+    final joiningDate = parseDateOrNull(json['joiningDate']) ?? createdAt;
+    final linkedUserId = parseString(json['linkedUserId']);
+    final bankDetails = parseString(json['bankDetails']);
+    final paymentMethod = parseString(json['paymentMethod']);
+
+    return EmployeeEntity()
+      ..id = parseString(json['id'])
+      ..employeeId = parseString(
+        json['employeeId'],
+        fallback: parseString(json['id']),
+      )
+      ..name = parseString(json['name'])
+      ..roleType = parseString(json['roleType'], fallback: 'worker')
+      ..linkedUserId = linkedUserId.isEmpty ? null : linkedUserId
+      ..department = parseString(json['department'])
+      ..assignedRoutes = parseStringList(json['assignedRoutes']) ?? <String>[]
+      ..mobile = parseString(json['mobile'])
+      ..isActive = parseBool(json['isActive'], fallback: true)
+      ..createdAt = createdAt
+      ..weeklyOffDay = parseInt(json['weeklyOffDay'], fallback: DateTime.sunday)
+      ..baseMonthlySalary = json['baseMonthlySalary'] == null
+          ? null
+          : parseDouble(json['baseMonthlySalary'])
+      ..hourlyRate = json['hourlyRate'] == null
+          ? null
+          : parseDouble(json['hourlyRate'])
+      ..paymentMethod = paymentMethod.isEmpty ? null : paymentMethod
+      ..bankDetails = bankDetails.isEmpty ? null : bankDetails
+      ..shiftStartHour = json['shiftStartHour'] == null
+          ? null
+          : parseInt(json['shiftStartHour'], fallback: 9)
+      ..shiftStartMinute = json['shiftStartMinute'] == null
+          ? null
+          : parseInt(json['shiftStartMinute'], fallback: 0)
+      ..joiningDate = joiningDate
+      ..exitDate = parseDateOrNull(json['exitDate'])
+      ..overtimeMultiplier = json['overtimeMultiplier'] == null
+          ? null
+          : parseDouble(json['overtimeMultiplier'], fallback: 1.0)
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
   }
 }

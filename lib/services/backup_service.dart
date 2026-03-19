@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:isar/isar.dart';
 import 'base_service.dart';
 import 'database_service.dart';
+import 'delegates/backup_restore_delegate.dart';
 // Entity imports removed as they were unused
 
 // Add other entity imports as needed for casting, though dynamic is easier for generic export
@@ -212,44 +212,12 @@ class BackupService extends BaseService {
       if (targets.contains(BackupSource.firebase)) {
         final firestore = db;
         if (firestore != null) {
-          const int batchSize = 450;
-
-          for (var entry in backupData.firebaseData.entries) {
-            final collectionName = entry.key;
-            final docs = entry.value;
-
-            final docEntries = docs.entries.toList();
-
-            for (int i = 0; i < docEntries.length; i += batchSize) {
-              final batch = firestore.batch();
-              final end = (i + batchSize < docEntries.length)
-                  ? i + batchSize
-                  : docEntries.length;
-              final chunk = docEntries.sublist(i, end);
-
-              for (var docEntry in chunk) {
-                // Skip errors or metadata if strictly data
-                if (docEntry.key == '_error') {
-                  continue;
-                }
-
-                final docRef = firestore
-                    .collection(collectionName)
-                    .doc(docEntry.key);
-                batch.set(docRef, docEntry.value, SetOptions(merge: true));
-              }
-
-              await batch.commit();
-              currentStep++;
-              if (onProgress != null) {
-                onProgress(
-                  currentStep,
-                  totalSteps,
-                  'Restoring Fire: $collectionName...',
-                );
-              }
-            }
-          }
+          currentStep = await BackupRestoreDelegate(firestore).restoreFirebaseData(
+            backupData.firebaseData,
+            totalSteps: totalSteps,
+            currentStep: currentStep,
+            onProgress: onProgress,
+          );
         }
       }
 

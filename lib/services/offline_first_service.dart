@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:isar/isar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -187,35 +186,21 @@ abstract class OfflineFirstService extends BaseService {
       final data = item['data'] as Map<String, dynamic>? ?? {};
       final collection = item['collection']?.toString() ?? '';
       final action = item['action']?.toString() ?? 'set';
-      final queueId =
-          item['queueId']?.toString() ??
-          OutboxCodec.buildQueueId(collection, data);
-      final existing = await dbService.syncQueue.getById(queueId);
-      final now = DateTime.now();
-      final existingMeta = existing == null
-          ? null
-          : OutboxCodec.decode(
-              existing.dataJson,
-              fallbackQueuedAt: existing.createdAt,
-            ).meta;
+      final explicitQueueId = item['queueId']?.toString().trim() ?? '';
+      final documentId =
+          data['id']?.toString().trim() ??
+          OutboxCodec.tryExtractRecordId(explicitQueueId) ??
+          '';
+      if (collection.trim().isEmpty || documentId.isEmpty) {
+        return;
+      }
 
-      final entity = SyncQueueEntity()
-        ..id = queueId
-        ..collection = collection
-        ..action = action
-        ..dataJson = OutboxCodec.encodeEnvelope(
-          payload: data,
-          existingMeta: existingMeta,
-          now: now,
-          resetRetryState: true,
-        )
-        ..createdAt = existing?.createdAt ?? now
-        ..updatedAt = now
-        ..syncStatus = SyncStatus.pending;
-
-      await dbService.db.writeTxn(() async {
-        await dbService.syncQueue.put(entity);
-      });
+      await SyncQueueService.instance.addToQueue(
+        collectionName: collection,
+        documentId: documentId,
+        operation: action,
+        payload: data,
+      );
     } catch (e) {
       handleError(e, 'enqueue');
     }
@@ -225,11 +210,21 @@ abstract class OfflineFirstService extends BaseService {
   @protected
   Future<void> dequeue(String queueId) async {
     try {
-      final existing = await dbService.syncQueue.getById(queueId);
-      if (existing == null) return;
-      await dbService.db.writeTxn(() async {
-        await dbService.syncQueue.delete(existing.isarId);
-      });
+      final normalizedQueueId = queueId.trim();
+      if (normalizedQueueId.isEmpty) {
+        return;
+      }
+
+      final collection = OutboxCodec.tryExtractCollection(normalizedQueueId);
+      final documentId = OutboxCodec.tryExtractRecordId(normalizedQueueId);
+      if (collection == null || documentId == null) {
+        return;
+      }
+
+      await SyncQueueService.instance.removeFromQueue(
+        collectionName: collection,
+        documentId: documentId,
+      );
     } catch (e) {
       handleError(e, 'dequeue');
     }
@@ -384,11 +379,9 @@ abstract class OfflineFirstService extends BaseService {
     String collection,
     Map<String, dynamic> data,
   ) async {
-    final firestore = db;
-    if (firestore == null) return;
-
     final id = data['id'] as String?;
     final now = getCurrentTimestamp();
+    var documentId = id ?? '';
 
     switch (action) {
       case 'add':
@@ -400,12 +393,10 @@ abstract class OfflineFirstService extends BaseService {
         } else if (!data.containsKey('deletedAt')) {
           data['deletedAt'] = null;
         }
-        if (id != null) {
-          await firestore.collection(collection).doc(id).set(data);
-        } else {
+        if (documentId.isEmpty) {
           final newId = generateId();
           data['id'] = newId;
-          await firestore.collection(collection).doc(newId).set(data);
+          documentId = newId;
         }
         break;
       case 'update':
@@ -414,30 +405,41 @@ abstract class OfflineFirstService extends BaseService {
         if (data['isDeleted'] == true) {
           data['deletedAt'] ??= now;
         }
-        if (id != null) {
-          await firestore
-              .collection(collection)
-              .doc(id)
-              .set(data, SetOptions(merge: true));
+        if (documentId.isEmpty) {
+          return;
         }
         break;
       case 'delete':
-        if (id != null) {
-          if (_isFinancialCollection(collection)) {
-            debugPrint(
-              'Blocked delete for $collection/$id. Financial docs require reversal entries.',
-            );
-            return;
-          }
-          await firestore.collection(collection).doc(id).set({
-            'id': id,
-            'isDeleted': true,
-            'deletedAt': data['deletedAt'] ?? now,
-            'updatedAt': data['updatedAt'] ?? now,
-          }, SetOptions(merge: true));
+        if (documentId.isEmpty) {
+          return;
         }
+        if (_isFinancialCollection(collection)) {
+          debugPrint(
+            'Blocked delete for $collection/$documentId. Financial docs require reversal entries.',
+          );
+          return;
+        }
+        data = <String, dynamic>{
+          'id': documentId,
+          'isDeleted': true,
+          'deletedAt': data['deletedAt'] ?? now,
+          'updatedAt': data['updatedAt'] ?? now,
+        };
         break;
+      default:
+        return;
     }
+
+    if (documentId.isEmpty) {
+      return;
+    }
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: data,
+    );
+    await SyncService.instance.pushAllPending();
   }
 
   bool _isFinancialCollection(String collection) {

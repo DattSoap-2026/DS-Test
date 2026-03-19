@@ -1,16 +1,35 @@
 import 'dart:convert';
 
 import 'package:isar/isar.dart';
-import 'package:uuid/uuid.dart';
 
-import '../models/types/user_types.dart';
-import '../models/audit_log_model.dart' as audit_model;
-import '../data/local/base_entity.dart';
 import '../data/local/entities/audit_log_entity.dart';
 import 'base_service.dart';
 import 'database_service.dart';
+import '../utils/app_logger.dart';
 
 const String auditLogsCollection = 'audit_logs';
+
+class AuditLog {
+  final String id;
+  final String collectionName;
+  final String docId;
+  final String action;
+  final Map<String, dynamic> changes;
+  final String userId;
+  final String userName;
+  final String timestamp;
+
+  AuditLog({
+    required this.id,
+    required this.collectionName,
+    required this.docId,
+    required this.action,
+    required this.changes,
+    required this.userId,
+    required this.userName,
+    required this.timestamp,
+  });
+}
 
 class AuditLogsService extends BaseService {
   final DatabaseService _dbService;
@@ -30,8 +49,8 @@ class AuditLogsService extends BaseService {
 
     return AuditLog(
       id: entity.auditId,
-      collectionName: entity.collectionName,
-      docId: entity.documentId,
+      collectionName: entity.collectionName ?? '',
+      docId: entity.documentId ?? '',
       action: entity.action.name,
       changes: changes,
       userId: entity.userId,
@@ -100,49 +119,10 @@ class AuditLogsService extends BaseService {
     required String userId,
     String? userName,
   }) async {
-    try {
-      final now = DateTime.now();
-      final id = const Uuid().v4();
-      final entity = AuditLogEntity()
-        ..id = id
-        ..auditId = id
-        ..userId = userId
-        ..userName = userName ?? 'Unknown'
-        ..userRole = 'Unknown'
-        ..action = _mapAction(action)
-        ..collectionName = collectionName
-        ..documentId = docId
-        ..changesJson = jsonEncode(changes)
-        ..createdAt = now
-        ..updatedAt = now
-        ..syncStatus = SyncStatus.synced;
-
-      await _dbService.db.writeTxn(() async {
-        await _dbService.auditLogs.put(entity);
-      });
-    } catch (e) {
-      // Silently fail to not block main application flow
-    }
+    AppLogger.debug(
+      'Skipped client audit log write for $collectionName/$docId ($action). audit_logs are pull-only.',
+      tag: 'Audit',
+    );
   }
 
-  audit_model.AuditAction _mapAction(String action) {
-    switch (action) {
-      case 'create':
-        return audit_model.AuditAction.create;
-      case 'update':
-        return audit_model.AuditAction.update;
-      case 'delete':
-        return audit_model.AuditAction.delete;
-      case 'sync':
-        return audit_model.AuditAction.sync;
-      case 'login':
-        return audit_model.AuditAction.login;
-      case 'logout':
-        return audit_model.AuditAction.logout;
-      case 'payment':
-        return audit_model.AuditAction.payment;
-      default:
-        return audit_model.AuditAction.other;
-    }
-  }
 }

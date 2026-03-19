@@ -1,26 +1,213 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import 'package:isar/isar.dart';
 
+import '../core/constants/collection_registry.dart';
+import '../core/network/connectivity_service.dart';
+import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
 import 'offline_first_service.dart';
-import '../core/firebase/firebase_config.dart';
 import '../models/types/user_types.dart';
 import '../data/local/entities/user_entity.dart';
 import '../data/local/base_entity.dart';
 import '../utils/app_logger.dart';
+import 'roles_service.dart' as roles;
 
-const usersCollection = 'users';
-const customRolesCollection = 'custom_roles';
+const usersCollection = CollectionRegistry.users;
+const customRolesCollection = CollectionRegistry.customRoles;
 
 class UsersService extends OfflineFirstService {
-  UsersService(super.firebase, [super.dbService]);
+  late final roles.RolesService _rolesService;
+
+  UsersService(super.firebase, [super.dbService]) {
+    _rolesService = roles.RolesService(firebaseServices, dbService);
+  }
   Future<void> Function()? _centralUsersSync;
 
   void bindCentralUsersSync(Future<void> Function() callback) {
     _centralUsersSync = callback;
+  }
+
+  Future<void> _queueUserWrite({
+    required String operation,
+    required Map<String, dynamic> payload,
+  }) async {
+    final userId = payload['id']?.toString().trim() ?? '';
+    if (userId.isEmpty) {
+      return;
+    }
+    await SyncQueueService.instance.addToQueue(
+      collectionName: CollectionRegistry.users,
+      documentId: userId,
+      operation: operation,
+      payload: payload,
+    );
+  }
+
+  Future<void> _flushQueuedWritesIfOnline() async {
+    if (!ConnectivityService.instance.isOnline) {
+      return;
+    }
+    await SyncService.instance.syncAllPending();
+  }
+
+  Future<void> _upsertLocalUserSnapshot(
+    Map<String, dynamic> payload, {
+    required SyncStatus syncStatus,
+  }) async {
+    final userId = payload['id']?.toString().trim() ?? '';
+    if (userId.isEmpty) {
+      return;
+    }
+    final existing = await dbService.users.filter().idEqualTo(userId).findFirst();
+    final merged = <String, dynamic>{
+      if (existing != null) ...existing.toJson(),
+      ...payload,
+      'id': userId,
+    };
+    final entity = _mapFirebaseUserToEntity(merged);
+    if (merged.containsKey('departments')) {
+      final departments = merged['departments'];
+      entity.departmentsJson = departments == null ? null : jsonEncode(departments);
+    } else if (merged.containsKey('departmentsJson')) {
+      entity.departmentsJson = merged['departmentsJson']?.toString();
+    } else {
+      entity.departmentsJson = existing?.departmentsJson;
+    }
+    if (merged.containsKey('allocatedStockJson')) {
+      entity.allocatedStockJson = merged['allocatedStockJson']?.toString();
+    } else if (existing != null && !merged.containsKey('allocatedStock')) {
+      entity.allocatedStockJson = existing.allocatedStockJson;
+    }
+    entity.designation =
+        merged['designation']?.toString() ?? existing?.designation;
+    entity.passwordHash =
+        merged['passwordHash']?.toString() ?? existing?.passwordHash;
+    final permissions = merged['permissions'];
+    if (permissions is List) {
+      entity.permissions = permissions.map((item) => item.toString()).toList();
+    } else {
+      entity.permissions = existing?.permissions;
+    }
+    entity.assignedWarehouseId =
+        merged['assignedWarehouseId']?.toString() ??
+        existing?.assignedWarehouseId;
+    entity.assignedWarehouseName =
+        merged['assignedWarehouseName']?.toString() ??
+        existing?.assignedWarehouseName;
+    entity.updatedAt =
+        DateTime.tryParse(merged['updatedAt']?.toString() ?? '') ??
+        DateTime.now();
+    entity.deletedAt = DateTime.tryParse(merged['deletedAt']?.toString() ?? '');
+    entity.isDeleted = merged['isDeleted'] == true;
+    entity.syncStatus = syncStatus;
+
+    await dbService.db.writeTxn(() async {
+      await dbService.users.put(entity);
+    });
+  }
+
+  Future<void> _applyUserPatchLocally(
+    String userId,
+    Map<String, dynamic> patch, {
+    required SyncStatus syncStatus,
+  }) async {
+    final entity = await dbService.users.filter().idEqualTo(userId).findFirst();
+    if (entity == null) {
+      final snapshot = <String, dynamic>{'id': userId, ...patch};
+      if (snapshot.containsKey('name') ||
+          snapshot.containsKey('email') ||
+          snapshot.containsKey('role')) {
+        await _upsertLocalUserSnapshot(snapshot, syncStatus: syncStatus);
+      }
+      return;
+    }
+
+    if (patch.containsKey('name')) {
+      entity.name = patch['name']?.toString();
+    }
+    if (patch.containsKey('email')) {
+      entity.email = patch['email']?.toString();
+    }
+    if (patch.containsKey('role')) {
+      entity.role = patch['role']?.toString();
+    }
+    if (patch.containsKey('department')) {
+      entity.department = patch['department']?.toString();
+    }
+    if (patch.containsKey('phone')) {
+      entity.phone = patch['phone']?.toString();
+    }
+    if (patch.containsKey('status')) {
+      entity.status = patch['status']?.toString();
+    }
+    if (patch.containsKey('isActive') && patch['isActive'] is bool) {
+      entity.isActive = patch['isActive'] as bool;
+    }
+    if (patch.containsKey('assignedRoutes')) {
+      final assignedRoutes = patch['assignedRoutes'] as List?;
+      entity.assignedRoutes = assignedRoutes
+          ?.map((item) => item.toString())
+          .toList();
+    }
+    if (patch.containsKey('assignedBhatti')) {
+      entity.assignedBhatti = patch['assignedBhatti']?.toString();
+    }
+    if (patch.containsKey('assignedBaseProductId')) {
+      entity.assignedBaseProductId =
+          patch['assignedBaseProductId']?.toString();
+    }
+    if (patch.containsKey('assignedBaseProductName')) {
+      entity.assignedBaseProductName =
+          patch['assignedBaseProductName']?.toString();
+    }
+    if (patch.containsKey('assignedVehicleId')) {
+      entity.assignedVehicleId = patch['assignedVehicleId']?.toString();
+    }
+    if (patch.containsKey('assignedVehicleName')) {
+      entity.assignedVehicleName = patch['assignedVehicleName']?.toString();
+    }
+    if (patch.containsKey('assignedVehicleNumber')) {
+      entity.assignedVehicleNumber = patch['assignedVehicleNumber']?.toString();
+    }
+    if (patch.containsKey('assignedDeliveryRoute')) {
+      entity.assignedDeliveryRoute =
+          patch['assignedDeliveryRoute']?.toString();
+    }
+    if (patch.containsKey('assignedSalesRoute')) {
+      entity.assignedSalesRoute = patch['assignedSalesRoute']?.toString();
+    }
+    if (patch.containsKey('assignedWarehouseId')) {
+      entity.assignedWarehouseId = patch['assignedWarehouseId']?.toString();
+    }
+    if (patch.containsKey('assignedWarehouseName')) {
+      entity.assignedWarehouseName =
+          patch['assignedWarehouseName']?.toString();
+    }
+    if (patch.containsKey('departments')) {
+      final departments = patch['departments'];
+      entity.departmentsJson = departments == null ? null : jsonEncode(departments);
+    }
+    if (patch.containsKey('allocatedStockJson')) {
+      entity.allocatedStockJson = patch['allocatedStockJson']?.toString();
+    }
+    if (patch.containsKey('isDeleted')) {
+      entity.isDeleted = patch['isDeleted'] == true;
+    }
+    if (patch.containsKey('deletedAt')) {
+      entity.deletedAt =
+          DateTime.tryParse(patch['deletedAt']?.toString() ?? '');
+    }
+    entity.updatedAt =
+        DateTime.tryParse(patch['updatedAt']?.toString() ?? '') ??
+        DateTime.now();
+    entity.syncStatus = syncStatus;
+
+    await dbService.db.writeTxn(() async {
+      await dbService.users.put(entity);
+    });
   }
 
   @override
@@ -529,11 +716,9 @@ class UsersService extends OfflineFirstService {
         'createdBy': bootstrapByUserId ?? 'system',
       };
 
-      await firestore
-          .collection(usersCollection)
-          .doc(normalizedEmail)
-          .set(payload);
-      await _upsertUsersToIsar([payload]);
+      await _upsertLocalUserSnapshot(payload, syncStatus: SyncStatus.pending);
+      await _queueUserWrite(operation: 'set', payload: payload);
+      await _flushQueuedWritesIfOnline();
       await createAuditLog(
         collectionName: usersCollection,
         docId: normalizedEmail,
@@ -556,13 +741,9 @@ class UsersService extends OfflineFirstService {
   // Create new user (Initial Firestore record)
   Future<bool> createUser(Map<String, dynamic> userData) async {
     try {
-      final firestore = db;
-      if (firestore == null) return false;
-
       final normalizedEmail = (userData['email'] as String)
           .trim()
           .toLowerCase();
-      final docRef = firestore.collection(usersCollection).doc(normalizedEmail);
       final now = DateTime.now().toIso8601String();
 
       final data = Map<String, dynamic>.from(userData);
@@ -576,26 +757,14 @@ class UsersService extends OfflineFirstService {
       );
       data['isActive'] = isActive;
 
-      await docRef.set(data);
-
-      // 1.5 Update Local ISAR
-      final entity = UserEntity()
-        ..id = normalizedEmail
-        ..name = data['name']
-        ..email = data['email']
-        ..role = data['role']
-        ..status = data['status']
-        ..isActive = data['isActive'] as bool? ?? true
-        ..syncStatus = SyncStatus.synced; // Already pushed to Firestore
-
-      await dbService.db.writeTxn(() async {
-        await dbService.users.put(entity);
-      });
+      await _upsertLocalUserSnapshot(data, syncStatus: SyncStatus.pending);
+      await _queueUserWrite(operation: 'set', payload: data);
+      await _flushQueuedWritesIfOnline();
 
       final currentUser = FirebaseAuth.instance.currentUser;
       await createAuditLog(
         collectionName: usersCollection,
-        docId: docRef.id,
+        docId: normalizedEmail,
         action: 'create',
         changes: {
           'all': {'oldValue': null, 'newValue': data},
@@ -854,46 +1023,15 @@ class UsersService extends OfflineFirstService {
 
       // Apply updates if there are changes (same as React lines 267-287)
       if (dataToUpdate.isNotEmpty) {
-        await userRef.update(dataToUpdate);
-
-        // SYNC WITH ISAR
-        final entity = await dbService.users
-            .filter()
-            .idEqualTo(userId)
-            .findFirst();
-        if (entity != null) {
-          if (dataToUpdate.containsKey('name')) {
-            entity.name = dataToUpdate['name'];
-          }
-          if (dataToUpdate.containsKey('role')) {
-            entity.role = dataToUpdate['role'];
-          }
-          if (dataToUpdate.containsKey('department')) {
-            entity.department = dataToUpdate['department'] as String?;
-          }
-          if (dataToUpdate.containsKey('departments')) {
-            final depts = dataToUpdate['departments'] as List? ?? [];
-            entity.departmentsJson = jsonEncode(depts);
-          }
-          if (dataToUpdate.containsKey('status')) {
-            entity.status = dataToUpdate['status'];
-          }
-          if (dataToUpdate.containsKey('isActive')) {
-            entity.isActive = dataToUpdate['isActive'] as bool;
-          }
-          if (dataToUpdate.containsKey('assignedRoutes')) {
-            entity.assignedRoutes = (dataToUpdate['assignedRoutes'] as List)
-                .cast<String>();
-          }
-          if (dataToUpdate.containsKey('assignedBhatti')) {
-            entity.assignedBhatti = dataToUpdate['assignedBhatti'] as String?;
-          }
-          entity.updatedAt = DateTime.now();
-          entity.syncStatus = SyncStatus.synced;
-          await dbService.db.writeTxn(() async {
-            await dbService.users.put(entity);
-          });
-        }
+        dataToUpdate['id'] = userId;
+        dataToUpdate['updatedAt'] = DateTime.now().toIso8601String();
+        await _applyUserPatchLocally(
+          userId,
+          dataToUpdate,
+          syncStatus: SyncStatus.pending,
+        );
+        await _queueUserWrite(operation: 'update', payload: dataToUpdate);
+        await _flushQueuedWritesIfOnline();
 
         if (changes.isNotEmpty) {
           await createAuditLog(
@@ -923,27 +1061,35 @@ class UsersService extends OfflineFirstService {
         throw Exception('Authentication Error');
       }
 
-      final firestore = db;
-      if (firestore == null) return false;
-
       final normalizedStatus = _normalizeAccountStatus(
         status,
         fallbackIsActive: status.toString().trim().toLowerCase() == 'active',
       );
       final isActive = normalizedStatus == 'active';
-
-      final batch = firestore.batch();
+      final now = DateTime.now().toIso8601String();
+      final queuedPatches = <Map<String, dynamic>>[];
       for (final id in userIds) {
         if (id == currentUser.uid) {
           continue; // Skip current user (same as React line 304)
         }
-        final userRef = firestore.collection(usersCollection).doc(id);
-        batch.update(userRef, {
+        final patch = <String, dynamic>{
+          'id': id,
           'status': normalizedStatus,
           'isActive': isActive,
-        });
+          'updatedAt': now,
+        };
+        queuedPatches.add(patch);
       }
-      await batch.commit();
+
+      for (final patch in queuedPatches) {
+        await _applyUserPatchLocally(
+          patch['id'] as String,
+          patch,
+          syncStatus: SyncStatus.pending,
+        );
+        await _queueUserWrite(operation: 'update', payload: patch);
+      }
+      await _flushQueuedWritesIfOnline();
 
       // Create audit logs (same as React lines 310-318)
       for (final id in userIds) {
@@ -1021,25 +1167,18 @@ class UsersService extends OfflineFirstService {
     required List<Permission> permissions,
   }) async {
     try {
-      final firestore = db;
-      if (firestore == null) throw Exception('Offline');
-
-      final docRef = firestore.collection(customRolesCollection).doc();
-      final now = DateTime.now().toIso8601String();
-
-      final roleData = {
-        'id': docRef.id,
-        'name': name,
-        'description': description,
-        'permissions': permissions.map((e) => e.toJson()).toList(),
-        'isActive': true,
-        'createdAt': now,
-        'updatedAt': now,
-        'createdBy': FirebaseAuth.instance.currentUser?.uid ?? 'system',
-      };
-
-      await docRef.set(roleData);
-      return docRef.id;
+      final roleId = 'role_${DateTime.now().microsecondsSinceEpoch}';
+      final role = CustomRole(
+        id: roleId,
+        name: name,
+        description: description,
+        permissions: permissions,
+        isActive: true,
+        createdAt: DateTime.now().toIso8601String(),
+        createdBy: FirebaseAuth.instance.currentUser?.uid ?? 'system',
+        updatedAt: DateTime.now().toIso8601String(),
+      );
+      return await _rolesService.createRole(role);
     } catch (e) {
       throw handleError(e, 'createCustomRole');
     }
@@ -1048,14 +1187,7 @@ class UsersService extends OfflineFirstService {
   // Update custom role (same as React updateRole)
   Future<void> updateCustomRole(String id, Map<String, dynamic> updates) async {
     try {
-      final firestore = db;
-      if (firestore == null) return;
-
-      final docRef = firestore.collection(customRolesCollection).doc(id);
-      final updateData = Map<String, dynamic>.from(updates);
-      updateData['updatedAt'] = DateTime.now().toIso8601String();
-
-      await docRef.update(updateData);
+      await _rolesService.updateRole(id, updates);
     } catch (e) {
       throw handleError(e, 'updateCustomRole');
     }
@@ -1064,16 +1196,7 @@ class UsersService extends OfflineFirstService {
   // Delete custom role (same as React deleteRole)
   Future<void> deleteCustomRole(String id) async {
     try {
-      final firestore = db;
-      if (firestore == null) return;
-
-      final docRef = firestore.collection(customRolesCollection).doc(id);
-      final now = DateTime.now().toIso8601String();
-      await docRef.set({
-        'isDeleted': true,
-        'deletedAt': now,
-        'updatedAt': now,
-      }, SetOptions(merge: true));
+      await _rolesService.deleteRole(id);
     } catch (e) {
       throw handleError(e, 'deleteCustomRole');
     }
@@ -1085,14 +1208,18 @@ class UsersService extends OfflineFirstService {
     UserPreferences preferences,
   ) async {
     try {
-      final firestore = db;
-      if (firestore == null) return false;
-
-      final userRef = firestore.collection(usersCollection).doc(userId);
-      await userRef.update({
+      final payload = <String, dynamic>{
+        'id': userId,
         'preferences': preferences.toJson(),
         'updatedAt': DateTime.now().toIso8601String(),
-      });
+      };
+      await _applyUserPatchLocally(
+        userId,
+        payload,
+        syncStatus: SyncStatus.pending,
+      );
+      await _queueUserWrite(operation: 'update', payload: payload);
+      await _flushQueuedWritesIfOnline();
       return true;
     } catch (e) {
       throw handleError(e, 'updateUserPreferences');
@@ -1108,14 +1235,18 @@ class UsersService extends OfflineFirstService {
   // Set password reset flag (for security audit/manual reset)
   Future<bool> requestPasswordReset(String userId) async {
     try {
-      final firestore = db;
-      if (firestore == null) return false;
-
-      final userRef = firestore.collection(usersCollection).doc(userId);
-      await userRef.update({
+      final payload = <String, dynamic>{
+        'id': userId,
         'passwordResetAt': DateTime.now().toIso8601String(),
         'updatedAt': DateTime.now().toIso8601String(),
-      });
+      };
+      await _applyUserPatchLocally(
+        userId,
+        payload,
+        syncStatus: SyncStatus.pending,
+      );
+      await _queueUserWrite(operation: 'update', payload: payload);
+      await _flushQueuedWritesIfOnline();
       return true;
     } catch (e) {
       throw handleError(e, 'requestPasswordReset');
@@ -1125,18 +1256,6 @@ class UsersService extends OfflineFirstService {
   // Delete user (Security: only allow deleting 'Mock' users as requested)
   Future<bool> deleteUser(String userId, String userName) async {
     try {
-      final firestore = db;
-      if (firestore == null) {
-        // In Mock Mode, allow "deleting" if safety check passes
-        if (FirebaseConfig.isMockMode) {
-          if (!userName.toLowerCase().contains('mock')) {
-            throw Exception('Security: Only Mock users can be deleted.');
-          }
-          return true; // Simulate success for UI
-        }
-        return false;
-      }
-
       // Safety check: Only allow deleting if name contains 'Mock'
       if (!userName.toLowerCase().contains('mock')) {
         throw Exception(
@@ -1149,14 +1268,22 @@ class UsersService extends OfflineFirstService {
         throw Exception('Cannot delete yourself.');
       }
 
-      final userRef = firestore.collection(usersCollection).doc(userId);
       final now = DateTime.now().toIso8601String();
-      await userRef.set({
+      final payload = <String, dynamic>{
+        'id': userId,
         'isDeleted': true,
         'deletedAt': now,
         'status': 'inactive',
+        'isActive': false,
         'updatedAt': now,
-      }, SetOptions(merge: true));
+      };
+      await _applyUserPatchLocally(
+        userId,
+        payload,
+        syncStatus: SyncStatus.pending,
+      );
+      await _queueUserWrite(operation: 'update', payload: payload);
+      await _flushQueuedWritesIfOnline();
 
       await createAuditLog(
         collectionName: usersCollection,

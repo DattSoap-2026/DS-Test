@@ -61,8 +61,8 @@ class AuditService extends BaseService {
 
     return AuditLog(
       id: entity.auditId,
-      collectionName: entity.collectionName,
-      docId: entity.documentId,
+      collectionName: entity.collectionName ?? '',
+      docId: entity.documentId ?? '',
       action: entity.action.name,
       changes: changes,
       userId: entity.userId,

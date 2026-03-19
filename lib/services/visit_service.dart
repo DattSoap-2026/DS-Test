@@ -1,12 +1,11 @@
 import 'package:isar/isar.dart';
+import '../core/sync/sync_queue_service.dart';
 import '../data/local/base_entity.dart';
 import '../data/local/entities/route_session_entity.dart';
 import '../data/local/entities/customer_visit_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import 'database_service.dart';
 import 'base_service.dart';
 import 'package:uuid/uuid.dart';
-import 'outbox_codec.dart';
 
 const visitsCollection = 'customer_visits';
 const sessionsCollection = 'route_sessions';
@@ -201,35 +200,19 @@ class VisitService extends BaseService {
     String action = 'set',
     String? explicitRecordKey,
   }) async {
-    final queueId = OutboxCodec.buildQueueId(
-      collection,
-      payload,
-      explicitRecordKey: explicitRecordKey,
+    final documentId =
+        explicitRecordKey?.trim().isNotEmpty == true
+        ? explicitRecordKey!.trim()
+        : (payload['id']?.toString().trim() ?? '');
+    if (documentId.isEmpty) {
+      return;
+    }
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: payload,
     );
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
   }
 
   Map<String, dynamic> _routePayload(RouteSessionEntity entity) {

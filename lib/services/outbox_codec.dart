@@ -92,6 +92,34 @@ class OutboxCodec {
     return 'outbox_${collection}_${_sanitizeKey(key)}';
   }
 
+  static String? tryExtractCollection(String queueId) {
+    final match = RegExp(r'^outbox_(.+?)_').firstMatch(queueId.trim());
+    if (match == null) {
+      return null;
+    }
+    final value = match.group(1)?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  static String? tryExtractRecordId(String queueId) {
+    final normalized = queueId.trim();
+    if (!normalized.startsWith('outbox_')) {
+      return null;
+    }
+    final parts = normalized.split('_');
+    if (parts.length < 3) {
+      return null;
+    }
+    final record = parts.sublist(2).join('_').trim();
+    if (record.isEmpty || record.startsWith('hash_')) {
+      return null;
+    }
+    return record;
+  }
+
   static String encodeEnvelope({
     required Map<String, dynamic> payload,
     Map<String, dynamic>? existingMeta,

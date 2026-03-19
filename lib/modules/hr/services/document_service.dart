@@ -4,11 +4,10 @@ import 'package:isar/isar.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import '../../../core/sync/sync_queue_service.dart';
 import '../../../services/database_service.dart';
 import '../../../data/local/entities/employee_document_entity.dart';
 import '../../../data/local/base_entity.dart';
-import '../../../data/local/entities/sync_queue_entity.dart';
-import '../../../services/outbox_codec.dart';
 import '../models/employee_document_model.dart';
 
 class DocumentService with ChangeNotifier {
@@ -21,35 +20,16 @@ class DocumentService with ChangeNotifier {
     Map<String, dynamic> payload, {
     String action = 'set',
   }) async {
-    final queueId = OutboxCodec.buildQueueId(
-      _collection,
-      payload,
-      explicitRecordKey: payload['id']?.toString(),
+    final documentId = payload['id']?.toString().trim() ?? '';
+    if (documentId.isEmpty) {
+      return;
+    }
+    await SyncQueueService.instance.addToQueue(
+      collectionName: _collection,
+      documentId: documentId,
+      operation: action,
+      payload: payload,
     );
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = _collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
   }
 
   Map<String, dynamic> _toSyncPayload(EmployeeDocumentEntity entity) {

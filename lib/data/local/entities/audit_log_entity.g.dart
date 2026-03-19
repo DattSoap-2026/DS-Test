@@ -231,7 +231,12 @@ int _auditLogEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.collectionName.length * 3;
+  {
+    final value = object.collectionName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.deviceInfo;
@@ -239,7 +244,12 @@ int _auditLogEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.documentId.length * 3;
+  {
+    final value = object.documentId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.id.length * 3;
   {
     final value = object.ipAddress;
@@ -300,12 +310,12 @@ AuditLogEntity _auditLogEntityDeserialize(
           AuditAction.create;
   object.auditId = reader.readString(offsets[1]);
   object.changesJson = reader.readStringOrNull(offsets[2]);
-  object.collectionName = reader.readString(offsets[3]);
+  object.collectionName = reader.readStringOrNull(offsets[3]);
   object.createdAt = reader.readDateTime(offsets[4]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[5]);
   object.deviceId = reader.readString(offsets[6]);
   object.deviceInfo = reader.readStringOrNull(offsets[7]);
-  object.documentId = reader.readString(offsets[8]);
+  object.documentId = reader.readStringOrNull(offsets[8]);
   object.id = reader.readString(offsets[9]);
   object.ipAddress = reader.readStringOrNull(offsets[10]);
   object.isDeleted = reader.readBool(offsets[11]);
@@ -339,7 +349,7 @@ P _auditLogEntityDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readDateTime(offset)) as P;
     case 5:
@@ -349,7 +359,7 @@ P _auditLogEntityDeserializeProp<P>(
     case 7:
       return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
       return (reader.readString(offset)) as P;
     case 10:
@@ -712,7 +722,29 @@ extension AuditLogEntityQueryWhere
   }
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterWhereClause>
-      collectionNameEqualTo(String collectionName) {
+      collectionNameIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'collectionName',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterWhereClause>
+      collectionNameIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'collectionName',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterWhereClause>
+      collectionNameEqualTo(String? collectionName) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'collectionName',
@@ -722,7 +754,7 @@ extension AuditLogEntityQueryWhere
   }
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterWhereClause>
-      collectionNameNotEqualTo(String collectionName) {
+      collectionNameNotEqualTo(String? collectionName) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -757,7 +789,29 @@ extension AuditLogEntityQueryWhere
   }
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterWhereClause>
-      documentIdEqualTo(String documentId) {
+      documentIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'documentId',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterWhereClause>
+      documentIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'documentId',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterWhereClause>
+      documentIdEqualTo(String? documentId) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'documentId',
@@ -767,7 +821,7 @@ extension AuditLogEntityQueryWhere
   }
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterWhereClause>
-      documentIdNotEqualTo(String documentId) {
+      documentIdNotEqualTo(String? documentId) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -1289,8 +1343,26 @@ extension AuditLogEntityQueryFilter
   }
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      collectionNameIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'collectionName',
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      collectionNameIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'collectionName',
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
       collectionNameEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1304,7 +1376,7 @@ extension AuditLogEntityQueryFilter
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
       collectionNameGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1320,7 +1392,7 @@ extension AuditLogEntityQueryFilter
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
       collectionNameLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1336,8 +1408,8 @@ extension AuditLogEntityQueryFilter
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
       collectionNameBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1845,8 +1917,26 @@ extension AuditLogEntityQueryFilter
   }
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      documentIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'documentId',
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      documentIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'documentId',
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
       documentIdEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1860,7 +1950,7 @@ extension AuditLogEntityQueryFilter
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
       documentIdGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1876,7 +1966,7 @@ extension AuditLogEntityQueryFilter
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
       documentIdLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1892,8 +1982,8 @@ extension AuditLogEntityQueryFilter
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
       documentIdBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -3904,7 +3994,7 @@ extension AuditLogEntityQueryProperty
     });
   }
 
-  QueryBuilder<AuditLogEntity, String, QQueryOperations>
+  QueryBuilder<AuditLogEntity, String?, QQueryOperations>
       collectionNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'collectionName');
@@ -3936,7 +4026,7 @@ extension AuditLogEntityQueryProperty
     });
   }
 
-  QueryBuilder<AuditLogEntity, String, QQueryOperations> documentIdProperty() {
+  QueryBuilder<AuditLogEntity, String?, QQueryOperations> documentIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'documentId');
     });

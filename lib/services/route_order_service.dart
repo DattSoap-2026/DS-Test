@@ -464,58 +464,10 @@ class RouteOrderService extends OfflineFirstService {
           'Route order alert emit failed: $alertError',
           tag: 'RouteOrder',
         );
-        try {
-          final firestoreDb = db;
-          if (firestoreDb != null) {
-            await firestoreDb.collection('notification_events').add({
-              'title': 'New Route Order ${order.orderNo}',
-              'body':
-                  '${order.salesmanName} created order for ${order.routeName} (${order.totalItems} qty, Rs ${order.totalAmount.toStringAsFixed(0)}).',
-              'eventType': AlertService.routeOrderCreatedEvent,
-              'severity': AlertSeverity.info.name,
-              'targetRoles': <String>{
-                ...AlertService.routeOrderNotificationTargetRoles.map(
-                  (role) => role.value,
-                ),
-                ...AlertService.routeOrderNotificationTargetRoles.map(
-                  (role) => role.name,
-                ),
-                ...AlertService.routeOrderNotificationTargetRoles.map(
-                  (role) => role.value.toLowerCase(),
-                ),
-                ...AlertService.routeOrderNotificationTargetRoles.map(
-                  (role) => role.name.toLowerCase(),
-                ),
-              }.toList(growable: false),
-              'targetUserIds': const <String>[],
-              'forceSound': true,
-              'route': '/dashboard/orders/route-management',
-              'data': {
-                AlertService.routeOrderEventTypeKey:
-                    AlertService.routeOrderCreatedEvent,
-                'orderId': order.id,
-                'orderNo': order.orderNo,
-                'routeId': order.routeId,
-                'routeName': order.routeName,
-                'salesmanId': order.salesmanId,
-                'salesmanName': order.salesmanName,
-                'dealerId': order.dealerId,
-                'dealerName': order.dealerName,
-                'totalAmount': order.totalAmount,
-                'totalQty': order.totalItems,
-                'source': order.source.value,
-                'createdByRole': normalizedRole,
-              },
-              'createdAt': firestore.FieldValue.serverTimestamp(),
-              'createdAtEpoch': DateTime.now().millisecondsSinceEpoch,
-            });
-          }
-        } catch (fallbackError) {
-          AppLogger.warning(
-            'Route order notification_events fallback failed: $fallbackError',
-            tag: 'RouteOrder',
-          );
-        }
+        AppLogger.warning(
+          'Route order notification_events fallback skipped: notification_events are pull-only.',
+          tag: 'RouteOrder',
+        );
       }
 
       return order.id;

@@ -1,12 +1,10 @@
 import 'package:isar/isar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../data/local/base_entity.dart';
+import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
 import '../data/local/entities/sale_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import 'base_service.dart';
 import 'database_service.dart';
-import 'outbox_codec.dart';
 
 class AgingCustomerDetail {
   final String customerId;
@@ -107,46 +105,31 @@ class AgingService extends BaseService {
     required String action,
     String? explicitRecordKey,
   }) async {
-    final queueId = OutboxCodec.buildQueueId(
-      collection,
-      payload,
-      explicitRecordKey: explicitRecordKey,
+    final documentId =
+        explicitRecordKey?.trim().isNotEmpty == true
+        ? explicitRecordKey!.trim()
+        : (payload['id']?.toString().trim() ?? '');
+    if (documentId.isEmpty) {
+      return '';
+    }
+
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: payload,
     );
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
-    return queueId;
+    return documentId;
   }
 
-  Future<void> _dequeueOutbox(String queueId) async {
-    final existing = await _dbService.syncQueue.getById(queueId);
-    if (existing == null) return;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.delete(existing.isarId);
-    });
+  Future<void> _dequeueOutbox(String documentId, String collection) async {
+    if (documentId.trim().isEmpty) {
+      return;
+    }
+    await SyncQueueService.instance.removeFromQueue(
+      collectionName: collection,
+      documentId: documentId,
+    );
   }
 
   Future<AgingSummary> generateAgingReport() async {
@@ -335,18 +318,12 @@ class AgingService extends BaseService {
           explicitRecordKey: id,
         );
 
-        final firestore = db;
-        if (firestore != null) {
+        if (db != null) {
           try {
-            final remotePayload = Map<String, dynamic>.from(payload)
-              ..remove('id');
-            await firestore
-                .collection('customers')
-                .doc(id)
-                .set(remotePayload, SetOptions(merge: true));
-            await _dequeueOutbox(queueId);
+            await SyncService.instance.pushAllPending();
+            await _dequeueOutbox(queueId, 'customers');
           } catch (_) {
-            // Keep queued item for SyncManager retry.
+            // Keep queued item for sync coordinator retry.
           }
         }
         success++;

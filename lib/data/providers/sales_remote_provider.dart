@@ -10,6 +10,7 @@ import '../../data/local/entities/product_entity.dart';
 import '../../data/local/entities/stock_balance_entity.dart';
 import '../../data/local/entities/user_entity.dart';
 import '../../services/database_service.dart';
+import '../../services/delegates/sales_remote_write_delegate.dart';
 import '../../services/inventory_movement_engine.dart';
 import '../../services/inventory_projection_service.dart';
 
@@ -25,11 +26,21 @@ class SalesRemoteProvider {
     InventoryMovementEngine? inventoryMovementEngine,
   }) : _dbService = dbService ?? DatabaseService.instance,
        _inventoryMovementEngine =
-           inventoryMovementEngine ??
-           InventoryMovementEngine(
-             dbService ?? DatabaseService.instance,
-             InventoryProjectionService(dbService ?? DatabaseService.instance),
-           );
+            inventoryMovementEngine ??
+            InventoryMovementEngine(
+              dbService ?? DatabaseService.instance,
+              InventoryProjectionService(dbService ?? DatabaseService.instance),
+            );
+
+  SalesRemoteWriteDelegate _writeDelegate() {
+    return SalesRemoteWriteDelegate(
+      firestore: _firestore,
+      ensureSaleInventoryAppliedIfNeeded: _ensureSaleInventoryAppliedIfNeeded,
+      ensureSaleEditInventoryAppliedIfNeeded:
+          _ensureSaleEditInventoryAppliedIfNeeded,
+      stripEditSyncMetadata: _stripEditSyncMetadata,
+    );
+  }
 
   Map<String, dynamic> _stripEditSyncMetadata(Map<String, dynamic> payload) {
     final cleaned = Map<String, dynamic>.from(payload);
@@ -531,363 +542,47 @@ class SalesRemoteProvider {
   }
 
   Future<void> performSyncAdd(Map<String, dynamic> data) async {
-    final recipientType = data['recipientType'];
-    final seriesType = recipientType == 'customer' ? 'Sale' : 'Dispatch';
-
-    final salesmanId = data['salesmanId']?.toString();
-    if (salesmanId == null || salesmanId.isEmpty) {
-      throw Exception('Salesman ID is missing in sync payload');
-    }
-
-    final saleId = data['id']?.toString();
-    if (saleId == null || saleId.isEmpty) {
-      throw Exception('Sale ID is missing in sync payload');
-    }
-
-    final itemsRaw = data['items'];
-    if (itemsRaw is! List) {
-      throw Exception('Items is missing or invalid in sync payload');
-    }
-    final items = itemsRaw.cast<Map<String, dynamic>>();
-
-    final batch = _firestore.batch();
-
-    // 1. Salesman Data (User)
-    final salesmanRef = _firestore.collection('users').doc(salesmanId);
-    final salesmanSnap = await salesmanRef.get();
-    if (!salesmanSnap.exists) {
-      throw Exception('User (Salesman/Creator) not found.');
-    }
-    final salesmanData = salesmanSnap.data() ?? const <String, dynamic>{};
-    final salesmanRole = (salesmanData['role'] ?? '')
-        .toString()
-        .trim()
-        .toLowerCase();
-    final isAdminRole = salesmanRole == 'admin' || salesmanRole == 'owner';
-    final canWriteTransactionSeries = isAdminRole;
-    final canWriteStockMovements =
-        isAdminRole ||
-        salesmanRole == 'sales manager' ||
-        salesmanRole == 'production manager' ||
-        salesmanRole == 'dealer manager' ||
-        salesmanRole == 'dispatch manager' ||
-        salesmanRole == 'store incharge' ||
-        salesmanRole == 'production supervisor' ||
-        salesmanRole == 'bhatti supervisor';
-
-    // 2. Transaction Series
-    final seriesRef = _firestore
-        .collection('transaction_series')
-        .doc(seriesType);
-    Map<String, dynamic>? seriesData;
-    if (canWriteTransactionSeries) {
-      final seriesSnap = await seriesRef.get();
-      if (seriesSnap.exists) {
-        seriesData = seriesSnap.data();
-      }
-    }
-
-    // 4. Create Sale Document
-    final saleRef = _firestore.collection(salesCollection).doc(saleId);
-    final existingSaleSnap = await saleRef.get();
-    if (existingSaleSnap.exists) {
-      // Idempotent replay
-      return;
-    }
-
-    final salePayload = Map<String, dynamic>.from(data);
-    salePayload.remove('isSynced');
-    salePayload['status'] = salePayload['status'] == 'pending_sync'
-        ? 'completed'
-        : salePayload['status'];
-
-    if (seriesData != null) {
-      final sData = seriesData;
-      final current = sData['current'] ?? 0;
-      final next = current + 1;
-      batch.update(seriesRef, {'current': next});
-      salePayload['humanReadableId'] = '${sData['prefix'] ?? "INV"}-$next';
-    }
-
-    batch.set(saleRef, salePayload);
-
-    await _ensureSaleInventoryAppliedIfNeeded(
-      saleId: saleId,
-      recipientType: recipientType.toString(),
-      salesmanUid: salesmanId,
-      items: items,
-      recipientSalesmanUid: data['recipientId']?.toString(),
-      actorUid: salesmanId,
-      actorLegacyAppUserId: data['editedBy']?.toString(),
-    );
-
-    // 5. Stock Operations
-    // T9-P2 REMOVED: direct Firestore stock writes replaced by
-    // InventoryMovementEngine sale_complete / dispatch_create.
-    // if (recipientType == 'customer') {
-    //   final allocated =
-    //       salesmanData['allocatedStock'] as Map<String, dynamic>? ?? {};
-    //   for (var item in items) {
-    //     final pId = item['productId'];
-    //     final qty = (item['quantity'] as num).toDouble();
-    //     final isFree = item['isFree'] == true;
-    //     final stockItem = allocated[pId] as Map<String, dynamic>? ?? {};
-    //     final available = isFree
-    //         ? (stockItem['freeQuantity'] as num? ?? 0).toDouble()
-    //         : (stockItem['quantity'] as num? ?? 0).toDouble();
-    //     if (available < qty) {
-    //       throw Exception(
-    //         'Insufficient allocated stock for $pId. Available: $available, Required: $qty',
-    //       );
-    //     }
-    //     final field = isFree
-    //         ? 'allocatedStock.$pId.freeQuantity'
-    //         : 'allocatedStock.$pId.quantity';
-    //     batch.update(salesmanRef, {field: FieldValue.increment(-qty)});
-    //   }
-    // } else if (recipientType == 'dealer' || recipientType == 'salesman') {
-    //   DocumentReference? recipientRef;
-    //   if (recipientType == 'salesman') {
-    //     recipientRef = _firestore.collection('users').doc(data['recipientId']);
-    //     final recipientSnap = await recipientRef.get();
-    //     if (!recipientSnap.exists) {
-    //       throw Exception(
-    //         'Recipient Salesman ${data['recipientId']} not found',
-    //       );
-    //     }
-    //   }
-    //   for (var item in items) {
-    //     final pRef = _firestore.collection('products').doc(item['productId']);
-    //     final pSnap = await pRef.get();
-    //     if (!pSnap.exists) {
-    //       throw Exception('Product ${item['productId']} not found');
-    //     }
-    //     final pData = pSnap.data() as Map<String, dynamic>;
-    //     final currentStock = (pData['stock'] as num? ?? 0).toDouble();
-    //     final qty = (item['quantity'] as num).toDouble();
-    //     if (currentStock < qty) {
-    //       throw Exception(
-    //         'Insufficient main stock for ${item['productId']}. Available: $currentStock',
-    //       );
-    //     }
-    //     batch.update(pRef, {'stock': FieldValue.increment(-qty)});
-    //     if (recipientType == 'salesman' && recipientRef != null) {
-    //       batch.set(recipientRef, {
-    //         'allocatedStock': {
-    //           item['productId']: {
-    //             'quantity': FieldValue.increment(qty),
-    //             'name': pData['name'],
-    //             'baseUnit': pData['baseUnit'],
-    //             'secondaryUnit': pData['secondaryUnit'],
-    //             'conversionFactor': pData['conversionFactor'],
-    //             'price': pData['price'],
-    //           },
-    //         },
-    //       }, SetOptions(merge: true));
-    //     }
-    //   }
-    // }
-
-    // 6. Stock Movement
-    if (canWriteStockMovements) {
-      final movementSource = (data['saleType'] == 'DIRECT_DEALER')
-          ? 'sale'
-          : 'dispatch';
-      for (final item in items) {
-        final movementRef = _firestore.collection('stock_movements').doc();
-        batch.set(movementRef, {
-          'type': 'out',
-          'source': movementSource,
-          'productId': item['productId'],
-          'productName': item['name'],
-          'quantity': item['quantity'],
-          'referenceId': data['id'],
-          'referenceNumber': salePayload['humanReadableId'],
-          'referenceType': 'sale',
-          'notes': 'Sync: Sale to ${data['recipientName']}',
-          'createdBy': salesmanId,
-          'createdByName': data['salesmanName'],
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-    }
-
-    // 7. Customer Balance
-    if (recipientType == 'customer') {
-      final totalAmt = (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
-      if (totalAmt > 0 &&
-          (data['recipientId'] as String?)?.isNotEmpty == true) {
-        final cRef = _firestore
-            .collection('customers')
-            .doc(data['recipientId']);
-        final cSnap = await cRef.get();
-        if (cSnap.exists) {
-          batch.update(cRef, {'balance': FieldValue.increment(totalAmt)});
-        }
-      }
-    }
-
-    // 8. Audit Log
-    final auditRef = _firestore.collection('audit_logs').doc();
-    batch.set(auditRef, {
-      'collectionName': 'sales',
-      'docId': data['id'],
-      'action': 'create_sync',
-      'userId': salesmanId,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-
-    await batch.commit();
+    await _writeDelegate().performSyncAdd(data);
   }
 
   Future<void> performSyncEdit(Map<String, dynamic> data) async {
-    final saleId = data['id']?.toString().trim();
-    if (saleId == null || saleId.isEmpty) {
-      throw Exception('Sale ID is required for edit sync');
-    }
+    await _writeDelegate().performSyncEdit(data);
+  }
 
-    final saleRef = _firestore.collection(salesCollection).doc(saleId);
-    final precheck = await saleRef.get();
-    if (!precheck.exists) {
-      final createPayload = _stripEditSyncMetadata(data);
-      await performSyncAdd(createPayload);
-      return;
-    }
-
-    final batch = _firestore.batch();
-    final saleSnap = await saleRef.get();
-    if (!saleSnap.exists) {
-      throw Exception('Sale not found for edit sync: $saleId');
-    }
-    final currentData = Map<String, dynamic>.from(
-      saleSnap.data() ?? <String, dynamic>{},
-    );
-    final currentStatus = (currentData['status'] ?? '')
-        .toString()
-        .trim()
-        .toLowerCase();
-    if (currentStatus == 'cancelled') {
-      throw Exception('Cannot edit cancelled sale: $saleId');
-    }
-
-    final recipientType =
-        (data['recipientType'] ?? currentData['recipientType'] ?? '')
-            .toString();
-    final recipientId =
-        (data['recipientId'] ?? currentData['recipientId'] ?? '').toString();
-    final previousRecipientType =
-        (data['previousRecipientType'] ?? currentData['recipientType'] ?? '')
-            .toString();
-    final previousRecipientId =
-        (data['previousRecipientId'] ?? currentData['recipientId'] ?? '')
-            .toString();
-    final oldTotalAmount =
-        (data['oldTotalAmount'] as num? ??
-                currentData['totalAmount'] as num? ??
-                0)
-            .toDouble();
-    final newTotalAmount =
-        (data['totalAmount'] as num? ?? currentData['totalAmount'] as num? ?? 0)
-            .toDouble();
-    final totalDelta =
-        (data['totalDelta'] as num?)?.toDouble() ??
-        (newTotalAmount - oldTotalAmount);
-    final salesmanId = (data['salesmanId'] ?? currentData['salesmanId'] ?? '')
-        .toString();
-    final commandKey =
-        (data['inventoryEditCommandKey'] ??
-                data['editedAt'] ??
-                '${saleId}_${data['updatedAt'] ?? DateTime.now().toIso8601String()}')
-            .toString();
-    final previousItems = (currentData['items'] is List)
-        ? (currentData['items'] as List)
-              .whereType<Map>()
-              .map(
-                (item) => Map<String, dynamic>.from(
-                  item.map((key, value) => MapEntry(key.toString(), value)),
-                ),
-              )
-              .toList(growable: false)
-        : const <Map<String, dynamic>>[];
-    final nextItems = (data['items'] is List)
-        ? (data['items'] as List)
-              .whereType<Map>()
-              .map(
-                (item) => Map<String, dynamic>.from(
-                  item.map((key, value) => MapEntry(key.toString(), value)),
-                ),
-              )
-              .toList(growable: false)
-        : const <Map<String, dynamic>>[];
-
-    await _ensureSaleEditInventoryAppliedIfNeeded(
+  Future<void> dispatchSale({
+    required String saleId,
+    required String vehicleNumber,
+  }) async {
+    await _writeDelegate().dispatchSale(
       saleId: saleId,
-      previousRecipientType: previousRecipientType,
-      nextRecipientType: recipientType,
-      salesmanUid: salesmanId,
-      previousItems: previousItems,
-      nextItems: nextItems,
-      commandKey: commandKey,
-      actorUid: data['editedBy']?.toString(),
-      actorLegacyAppUserId: data['editedBy']?.toString(),
+      vehicleNumber: vehicleNumber,
     );
+  }
 
-    if (recipientType == 'customer') {
-      // T9-P2 REMOVED: direct Firestore allocatedStock edit replaced by
-      // InventoryMovementEngine sale_reversal -> sale_complete.
-      final normalizedRecipientId = recipientId.trim();
-      final normalizedPreviousRecipientId = previousRecipientId.trim();
-      final recipientChanged =
-          normalizedPreviousRecipientId.isNotEmpty &&
-          normalizedRecipientId.isNotEmpty &&
-          normalizedPreviousRecipientId != normalizedRecipientId;
+  Future<void> updateReturnedQuantity({
+    required String saleId,
+    required String productId,
+    required int additionalReturnedQty,
+  }) async {
+    await _writeDelegate().updateReturnedQuantity(
+      saleId: saleId,
+      productId: productId,
+      additionalReturnedQty: additionalReturnedQty,
+    );
+  }
 
-      if (recipientChanged &&
-          previousRecipientType.trim().toLowerCase() == 'customer') {
-        if (oldTotalAmount.abs() >= 1e-9) {
-          final previousCustomerRef = _firestore
-              .collection('customers')
-              .doc(normalizedPreviousRecipientId);
-          batch.update(previousCustomerRef, {
-            'balance': FieldValue.increment(-oldTotalAmount),
-          });
-        }
-        if (newTotalAmount.abs() >= 1e-9) {
-          final nextCustomerRef = _firestore
-              .collection('customers')
-              .doc(normalizedRecipientId);
-          batch.update(nextCustomerRef, {
-            'balance': FieldValue.increment(newTotalAmount),
-          });
-        }
-      } else if (normalizedRecipientId.isNotEmpty && totalDelta.abs() >= 1e-9) {
-        final customerRef = _firestore
-            .collection('customers')
-            .doc(normalizedRecipientId);
-        batch.update(customerRef, {
-          'balance': FieldValue.increment(totalDelta),
-        });
-      }
-    } else if (recipientType == 'dealer' || recipientType == 'salesman') {
-      // T9-P2 REMOVED: direct Firestore product stock edit replaced by
-      // InventoryMovementEngine sale_reversal -> sale_complete.
-    }
-
-    final salePatch = _stripEditSyncMetadata(Map<String, dynamic>.from(data))
-      ..remove('id')
-      ..['updatedAt'] = DateTime.now().toIso8601String();
-    batch.set(saleRef, salePatch, SetOptions(merge: true));
-
-    final auditRef = _firestore.collection('audit_logs').doc();
-    batch.set(auditRef, {
-      'collectionName': 'sales',
-      'docId': saleId,
-      'action': 'edit_sync',
-      'userId': data['editedBy'] ?? salesmanId,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-
-    await batch.commit();
+  Future<void> cancelSale({
+    required String saleId,
+    required String reason,
+    required String userId,
+    String? nowIso,
+  }) async {
+    await _writeDelegate().cancelSale(
+      saleId: saleId,
+      reason: reason,
+      userId: userId,
+      nowIso: nowIso,
+    );
   }
 }
 

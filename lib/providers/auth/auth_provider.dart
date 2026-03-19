@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 
 // [HARD LOCKED] - Authentication Provider
 // CRITICAL: NO modification allowed without explicit AUTH_LOCK_OVERRIDE.
 // Standardized on 3-pass lookup: UID Doc -> Email Doc ID -> Email Field Query.
 import '../../core/firebase/firebase_config.dart';
+import '../../services/delegates/firestore_query_delegate.dart';
 import '../../models/types/user_types.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/local/entities/user_entity.dart';
@@ -250,12 +250,18 @@ class AuthProvider with ChangeNotifier {
   Future<AppUser?> _fetchUserDetails(String uid) async {
     try {
       final authUser = _firebase.auth?.currentUser;
-      final collection = _firebase.db?.collection('users');
+      final firestoreDb = _firebase.db;
+      final remote = firestoreDb == null
+          ? null
+          : FirestoreQueryDelegate(firestoreDb);
 
       // Rule: Identity must be verified online at every startup/refresh
-      if (collection != null && authUser != null && authUser.email != null) {
+      if (remote != null && authUser != null && authUser.email != null) {
         try {
-          var docSnapshot = await collection.doc(uid).get();
+          var docSnapshot = await remote.getDocument(
+            collection: 'users',
+            documentId: uid,
+          );
           final authEmail = authUser.email?.toLowerCase();
 
           // Multi-pass lookup for legacy compatibility
@@ -266,27 +272,42 @@ class AuthProvider with ChangeNotifier {
             );
 
             // 1. Direct email document lookup
-            docSnapshot = await collection.doc(authEmail).get();
+            docSnapshot = await remote.getDocument(
+              collection: 'users',
+              documentId: authEmail ?? '',
+            );
 
             // 2. Targeted query by email field (for legacy/mixed-case IDs)
             if (!docSnapshot.exists) {
-              var query = await collection
-                  .where('email', isEqualTo: authEmail)
-                  .limit(1)
-                  .get();
+              var query = await remote.getCollection(
+                collection: 'users',
+                filters: <FirestoreQueryFilter>[
+                  FirestoreQueryFilter(
+                    field: 'email',
+                    operator: FirestoreQueryOperator.isEqualTo,
+                    value: authEmail,
+                  ),
+                ],
+                limit: 1,
+              );
 
               // Fallback for mixed-case in Firestore
               if (query.docs.isEmpty && authUser.email != null) {
-                query = await collection
-                    .where('email', isEqualTo: authUser.email)
-                    .limit(1)
-                    .get();
+                query = await remote.getCollection(
+                  collection: 'users',
+                  filters: <FirestoreQueryFilter>[
+                    FirestoreQueryFilter(
+                      field: 'email',
+                      operator: FirestoreQueryOperator.isEqualTo,
+                      value: authUser.email,
+                    ),
+                  ],
+                  limit: 1,
+                );
               }
 
               if (query.docs.isNotEmpty) {
-                docSnapshot =
-                    query.docs.first
-                        as firestore.DocumentSnapshot<Map<String, dynamic>>;
+                docSnapshot = query.docs.first;
               }
             }
           }

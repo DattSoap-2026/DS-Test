@@ -713,8 +713,8 @@ class _DataMaintenanceTabState extends State<_DataMaintenanceTab> {
     if (success) {
       setState(() => _fullResetStatus = 'Resyncing master data...');
       try {
-        final syncManager = context.read<SyncManager>();
-        await syncManager.syncAll(user, forceRefresh: true).timeout(
+        final appSyncCoordinator = context.read<AppSyncCoordinator>();
+        await appSyncCoordinator.syncAll(user, forceRefresh: true).timeout(
           const Duration(minutes: 5),
           onTimeout: () => SyncRunResult.skipped('Sync timeout'),
         );

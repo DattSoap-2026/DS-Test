@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../data/local/base_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
+import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
 import 'base_service.dart';
 import 'database_service.dart';
-import 'outbox_codec.dart';
 
 const taskHistoryCollection = 'task_history';
 
@@ -59,55 +58,31 @@ class AddTaskHistoryPayload {
 }
 
 class TaskHistoryService extends BaseService {
-  final DatabaseService _dbService;
-
-  TaskHistoryService(super.firebase, [DatabaseService? dbService])
-    : _dbService = dbService ?? DatabaseService.instance;
+  TaskHistoryService(super.firebase, [DatabaseService? _]);
 
   Future<String> _enqueueOutbox(
     Map<String, dynamic> payload, {
     required String action,
   }) async {
-    final queueId = OutboxCodec.buildQueueId(
-      taskHistoryCollection,
-      payload,
-      explicitRecordKey: payload['id']?.toString(),
+    final entryId = payload['id']?.toString().trim() ?? '';
+    if (entryId.isEmpty) {
+      return '';
+    }
+    await SyncQueueService.instance.addToQueue(
+      collectionName: taskHistoryCollection,
+      documentId: entryId,
+      operation: action,
+      payload: payload,
     );
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = taskHistoryCollection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
-    return queueId;
+    return entryId;
   }
 
-  Future<void> _dequeueOutbox(String queueId) async {
-    final existing = await _dbService.syncQueue.getById(queueId);
-    if (existing == null) return;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.delete(existing.isarId);
-    });
+  Future<void> _dequeueOutbox(String entryId) async {
+    if (entryId.trim().isEmpty) return;
+    await SyncQueueService.instance.removeFromQueue(
+      collectionName: taskHistoryCollection,
+      documentId: entryId,
+    );
   }
 
   Future<void> _performImmediateWrite(
@@ -115,15 +90,7 @@ class TaskHistoryService extends BaseService {
     String action,
     Map<String, dynamic> payload,
   ) async {
-    final id = payload['id']?.toString();
-    if (id == null || id.trim().isEmpty) {
-      throw Exception('Task history payload missing id for action: $action');
-    }
-    final remotePayload = Map<String, dynamic>.from(payload)..remove('id');
-    await firestore
-        .collection(taskHistoryCollection)
-        .doc(id)
-        .set(remotePayload, SetOptions(merge: true));
+    await SyncService.instance.pushAllPending();
   }
 
   Future<bool> addTaskHistory(AddTaskHistoryPayload payload) async {

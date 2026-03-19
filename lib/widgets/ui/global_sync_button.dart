@@ -17,10 +17,10 @@ class GlobalSyncButton extends StatelessWidget {
     final theme = Theme.of(context);
     final effectiveColor = iconColor ?? theme.colorScheme.onSurface;
 
-    return Consumer<SyncManager>(
-      builder: (context, syncManager, _) {
+    return Consumer<AppSyncCoordinator>(
+      builder: (context, appSyncCoordinator, _) {
         // Syncing state
-        if (syncManager.isSyncing) {
+        if (appSyncCoordinator.isSyncing) {
           return Padding(
             padding: const EdgeInsets.all(12.0),
             child: SizedBox(
@@ -35,11 +35,11 @@ class GlobalSyncButton extends StatelessWidget {
         }
 
         // Pending items
-        if (syncManager.pendingCount > 0) {
+        if (appSyncCoordinator.pendingCount > 0) {
           return Tooltip(
-            message: '${syncManager.pendingCount} items syncing',
+            message: '${appSyncCoordinator.pendingCount} items syncing',
             child: Badge(
-              label: Text('${syncManager.pendingCount}'),
+              label: Text('${appSyncCoordinator.pendingCount}'),
               child: Icon(
                 Icons.cloud_upload_outlined,
                 size: iconSize,

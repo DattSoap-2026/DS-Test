@@ -27,111 +27,116 @@ const TaskEntitySchema = CollectionSchema(
       name: r'assignedToName',
       type: IsarType.string,
     ),
-    r'createdAtStr': PropertySchema(
+    r'createdAt': PropertySchema(
       id: 2,
+      name: r'createdAt',
+      type: IsarType.dateTime,
+    ),
+    r'createdAtStr': PropertySchema(
+      id: 3,
       name: r'createdAtStr',
       type: IsarType.string,
     ),
     r'createdById': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'createdById',
       type: IsarType.string,
     ),
     r'createdByName': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'createdByName',
       type: IsarType.string,
     ),
     r'deletedAt': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
     r'description': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'description',
       type: IsarType.string,
     ),
     r'deviceId': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'deviceId',
       type: IsarType.string,
     ),
     r'dueDate': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'dueDate',
-      type: IsarType.string,
+      type: IsarType.dateTime,
     ),
     r'id': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'id',
       type: IsarType.string,
     ),
     r'isBlocking': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isBlocking',
       type: IsarType.bool,
     ),
     r'isDeleted': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lastSynced': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'lastSynced',
       type: IsarType.dateTime,
     ),
     r'notificationReadAt': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'notificationReadAt',
-      type: IsarType.string,
+      type: IsarType.dateTime,
     ),
     r'notificationSent': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'notificationSent',
       type: IsarType.bool,
     ),
     r'priority': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'priority',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _TaskEntitysyncStatusEnumValueMap,
     ),
     r'title': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'title',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'version': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'version',
       type: IsarType.long,
     ),
     r'viewedAt': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'viewedAt',
-      type: IsarType.string,
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _taskEntityEstimateSize,
@@ -187,8 +192,8 @@ const TaskEntitySchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'dueDate',
-          type: IndexType.hash,
-          caseSensitive: true,
+          type: IndexType.value,
+          caseSensitive: false,
         )
       ],
     ),
@@ -283,19 +288,7 @@ int _taskEntityEstimateSize(
     }
   }
   bytesCount += 3 + object.deviceId.length * 3;
-  {
-    final value = object.dueDate;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
   bytesCount += 3 + object.id.length * 3;
-  {
-    final value = object.notificationReadAt;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
   {
     final value = object.priority;
     if (value != null) {
@@ -314,12 +307,6 @@ int _taskEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  {
-    final value = object.viewedAt;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
   return bytesCount;
 }
 
@@ -331,27 +318,28 @@ void _taskEntitySerialize(
 ) {
   writer.writeString(offsets[0], object.assignedToId);
   writer.writeString(offsets[1], object.assignedToName);
-  writer.writeString(offsets[2], object.createdAtStr);
-  writer.writeString(offsets[3], object.createdById);
-  writer.writeString(offsets[4], object.createdByName);
-  writer.writeDateTime(offsets[5], object.deletedAt);
-  writer.writeString(offsets[6], object.description);
-  writer.writeString(offsets[7], object.deviceId);
-  writer.writeString(offsets[8], object.dueDate);
-  writer.writeString(offsets[9], object.id);
-  writer.writeBool(offsets[10], object.isBlocking);
-  writer.writeBool(offsets[11], object.isDeleted);
-  writer.writeBool(offsets[12], object.isSynced);
-  writer.writeDateTime(offsets[13], object.lastSynced);
-  writer.writeString(offsets[14], object.notificationReadAt);
-  writer.writeBool(offsets[15], object.notificationSent);
-  writer.writeString(offsets[16], object.priority);
-  writer.writeString(offsets[17], object.status);
-  writer.writeByte(offsets[18], object.syncStatus.index);
-  writer.writeString(offsets[19], object.title);
-  writer.writeDateTime(offsets[20], object.updatedAt);
-  writer.writeLong(offsets[21], object.version);
-  writer.writeString(offsets[22], object.viewedAt);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeString(offsets[3], object.createdAtStr);
+  writer.writeString(offsets[4], object.createdById);
+  writer.writeString(offsets[5], object.createdByName);
+  writer.writeDateTime(offsets[6], object.deletedAt);
+  writer.writeString(offsets[7], object.description);
+  writer.writeString(offsets[8], object.deviceId);
+  writer.writeDateTime(offsets[9], object.dueDate);
+  writer.writeString(offsets[10], object.id);
+  writer.writeBool(offsets[11], object.isBlocking);
+  writer.writeBool(offsets[12], object.isDeleted);
+  writer.writeBool(offsets[13], object.isSynced);
+  writer.writeDateTime(offsets[14], object.lastSynced);
+  writer.writeDateTime(offsets[15], object.notificationReadAt);
+  writer.writeBool(offsets[16], object.notificationSent);
+  writer.writeString(offsets[17], object.priority);
+  writer.writeString(offsets[18], object.status);
+  writer.writeByte(offsets[19], object.syncStatus.index);
+  writer.writeString(offsets[20], object.title);
+  writer.writeDateTime(offsets[21], object.updatedAt);
+  writer.writeLong(offsets[22], object.version);
+  writer.writeDateTime(offsets[23], object.viewedAt);
 }
 
 TaskEntity _taskEntityDeserialize(
@@ -363,29 +351,30 @@ TaskEntity _taskEntityDeserialize(
   final object = TaskEntity();
   object.assignedToId = reader.readStringOrNull(offsets[0]);
   object.assignedToName = reader.readStringOrNull(offsets[1]);
-  object.createdAtStr = reader.readStringOrNull(offsets[2]);
-  object.createdById = reader.readStringOrNull(offsets[3]);
-  object.createdByName = reader.readStringOrNull(offsets[4]);
-  object.deletedAt = reader.readDateTimeOrNull(offsets[5]);
-  object.description = reader.readStringOrNull(offsets[6]);
-  object.deviceId = reader.readString(offsets[7]);
-  object.dueDate = reader.readStringOrNull(offsets[8]);
-  object.id = reader.readString(offsets[9]);
-  object.isBlocking = reader.readBoolOrNull(offsets[10]);
-  object.isDeleted = reader.readBool(offsets[11]);
-  object.isSynced = reader.readBool(offsets[12]);
-  object.lastSynced = reader.readDateTimeOrNull(offsets[13]);
-  object.notificationReadAt = reader.readStringOrNull(offsets[14]);
-  object.notificationSent = reader.readBoolOrNull(offsets[15]);
-  object.priority = reader.readStringOrNull(offsets[16]);
-  object.status = reader.readStringOrNull(offsets[17]);
+  object.createdAt = reader.readDateTimeOrNull(offsets[2]);
+  object.createdAtStr = reader.readStringOrNull(offsets[3]);
+  object.createdById = reader.readStringOrNull(offsets[4]);
+  object.createdByName = reader.readStringOrNull(offsets[5]);
+  object.deletedAt = reader.readDateTimeOrNull(offsets[6]);
+  object.description = reader.readStringOrNull(offsets[7]);
+  object.deviceId = reader.readString(offsets[8]);
+  object.dueDate = reader.readDateTimeOrNull(offsets[9]);
+  object.id = reader.readString(offsets[10]);
+  object.isBlocking = reader.readBool(offsets[11]);
+  object.isDeleted = reader.readBool(offsets[12]);
+  object.isSynced = reader.readBool(offsets[13]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[14]);
+  object.notificationReadAt = reader.readDateTimeOrNull(offsets[15]);
+  object.notificationSent = reader.readBool(offsets[16]);
+  object.priority = reader.readStringOrNull(offsets[17]);
+  object.status = reader.readStringOrNull(offsets[18]);
   object.syncStatus =
-      _TaskEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[18])] ??
+      _TaskEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[19])] ??
           SyncStatus.pending;
-  object.title = reader.readStringOrNull(offsets[19]);
-  object.updatedAt = reader.readDateTime(offsets[20]);
-  object.version = reader.readLong(offsets[21]);
-  object.viewedAt = reader.readStringOrNull(offsets[22]);
+  object.title = reader.readStringOrNull(offsets[20]);
+  object.updatedAt = reader.readDateTime(offsets[21]);
+  object.version = reader.readLong(offsets[22]);
+  object.viewedAt = reader.readDateTimeOrNull(offsets[23]);
   return object;
 }
 
@@ -401,49 +390,51 @@ P _taskEntityDeserializeProp<P>(
     case 1:
       return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
-    case 8:
       return (reader.readStringOrNull(offset)) as P;
-    case 9:
+    case 8:
       return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 10:
-      return (reader.readBoolOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 11:
       return (reader.readBool(offset)) as P;
     case 12:
       return (reader.readBool(offset)) as P;
     case 13:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 14:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 15:
-      return (reader.readBoolOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 16:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 17:
       return (reader.readStringOrNull(offset)) as P;
     case 18:
+      return (reader.readStringOrNull(offset)) as P;
+    case 19:
       return (_TaskEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 19:
-      return (reader.readStringOrNull(offset)) as P;
     case 20:
-      return (reader.readDateTime(offset)) as P;
-    case 21:
-      return (reader.readLong(offset)) as P;
-    case 22:
       return (reader.readStringOrNull(offset)) as P;
+    case 21:
+      return (reader.readDateTime(offset)) as P;
+    case 22:
+      return (reader.readLong(offset)) as P;
+    case 23:
+      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -529,6 +520,14 @@ extension TaskEntityQueryWhereSort
   QueryBuilder<TaskEntity, TaskEntity, QAfterWhere> anyIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterWhere> anyDueDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'dueDate'),
+      );
     });
   }
 
@@ -828,7 +827,7 @@ extension TaskEntityQueryWhere
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterWhereClause> dueDateEqualTo(
-      String? dueDate) {
+      DateTime? dueDate) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'dueDate',
@@ -838,7 +837,7 @@ extension TaskEntityQueryWhere
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterWhereClause> dueDateNotEqualTo(
-      String? dueDate) {
+      DateTime? dueDate) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -869,6 +868,51 @@ extension TaskEntityQueryWhere
               includeUpper: false,
             ));
       }
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterWhereClause> dueDateGreaterThan(
+    DateTime? dueDate, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'dueDate',
+        lower: [dueDate],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterWhereClause> dueDateLessThan(
+    DateTime? dueDate, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'dueDate',
+        lower: [],
+        upper: [dueDate],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterWhereClause> dueDateBetween(
+    DateTime? lowerDueDate,
+    DateTime? upperDueDate, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'dueDate',
+        lower: [lowerDueDate],
+        includeLower: includeLower,
+        upper: [upperDueDate],
+        includeUpper: includeUpper,
+      ));
     });
   }
 
@@ -938,29 +982,8 @@ extension TaskEntityQueryWhere
     });
   }
 
-  QueryBuilder<TaskEntity, TaskEntity, QAfterWhereClause> isBlockingIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'isBlocking',
-        value: [null],
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterWhereClause>
-      isBlockingIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'isBlocking',
-        lower: [null],
-        includeLower: false,
-        upper: [],
-      ));
-    });
-  }
-
   QueryBuilder<TaskEntity, TaskEntity, QAfterWhereClause> isBlockingEqualTo(
-      bool? isBlocking) {
+      bool isBlocking) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'isBlocking',
@@ -970,7 +993,7 @@ extension TaskEntityQueryWhere
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterWhereClause> isBlockingNotEqualTo(
-      bool? isBlocking) {
+      bool isBlocking) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -1355,6 +1378,78 @@ extension TaskEntityQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'assignedToName',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
+      createdAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
+      createdAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> createdAtEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
+      createdAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> createdAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> createdAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'createdAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -2199,55 +2294,47 @@ extension TaskEntityQueryFilter
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> dueDateEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
+      DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'dueDate',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
       dueDateGreaterThan(
-    String? value, {
+    DateTime? value, {
     bool include = false,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
         property: r'dueDate',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> dueDateLessThan(
-    String? value, {
+    DateTime? value, {
     bool include = false,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
         property: r'dueDate',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> dueDateBetween(
-    String? lower,
-    String? upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
@@ -2256,76 +2343,6 @@ extension TaskEntityQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> dueDateStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'dueDate',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> dueDateEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'dueDate',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> dueDateContains(
-      String value,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'dueDate',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> dueDateMatches(
-      String pattern,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'dueDate',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> dueDateIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'dueDate',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      dueDateIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'dueDate',
-        value: '',
       ));
     });
   }
@@ -2460,26 +2477,8 @@ extension TaskEntityQueryFilter
     });
   }
 
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      isBlockingIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'isBlocking',
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      isBlockingIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'isBlocking',
-      ));
-    });
-  }
-
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> isBlockingEqualTo(
-      bool? value) {
+      bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isBlocking',
@@ -2653,58 +2652,49 @@ extension TaskEntityQueryFilter
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      notificationReadAtEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
+      notificationReadAtEqualTo(DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'notificationReadAt',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
       notificationReadAtGreaterThan(
-    String? value, {
+    DateTime? value, {
     bool include = false,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
         property: r'notificationReadAt',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
       notificationReadAtLessThan(
-    String? value, {
+    DateTime? value, {
     bool include = false,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
         property: r'notificationReadAt',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
       notificationReadAtBetween(
-    String? lower,
-    String? upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
@@ -2713,101 +2703,12 @@ extension TaskEntityQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      notificationReadAtStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'notificationReadAt',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      notificationReadAtEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'notificationReadAt',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      notificationReadAtContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'notificationReadAt',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      notificationReadAtMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'notificationReadAt',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      notificationReadAtIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'notificationReadAt',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      notificationReadAtIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'notificationReadAt',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      notificationSentIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'notificationSent',
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      notificationSentIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'notificationSent',
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      notificationSentEqualTo(bool? value) {
+      notificationSentEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'notificationSent',
@@ -3443,55 +3344,47 @@ extension TaskEntityQueryFilter
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> viewedAtEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
+      DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'viewedAt',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
       viewedAtGreaterThan(
-    String? value, {
+    DateTime? value, {
     bool include = false,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
         property: r'viewedAt',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> viewedAtLessThan(
-    String? value, {
+    DateTime? value, {
     bool include = false,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
         property: r'viewedAt',
         value: value,
-        caseSensitive: caseSensitive,
       ));
     });
   }
 
   QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> viewedAtBetween(
-    String? lower,
-    String? upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
-    bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
@@ -3500,78 +3393,6 @@ extension TaskEntityQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      viewedAtStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'viewedAt',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> viewedAtEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'viewedAt',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> viewedAtContains(
-      String value,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'viewedAt',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition> viewedAtMatches(
-      String pattern,
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'viewedAt',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      viewedAtIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'viewedAt',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<TaskEntity, TaskEntity, QAfterFilterCondition>
-      viewedAtIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'viewedAt',
-        value: '',
       ));
     });
   }
@@ -3607,6 +3428,18 @@ extension TaskEntityQuerySortBy
       sortByAssignedToNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'assignedToName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterSortBy> sortByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterSortBy> sortByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
     });
   }
 
@@ -3890,6 +3723,18 @@ extension TaskEntityQuerySortThenBy
       thenByAssignedToNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'assignedToName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterSortBy> thenByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TaskEntity, TaskEntity, QAfterSortBy> thenByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
     });
   }
 
@@ -4178,6 +4023,12 @@ extension TaskEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<TaskEntity, TaskEntity, QDistinct> distinctByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdAt');
+    });
+  }
+
   QueryBuilder<TaskEntity, TaskEntity, QDistinct> distinctByCreatedAtStr(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -4220,10 +4071,9 @@ extension TaskEntityQueryWhereDistinct
     });
   }
 
-  QueryBuilder<TaskEntity, TaskEntity, QDistinct> distinctByDueDate(
-      {bool caseSensitive = true}) {
+  QueryBuilder<TaskEntity, TaskEntity, QDistinct> distinctByDueDate() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'dueDate', caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'dueDate');
     });
   }
 
@@ -4258,11 +4108,10 @@ extension TaskEntityQueryWhereDistinct
     });
   }
 
-  QueryBuilder<TaskEntity, TaskEntity, QDistinct> distinctByNotificationReadAt(
-      {bool caseSensitive = true}) {
+  QueryBuilder<TaskEntity, TaskEntity, QDistinct>
+      distinctByNotificationReadAt() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'notificationReadAt',
-          caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'notificationReadAt');
     });
   }
 
@@ -4311,10 +4160,9 @@ extension TaskEntityQueryWhereDistinct
     });
   }
 
-  QueryBuilder<TaskEntity, TaskEntity, QDistinct> distinctByViewedAt(
-      {bool caseSensitive = true}) {
+  QueryBuilder<TaskEntity, TaskEntity, QDistinct> distinctByViewedAt() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'viewedAt', caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'viewedAt');
     });
   }
 }
@@ -4336,6 +4184,12 @@ extension TaskEntityQueryProperty
   QueryBuilder<TaskEntity, String?, QQueryOperations> assignedToNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'assignedToName');
+    });
+  }
+
+  QueryBuilder<TaskEntity, DateTime?, QQueryOperations> createdAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdAt');
     });
   }
 
@@ -4375,7 +4229,7 @@ extension TaskEntityQueryProperty
     });
   }
 
-  QueryBuilder<TaskEntity, String?, QQueryOperations> dueDateProperty() {
+  QueryBuilder<TaskEntity, DateTime?, QQueryOperations> dueDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'dueDate');
     });
@@ -4387,7 +4241,7 @@ extension TaskEntityQueryProperty
     });
   }
 
-  QueryBuilder<TaskEntity, bool?, QQueryOperations> isBlockingProperty() {
+  QueryBuilder<TaskEntity, bool, QQueryOperations> isBlockingProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isBlocking');
     });
@@ -4411,14 +4265,14 @@ extension TaskEntityQueryProperty
     });
   }
 
-  QueryBuilder<TaskEntity, String?, QQueryOperations>
+  QueryBuilder<TaskEntity, DateTime?, QQueryOperations>
       notificationReadAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'notificationReadAt');
     });
   }
 
-  QueryBuilder<TaskEntity, bool?, QQueryOperations> notificationSentProperty() {
+  QueryBuilder<TaskEntity, bool, QQueryOperations> notificationSentProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'notificationSent');
     });
@@ -4460,7 +4314,7 @@ extension TaskEntityQueryProperty
     });
   }
 
-  QueryBuilder<TaskEntity, String?, QQueryOperations> viewedAtProperty() {
+  QueryBuilder<TaskEntity, DateTime?, QQueryOperations> viewedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'viewedAt');
     });

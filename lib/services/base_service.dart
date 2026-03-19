@@ -1,6 +1,5 @@
 import 'dart:async';
 import '../core/firebase/firebase_config.dart';
-import 'dart:developer' as developer;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -68,27 +67,10 @@ class BaseService {
     required String userId,
     String? userName,
   }) async {
-    final auditData = {
-      'collectionName': collectionName,
-      'docId': docId,
-      'action': action,
-      'changes': changes,
-      'userId': userId,
-      'userName': userName ?? 'System',
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-
-    try {
-      // 1. Log to Firestore (Try direct, if fails, it's NOT critical enough to queue)
-      // Actually, audit logs ARE critical for ERP.
-      // But we don't want to bloat the main sync queue with thousands of minor audit events.
-      // Strategy: Fire and forget if online, skip if offline.
-      if (db != null) {
-        db!.collection('audit_logs').add(auditData);
-      }
-    } catch (e) {
-      developer.log('Audit log creation failed: $e');
-    }
+    AppLogger.debug(
+      'Skipped client audit log write for $collectionName/$docId ($action). audit_logs are server-managed.',
+      tag: 'Audit',
+    );
   }
 
   /// Convenience method to notify user of success from services.

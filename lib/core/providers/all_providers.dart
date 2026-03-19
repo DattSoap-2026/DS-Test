@@ -1,7 +1,9 @@
 export 'core_providers.dart';
 export '../../features/bhatti/providers/bhatti_providers.dart';
+export '../../features/alerts/providers/alerts_providers.dart';
 export '../../features/dispatch/providers/dispatch_providers.dart';
 export '../../features/fleet/providers/fleet_providers.dart';
+export '../../features/hr/providers/hr_providers.dart';
 export '../../features/inventory/providers/inventory_providers.dart';
 export '../../features/production/providers/production_providers.dart';
 export '../../features/procurement/providers/procurement_providers.dart';

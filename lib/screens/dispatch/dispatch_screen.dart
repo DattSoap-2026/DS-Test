@@ -334,7 +334,7 @@ class _DispatchScreenState extends State<DispatchScreen>
   Future<void> _syncAndRefresh() async {
     setState(() => _isLoading = true);
     try {
-      await context.read<SyncManager>().syncUsersViaDelegate(
+      await context.read<AppSyncCoordinator>().syncUsersViaDelegate(
         forceRefresh: true,
       );
       if (mounted) {

@@ -1,12 +1,10 @@
 import 'package:isar/isar.dart';
-import '../../data/local/base_entity.dart';
+import '../../core/sync/sync_queue_service.dart';
 import '../../data/local/entities/product_entity.dart';
 import '../../data/local/entities/stock_movement_entity.dart';
 import '../../data/local/entities/stock_ledger_entity.dart';
 import '../../data/local/entities/department_stock_entity.dart';
-import '../../data/local/entities/sync_queue_entity.dart';
 import '../../services/database_service.dart';
-import '../../services/outbox_codec.dart';
 
 /// Stateless Isar data access layer for inventory entities.
 ///
@@ -166,33 +164,12 @@ class InventoryLocalProvider {
     final id = data['id']?.toString();
     if (id == null || id.isEmpty) return '';
 
-    final queueId = '${stockMovementsCollection}_$id';
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    final entity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = stockMovementsCollection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: data,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(entity);
-    });
-    return queueId;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: stockMovementsCollection,
+      documentId: id,
+      operation: action,
+      payload: data,
+    );
+    return id;
   }
 }

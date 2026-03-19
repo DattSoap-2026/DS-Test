@@ -1,9 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:isar/isar.dart';
-import '../data/local/entities/audit_log_entity.dart';
-import '../models/audit_log_model.dart';
+
 import 'base_service.dart';
 import 'database_service.dart';
+import '../utils/app_logger.dart';
 
 class AccountingAuditService extends BaseService {
   final DatabaseService _dbService;
@@ -21,68 +20,12 @@ class AccountingAuditService extends BaseService {
     String? notes,
   }) async {
     try {
-      final now = DateTime.now();
-      final auditId = 'audit_${now.microsecondsSinceEpoch}_$userId';
-
-      final entity = AuditLogEntity()
-        ..auditId = auditId
-        ..userId = userId
-        ..userName = userName
-        ..action = _parseAction(action)
-        ..collectionName = collectionName
-        ..documentId = documentId
-        ..changesJson = changes != null ? _encodeChanges(changes) : null
-        ..notes = notes
-        ..createdAt = now;
-
-      // Save to local Isar
-      await _dbService.db.writeTxn(() async {
-        await _dbService.auditLogs.put(entity);
-      });
-
-      // Sync to Firebase
-      final firestore = db;
-      if (firestore != null) {
-        await firestore.collection('audit_logs').doc(auditId).set({
-          'userId': userId,
-          'userName': userName,
-          'action': action,
-          'collectionName': collectionName,
-          'documentId': documentId,
-          if (changes != null) 'changes': changes,
-          if (notes != null) 'notes': notes,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
+      AppLogger.debug(
+        'Skipped client accounting audit write for $collectionName/$documentId ($action). audit_logs are pull-only.',
+        tag: 'Audit',
+      );
     } catch (e) {
       handleError(e, 'logAction');
-    }
-  }
-
-  AuditAction _parseAction(String action) {
-    switch (action.toLowerCase()) {
-      case 'create':
-        return AuditAction.create;
-      case 'update':
-        return AuditAction.update;
-      case 'delete':
-        return AuditAction.delete;
-      case 'sync':
-        return AuditAction.sync;
-      case 'login':
-        return AuditAction.login;
-      case 'logout':
-        return AuditAction.logout;
-      default:
-        return AuditAction.other;
-    }
-  }
-
-  String? _encodeChanges(Map<String, dynamic> changes) {
-    try {
-      return changes.toString();
-    } catch (_) {
-      return null;
     }
   }
 

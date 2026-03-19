@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as fs;
-import 'package:flutter/foundation.dart';
 import 'offline_first_service.dart';
 import '../data/local/entities/tank_lot_entity.dart';
 import '../services/database_service.dart';
@@ -697,59 +696,26 @@ class TankService extends OfflineFirstService {
     String operatorId,
     String operatorName,
   ) async {
-    final firestoreDb = db;
-    if (firestoreDb == null) return [];
+    Object.hash(transaction, operatorId, operatorName);
+    final activeLots = await TankLotEntityQueryFilter(_db.tankLots.filter())
+        .tankIdEqualTo(tankId)
+        .and()
+        .materialIdEqualTo(materialId)
+        .and()
+        .statusEqualTo('active')
+        .sortByReceivedDate()
+        .findAll();
 
-    final lotsRef = firestoreDb.collection(tankLotsCollection);
-
-    // NOTE: In client-side SDK, we must perform reads BEFORE writes.
-    // However, we can't query collections easily inside transaction without knowing doc IDs.
-    // BUT we can run the query first (outside transaction or just normal get) to get candidates,
-    // then read them transactionally? Or just read them normally if concurrency isn't extreme?
-    // Using standard pattern: Query first, then transactionally update.
-    // If strict consistency is needed, we should verify in transaction.
-
-    // Fetch active lots (Non-transactional read to find IDs, then transactional read/write)
-    // Limitation: If someone completely consumes a lot between our read and transaction, it might fail.
-    // Retry logic handles this usually.
-
-    final q = lotsRef
-        .where('tankId', isEqualTo: tankId)
-        .where('materialId', isEqualTo: materialId)
-        .where('status', isEqualTo: 'active')
-        .orderBy('receivedDate', descending: false); // FIFO: Oldest first
-
-    final querySnapshot = await q.get(); // READ 1
-
-    if (querySnapshot.docs.isEmpty) {
+    if (activeLots.isEmpty) {
       throw Exception('No active lots found for material in tank $tankId');
     }
-
-    // We need to re-read inside transaction to be safe?
-    // Dart transaction.get() takes a DocumentReference.
-    // We will iterate and read-modify-write.
-    // BUT we need to check total available first.
-
-    // To properly lock, we should read them inside transaction.
-    // But we cannot query inside transaction in client SDK easily?
-    // Actually, we can't generic query. We must know DocRefs.
-    // So we use the snapshot from READ 1.
-    // We will read each doc again via transaction.
 
     double remainingToDeduct = requiredQty;
     final List<Map<String, dynamic>> consumedLots = [];
 
-    for (var docSnapshot in querySnapshot.docs) {
+    for (final lot in activeLots) {
       if (remainingToDeduct <= 0) break;
-
-      final lotRef = lotsRef.doc(docSnapshot.id);
-      final lotDoc = await transaction.get(lotRef); // READ 2 (Transactional)
-
-      if (!lotDoc.exists) continue;
-
-      final lotData = lotDoc.data();
-      if (lotData == null) continue;
-      final currentQty = (lotData['quantity'] as num).toDouble();
+      final currentQty = lot.quantity;
 
       if (currentQty <= 0) continue;
 
@@ -758,17 +724,12 @@ class TankService extends OfflineFirstService {
           : currentQty;
       final newLotQty = currentQty - deductFromThisLot;
 
-      transaction.update(lotRef, {
-        'quantity': newLotQty,
-        'status': newLotQty <= 0 ? 'exhausted' : 'active',
-        'updatedAt': DateTime.now().toIso8601String(),
-      });
-
       consumedLots.add({
-        'lotId': docSnapshot.id,
-        'supplierId': lotData['supplierId'],
-        'supplierName': lotData['supplierName'],
+        'lotId': lot.id,
+        'supplierId': lot.supplierId,
+        'supplierName': lot.supplierName,
         'quantity': deductFromThisLot,
+        'remainingQuantity': newLotQty,
       });
 
       remainingToDeduct -= deductFromThisLot;
@@ -968,70 +929,28 @@ class TankService extends OfflineFirstService {
     String operatorId,
     String operatorName,
   ) async {
-    final firestoreDb = db;
-    if (firestoreDb == null) return {};
-
-    final tankRef = firestoreDb.collection(tanksCollection).doc(tankId);
-    final tankDoc = await transaction.get(tankRef);
-
-    if (!tankDoc.exists) throw Exception("Tank not found.");
-
-    final data = tankDoc.data();
-    if (data == null) throw Exception("Tank data is empty.");
-    final currentStock = (data['currentStock'] as num).toDouble();
-    final capacity = (data['capacity'] as num).toDouble();
-
-    if (quantity <= 0) throw Exception("Quantity must be positive.");
-
-    final newStock = currentStock - quantity;
-
-    if (newStock < 0) {
-      throw Exception(
-        "Insufficient stock in ${data['name']}. Available: $currentStock",
-      );
-    }
-
-    // FIFO Lot Consumption
-    final lotConsumptions = await consumeLotsFromTankInTransaction(
-      transaction,
-      tankId,
-      data['materialId'],
-      quantity,
-      operatorId,
-      operatorName,
+    identityHashCode(transaction);
+    final result = await calculateConsumption(
+      tankId: tankId,
+      quantity: quantity,
+      referenceId: referenceId,
+      operatorId: operatorId,
+      operatorName: operatorName,
     );
-
-    final fillLevel = (newStock / capacity) * 100;
-    String status = (fillLevel < 5)
-        ? 'critical'
-        : (fillLevel < 15 ? 'low-stock' : 'active');
-
-    transaction.update(tankRef, {
-      'currentStock': newStock,
-      'fillLevel': fillLevel,
-      'status': status,
-      'updatedAt': DateTime.now().toIso8601String(),
+    await _db.db.writeTxn(() async {
+      await _db.tanks.put(result.tank);
+      await _db.tankTransactions.put(result.transaction);
+      if (result.lots.isNotEmpty) {
+        await _db.tankLots.putAll(result.lots);
+      }
     });
-
-    // Transaction Record
-    final transRef = firestoreDb.collection(tankTransactionsCollection).doc();
-    transaction.set(transRef, {
-      'tankId': tankId,
-      'tankName': data['name'],
-      'type': 'consumption',
-      'quantity': quantity,
-      'previousStock': currentStock,
-      'newStock': newStock,
-      'materialId': data['materialId'],
-      'materialName': data['materialName'],
-      'referenceId': referenceId,
-      'referenceType': 'production',
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-
-    final resultMap = Map<String, dynamic>.from(data);
-    resultMap['lotConsumptions'] = lotConsumptions;
-    return resultMap;
+    await _queueTankAndLotTransactionSync(
+      tank: result.tank,
+      transaction: result.transaction,
+      lots: result.lots,
+      syncImmediately: false,
+    );
+    return result.summary;
   }
 
   // Helper designed for use by OTHER Services (like BhattiService) in THEIR transactions
@@ -1430,105 +1349,73 @@ class TankService extends OfflineFirstService {
     required String operatorName,
   }) async {
     try {
-      final firestore = db;
-      if (firestore == null) return false;
+      final now = DateTime.now();
+      TankEntity? updatedTank;
+      Map<String, dynamic>? adjustmentPayload;
 
-      final bool isWindows =
-          defaultTargetPlatform == TargetPlatform.windows && !kIsWeb;
+      await _db.db.writeTxn(() async {
+        final tank = await TankEntityQueryWhere(
+          _db.tanks.where(),
+        ).idEqualTo(tankId).findFirst();
+        if (tank == null || tank.isDeleted) {
+          throw Exception("Tank not found locally: $tankId");
+        }
 
-      if (isWindows) {
-        final tankRef = firestore.collection(tanksCollection).doc(tankId);
-        final tankSnap = await tankRef.get();
-        if (!tankSnap.exists) throw Exception("Tank not found");
+        final oldStock = tank.currentStock;
+        final finalStock = newStock.clamp(0.0, tank.capacity);
+        final fillLevel = _safeFillLevel(
+          stock: finalStock,
+          capacity: tank.capacity,
+        );
 
-        final tankData = tankSnap.data()!;
-        final oldStock = (tankData['currentStock'] ?? 0).toDouble();
-        final capacity = (tankData['capacity'] ?? 10000).toDouble();
-        final finalStock = newStock.clamp(0.0, capacity);
-        final fillLevel = (finalStock / capacity) * 100;
+        tank
+          ..currentStock = finalStock
+          ..fillLevel = fillLevel
+          ..status = _statusForFillLevel(fillLevel)
+          ..updatedAt = now
+          ..syncStatus = SyncStatus.pending;
+        await _db.tanks.put(tank);
 
-        String status = (fillLevel < 5)
-            ? 'critical'
-            : (fillLevel < 15 ? 'low-stock' : 'active');
+        final adjustment = TankTransactionEntity()
+          ..id = 'tx_${generateId()}'
+          ..tankId = tankId
+          ..tankName = tank.name
+          ..type = 'adjustment'
+          ..quantity = finalStock - oldStock
+          ..newStock = finalStock
+          ..previousStock = oldStock
+          ..materialId = tank.materialId
+          ..materialName = tank.materialName
+          ..referenceId = 'adjustment:$tankId:${now.millisecondsSinceEpoch}'
+          ..referenceType = 'manual_adjustment'
+          ..operatorId = operatorId
+          ..operatorName = operatorName
+          ..timestamp = now
+          ..updatedAt = now
+          ..syncStatus = SyncStatus.pending
+          ..isDeleted = false;
+        await _db.tankTransactions.put(adjustment);
 
-        final batch = firestore.batch();
-        batch.update(tankRef, {
-          'currentStock': finalStock,
-          'fillLevel': fillLevel,
-          'status': status,
-          'updatedAt': DateTime.now().toIso8601String(),
-        });
-
-        final adjustmentRef = firestore
-            .collection(tankTransactionsCollection)
-            .doc();
-        batch.set(adjustmentRef, {
-          'id': adjustmentRef.id,
-          'tankId': tankId,
-          'tankName': tankData['name'],
-          'type': 'adjustment',
-          'quantity': finalStock - oldStock,
-          'newStock': finalStock,
-          'previousStock': oldStock,
+        updatedTank = tank;
+        adjustmentPayload = {
+          ...adjustment.toFirebaseJson(),
           'reason': reason,
-          'operatorId': operatorId,
-          'operatorName': operatorName,
-          'materialId': tankData['materialId'],
-          'materialName': tankData['materialName'],
-          'timestamp': DateTime.now().toIso8601String(),
-        });
-        await batch.commit();
-      } else {
-        await firestore.runTransaction((transaction) async {
-          final tankRef = firestore.collection(tanksCollection).doc(tankId);
-          final tankSnap = await transaction.get(tankRef);
+          'createdAt': now.toIso8601String(),
+        };
+      });
 
-          if (!tankSnap.exists) throw Exception("Tank not found");
-
-          final tankData = tankSnap.data()!;
-          final oldStock = (tankData['currentStock'] ?? 0).toDouble();
-          final capacity = (tankData['capacity'] ?? 10000).toDouble();
-
-          // Ensure new stock does not exceed capacity
-          final finalStock = newStock.clamp(0.0, capacity);
-          final fillLevel = (finalStock / capacity) * 100;
-
-          String status = 'active';
-          if (fillLevel < 5) {
-            status = 'critical';
-          } else if (fillLevel < 15) {
-            status = 'low-stock';
-          }
-
-          transaction.update(tankRef, {
-            'currentStock': finalStock,
-            'fillLevel': fillLevel,
-            'status': status,
-            'updatedAt': DateTime.now().toIso8601String(),
-          });
-
-          // Log the stock adjustment
-          final adjustmentRef = firestore
-              .collection(tankTransactionsCollection)
-              .doc();
-          transaction.set(adjustmentRef, {
-            'id': adjustmentRef.id,
-            'tankId': tankId,
-            'tankName': tankData['name'],
-            'type': 'adjustment',
-            'quantity': finalStock - oldStock,
-            'newStock': finalStock,
-            'previousStock': oldStock,
-            'reason': reason,
-            'operatorId': operatorId,
-            'operatorName': operatorName,
-            'materialId': tankData['materialId'],
-            'materialName': tankData['materialName'],
-            'timestamp': DateTime.now().toIso8601String(),
-            'createdAt': DateTime.now().toIso8601String(),
-          });
-        });
-      }
+      await syncToFirebase(
+        'update',
+        updatedTank!.toDomain().toJson(),
+        collectionName: tanksCollection,
+        syncImmediately: false,
+      );
+      await syncToFirebase(
+        'set',
+        adjustmentPayload!,
+        collectionName: tankTransactionsCollection,
+        syncImmediately: false,
+      );
       return true;
     } catch (e) {
       throw handleError(e, 'adjustTankStock');

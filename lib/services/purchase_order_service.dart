@@ -71,7 +71,7 @@ class PurchaseOrderService extends OfflineFirstService {
     final poId = generateId();
     final now = getCurrentTimestamp();
 
-    // Improved PO Number generation: PO-YYYYMMDD-XXXX
+    // Improved PO Number generation: PO-YYYYMMDD-RAND
     final dateToken = DateFormat('yyyyMMdd').format(DateTime.now());
     final randToken = poId.substring(0, 4).toUpperCase();
     final poNumber = 'PO-$dateToken-$randToken';

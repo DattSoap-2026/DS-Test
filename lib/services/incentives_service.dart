@@ -1,5 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
+import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
 import 'base_service.dart';
 
 const incentivesDocId =
@@ -70,13 +71,19 @@ class IncentivesService extends BaseService {
 
   Future<bool> saveIncentives(IncentiveSettings settings) async {
     try {
-      final firestore = db;
-      if (firestore == null) return false;
-
-      await firestore
-          .collection(settingsCollection)
-          .doc(incentivesDocId)
-          .set(settings.toJson(), SetOptions(merge: true));
+      final payload = <String, dynamic>{
+        'id': incentivesDocId,
+        ...settings.toJson(),
+      };
+      await SyncQueueService.instance.addToQueue(
+        collectionName: settingsCollection,
+        documentId: incentivesDocId,
+        operation: 'set',
+        payload: payload,
+      );
+      if (db != null) {
+        await SyncService.instance.pushAllPending();
+      }
       return true;
     } catch (e) {
       handleError(e, 'saveIncentives');

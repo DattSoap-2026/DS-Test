@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'conflict_entity.g.dart';
 
@@ -58,6 +59,72 @@ class ConflictEntity extends BaseEntity {
       ..resolvedAt = conflict.resolvedAt
       ..syncStatus = conflict.syncStatus
       ..updatedAt = conflict.updatedAt;
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'entityId': entityId,
+      'entityType': entityType,
+      'localData': localData,
+      'serverData': serverData,
+      'conflictDate': conflictDate.toIso8601String(),
+      'resolved': resolved,
+      'resolutionStrategy': resolutionStrategy.name,
+      'resolvedBy': resolvedBy,
+      'resolvedAt': resolvedAt?.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
+  static ConflictEntity fromJson(Map<String, dynamic> json) {
+    return ConflictEntity()
+      ..id = parseString(json['id'])
+      ..entityId = parseString(json['entityId'])
+      ..entityType = parseString(json['entityType'])
+      ..localData = parseString(json['localData'])
+      ..serverData = parseString(json['serverData'])
+      ..conflictDate = parseDate(json['conflictDate'])
+      ..resolved = parseBool(json['resolved'])
+      ..resolutionStrategy = _parseResolutionStrategy(
+        json['resolutionStrategy'],
+      )
+      ..resolvedBy = _nullableString(json['resolvedBy'])
+      ..resolvedAt = parseDateOrNull(json['resolvedAt'])
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
+  }
+
+  static String? _nullableString(dynamic value) {
+    final normalized = parseString(value).trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  static ResolutionStrategy _parseResolutionStrategy(dynamic value) {
+    final normalized = parseString(
+      value,
+      fallback: ResolutionStrategy.pending.name,
+    ).trim().toLowerCase().replaceFirst('resolutionstrategy.', '');
+    for (final candidate in ResolutionStrategy.values) {
+      if (candidate.name.toLowerCase() == normalized) {
+        return candidate;
+      }
+    }
+    return ResolutionStrategy.pending;
   }
 }
 

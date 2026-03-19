@@ -255,7 +255,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
 
     if (confirmed == true && mounted) {
-      context.read<SyncManager>().stopUserListener();
+      context.read<AppSyncCoordinator>().stopUserListener();
       await context.read<AuthProvider>().signOut();
     }
   }

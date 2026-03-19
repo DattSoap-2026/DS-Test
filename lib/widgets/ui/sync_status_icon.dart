@@ -7,15 +7,17 @@ class SyncStatusIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We can't use context.watch<SyncManager>() easily if SyncManager lacks ChangeNotifier.
-    // However, SyncManager is not a ChangeNotifier yet.
-    // We should make SyncManager a ChangeNotifier or use a Stream.
-    // For now, let's assume we might need to convert SyncManager to ChangeNotifier
+    // We can't use context.watch<AppSyncCoordinator>() easily if the sync
+    // coordinator lacks ChangeNotifier.
+    // However, the coordinator is not guaranteed to be a ChangeNotifier yet.
+    // We should make the sync coordinator a ChangeNotifier or use a Stream.
+    // For now, let's assume we might need to convert it to ChangeNotifier
     // OR create a simple StreamBuilder if we exposed a stream.
 
     // Simplest: Poll or Make it ChangeNotifier
     // Reactive listener
-    final isSyncing = context.select<SyncManager, bool>((s) => s.isSyncing);
+    final isSyncing =
+        context.select<AppSyncCoordinator, bool>((s) => s.isSyncing);
 
     if (isSyncing) {
       return Padding(
@@ -44,4 +46,4 @@ class SyncStatusIcon extends StatelessWidget {
   }
 }
 
-// BETTER APPROACH: Make SyncManager a ChangeNotifier
+// BETTER APPROACH: Make the sync coordinator a ChangeNotifier

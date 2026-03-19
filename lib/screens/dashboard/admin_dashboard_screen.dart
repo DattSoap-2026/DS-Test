@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../services/delegates/firestore_query_delegate.dart';
 import '../../services/sales_service.dart';
 import '../../services/products_service.dart';
 import '../../services/dispatch_service.dart';
@@ -102,55 +102,54 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   void _setupRealtimeListeners() {
-    final firestore = FirebaseFirestore.instance;
+    final delegate = FirestoreQueryDelegate();
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
 
     // Listen to sales changes (today onwards)
     _listeners.add(
-      firestore
-          .collection('sales')
-          .where(
-            'createdAt',
-            isGreaterThanOrEqualTo: todayStart.toIso8601String(),
+      delegate
+          .watchCollection(
+            collection: 'sales',
+            filters: <FirestoreQueryFilter>[
+              FirestoreQueryFilter(
+                field: 'createdAt',
+                operator: FirestoreQueryOperator.isGreaterThanOrEqualTo,
+                value: todayStart.toIso8601String(),
+              ),
+            ],
           )
-          .snapshots()
           .listen((_) => _autoRefresh()),
     );
 
     // Listen to product stock changes
     _listeners.add(
-      firestore
-          .collection('products')
-          .snapshots()
+      delegate
+          .watchCollection(collection: 'products')
           .listen((_) => _autoRefresh()),
     );
 
     // Listen to dispatch changes
     _listeners.add(
-      firestore
-          .collection('dispatches')
-          .snapshots()
+      delegate
+          .watchCollection(collection: 'dispatches')
           .listen((_) => _autoRefresh()),
     );
 
     // Listen to production batches (bhatti + cutting)
     _listeners.add(
-      firestore
-          .collection('bhatti_batches')
-          .snapshots()
+      delegate
+          .watchCollection(collection: 'bhatti_batches')
           .listen((_) => _autoRefresh()),
     );
     _listeners.add(
-      firestore
-          .collection('cutting_batches')
-          .snapshots()
+      delegate
+          .watchCollection(collection: 'cutting_batches')
           .listen((_) => _autoRefresh()),
     );
     _listeners.add(
-      firestore
-          .collection('detailed_production_logs')
-          .snapshots()
+      delegate
+          .watchCollection(collection: 'detailed_production_logs')
           .listen((_) => _autoRefresh()),
     );
   }

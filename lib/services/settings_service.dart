@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Restored
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
+import 'package:flutter_app/core/sync/sync_service.dart';
 import 'database_service.dart';
-import '../data/local/base_entity.dart';
 import '../data/local/entities/route_entity.dart';
 import '../data/local/entities/settings_cache_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import '../models/settings_audit_log.dart';
 import 'base_service.dart';
 import 'settings_audit_service.dart';
 import 'settings_registry.dart';
+import 'delegates/firestore_query_delegate.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'outbox_codec.dart';
 
 class DeptTeam {
   final String code;
@@ -1050,52 +1050,22 @@ class SettingsService extends BaseService {
     pdfTemplatesCollection,
   };
 
-  Future<String> _enqueueOutbox({
+  Future<void> _enqueueOutbox({
     required String collection,
     required String action,
     required Map<String, dynamic> payload,
     String? explicitRecordKey,
   }) async {
-    final queueId = OutboxCodec.buildQueueId(
-      collection,
-      payload,
-      explicitRecordKey: explicitRecordKey ?? payload['id']?.toString(),
+    final documentId = explicitRecordKey?.trim().isNotEmpty == true
+        ? explicitRecordKey!.trim()
+        : payload['id']?.toString().trim() ?? '';
+    if (documentId.isEmpty) return;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: payload,
     );
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
-    return queueId;
-  }
-
-  Future<void> _dequeueOutbox(String queueId) async {
-    final existing = await _dbService.syncQueue.getById(queueId);
-    if (existing == null) return;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.delete(existing.isarId);
-    });
   }
 
   Future<void> _performImmediateDocWrite({
@@ -1106,26 +1076,7 @@ class SettingsService extends BaseService {
     required Map<String, dynamic> payload,
     bool merge = true,
   }) async {
-    final docRef = firestore.collection(collection).doc(docId);
-    final remotePayload = Map<String, dynamic>.from(payload)..remove('id');
-
-    switch (action) {
-      case 'set':
-      case 'add':
-      case 'update':
-        await docRef.set(remotePayload, SetOptions(merge: merge));
-        return;
-      case 'delete':
-        final now = DateTime.now().toIso8601String();
-        await docRef.set({
-          'isDeleted': true,
-          'deletedAt': now,
-          'updatedAt': now,
-        }, SetOptions(merge: true));
-        return;
-      default:
-        throw Exception('Unsupported settings action: $action');
-    }
+    await SyncService.instance.pushAllPending();
   }
 
   Future<void> _queueDocWrite({
@@ -1137,7 +1088,7 @@ class SettingsService extends BaseService {
     String? explicitRecordKey,
   }) async {
     final queuedPayload = <String, dynamic>{...payload, 'id': docId};
-    final queueId = await _enqueueOutbox(
+    await _enqueueOutbox(
       collection: collection,
       action: action,
       payload: queuedPayload,
@@ -1156,9 +1107,8 @@ class SettingsService extends BaseService {
         payload: queuedPayload,
         merge: merge,
       );
-      await _dequeueOutbox(queueId);
     } catch (_) {
-      // Keep durable outbox entry for SyncManager retry.
+      // Keep durable outbox entry for sync coordinator retry.
     }
   }
 
@@ -1314,7 +1264,9 @@ class SettingsService extends BaseService {
     if (firestore == null) return [];
 
     try {
-      final snapshot = await firestore.collection('schemes').get();
+      final snapshot = await FirestoreQueryDelegate(firestore).getCollection(
+        collection: 'schemes',
+      );
       final fetched = snapshot.docs.map((doc) {
         final row = Map<String, dynamic>.from(doc.data());
         row['id'] = doc.id;
@@ -1462,10 +1414,10 @@ class SettingsService extends BaseService {
       try {
         final firestore = db;
         if (firestore != null) {
-          final snapshot = await firestore
-              .collection('routes')
-              .orderBy('name')
-              .get();
+          final snapshot = await FirestoreQueryDelegate(firestore).getCollection(
+            collection: 'routes',
+            orderBy: 'name',
+          );
 
           for (final doc in snapshot.docs) {
             final name = (doc.data()['name'] as String? ?? '').trim();
@@ -1495,8 +1447,10 @@ class SettingsService extends BaseService {
       final firestore = db;
       if (firestore == null) return null;
 
-      final docRef = firestore.collection('settings').doc(gstSettingsDocId);
-      final snapshot = await docRef.get();
+      final snapshot = await FirestoreQueryDelegate(firestore).getDocument(
+        collection: 'settings',
+        documentId: gstSettingsDocId,
+      );
       if (snapshot.exists) {
         final data = snapshot.data() as Map<String, dynamic>;
         await _writeCache(gstSettingsDocId, data);

@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
+import 'package:flutter_app/core/sync/sync_service.dart';
 import 'base_service.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -10,9 +12,8 @@ import '../data/local/entities/duty_session_entity.dart';
 import '../data/local/base_entity.dart';
 import '../data/repositories/duty_repository.dart';
 import '../data/local/entities/settings_cache_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import 'database_service.dart';
-import 'outbox_codec.dart';
+import 'delegates/firestore_query_delegate.dart';
 import '../utils/app_logger.dart';
 import 'package:uuid/uuid.dart';
 
@@ -492,43 +493,16 @@ class DutyService extends BaseService {
     String collection = _collection,
     String? explicitRecordKey,
   }) async {
-    final queueId = OutboxCodec.buildQueueId(
-      collection,
-      payload,
-      explicitRecordKey: explicitRecordKey ?? payload['id']?.toString(),
+    final documentId = explicitRecordKey?.trim().isNotEmpty == true
+        ? explicitRecordKey!.trim()
+        : payload['id']?.toString().trim() ?? '';
+    if (documentId.isEmpty) return;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: payload,
     );
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
-  }
-
-  Future<void> _dequeueOutbox(String queueId) async {
-    final existing = await _dbService.syncQueue.getById(queueId);
-    if (existing == null) return;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.delete(existing.isarId);
-    });
   }
 
   Stream<List<DutySession>> subscribeToDateDutySessions(String date) {
@@ -564,7 +538,7 @@ class DutyService extends BaseService {
               remoteModel.id,
             );
             if (existing != null && existing.syncStatus == SyncStatus.pending) {
-              // Keep local unsynced edits authoritative until SyncManager resolves them.
+              // Keep local unsynced edits authoritative until the sync coordinator resolves them.
               continue;
             }
             final entity = DutySessionEntity.fromDomain(remoteModel);
@@ -646,11 +620,6 @@ class DutyService extends BaseService {
       data['updatedBy'] = updatedBy;
 
       // Queue durable outbox first for offline-safe persistence.
-      final queueId = OutboxCodec.buildQueueId(
-        'public_settings',
-        data,
-        explicitRecordKey: 'duty_settings',
-      );
       await _enqueueOutbox(
         data,
         action: 'set',
@@ -659,16 +628,11 @@ class DutyService extends BaseService {
       );
 
       // Best-effort immediate sync when online.
-      final firestore = db;
-      if (firestore != null) {
+      if (db != null) {
         try {
-          final remoteData = Map<String, dynamic>.from(data)..remove('id');
-          await firestore
-              .doc(dutySettingsDoc)
-              .set(remoteData, SetOptions(merge: true));
-          await _dequeueOutbox(queueId);
+          await SyncService.instance.pushAllPending();
         } catch (_) {
-          // Keep queued item for SyncManager retry.
+          // Keep queued item for sync coordinator retry.
         }
       }
 
@@ -702,7 +666,10 @@ class DutyService extends BaseService {
       // ... logic is same ... but if firestore is null?
       // 1. Check assignments (Firestore only currently)
       if (firestore != null) {
-        final userDoc = await firestore.collection('users').doc(userId).get();
+        final userDoc = await FirestoreQueryDelegate(firestore).getDocument(
+          collection: 'users',
+          documentId: userId,
+        );
         if (userDoc.exists) {
           final userData = userDoc.data();
           if (role == 'Driver' &&
@@ -817,7 +784,7 @@ class DutyService extends BaseService {
       // If nothing local, should we check remote?
       // If we are strictly offline-first, local is the truth.
       // If data was cleared, we might want to fetch from server on init.
-      // But SyncManager should handle population.
+      // But the sync coordinator should handle population.
       return null;
     } catch (e) {
       handleError(e, 'getActiveDutySession');
@@ -896,8 +863,8 @@ class DutyService extends BaseService {
       entity.syncStatus = SyncStatus.pending;
       await _dutyRepository.startDuty(entity);
 
-      // Attempt immediate sync push (optional, or rely on SyncManager)
-      // _syncManager.triggerSync... if available.
+      // Attempt immediate sync push (optional, or rely on the sync coordinator)
+      // _syncCoordinator.triggerSync... if available.
 
       // Update location
       await _gpsService.updateEntityLocation(

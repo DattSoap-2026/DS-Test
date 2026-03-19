@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import 'dart:convert';
 import 'offline_first_service.dart';
 import 'database_service.dart';
@@ -8,11 +9,11 @@ import '../data/local/entities/bhatti_batch_entity.dart';
 import '../data/local/entities/department_stock_entity.dart';
 import '../data/local/entities/wastage_log_entity.dart';
 import '../data/local/entities/stock_ledger_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import '../data/local/base_entity.dart';
 import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'outbox_codec.dart';
+import 'delegates/firestore_query_delegate.dart';
 
 import 'tank_service.dart';
 import 'inventory_movement_engine.dart';
@@ -186,30 +187,20 @@ class BhattiService extends OfflineFirstService {
     required String action,
     required Map<String, dynamic> payload,
   }) async {
-    final now = DateTime.now();
     final commandPayload = OutboxCodec.ensureCommandPayload(
       collection: collection,
       action: action,
       payload: payload,
       queueId: queueId,
     );
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: commandPayload,
-        existingMeta: null,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
+    final documentId = payload['id']?.toString().trim() ?? '';
+    if (documentId.isEmpty) return;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: commandPayload,
+    );
     if (_centralQueueSync != null) {
       await _centralQueueSync!.call();
     }
@@ -220,33 +211,7 @@ class BhattiService extends OfflineFirstService {
     String action,
     String collection,
     Map<String, dynamic> data,
-  ) async {
-    final firestore = db;
-    if (firestore == null) return;
-
-    final docId = data['id']?.toString();
-    if (docId == null || docId.isEmpty) return;
-
-    final payload = Map<String, dynamic>.from(data)..remove('id');
-    switch (action) {
-      case 'add':
-      case 'set':
-      case 'update':
-        await firestore
-            .collection(collection)
-            .doc(docId)
-            .set(payload, fs.SetOptions(merge: true));
-        return;
-      case 'delete':
-        await firestore.collection(collection).doc(docId).set({
-          'isDeleted': true,
-          'updatedAt': payload['updatedAt'] ?? DateTime.now().toIso8601String(),
-        }, fs.SetOptions(merge: true));
-        return;
-    }
-
-    await super.performSync(action, collection, data);
-  }
+  ) => super.performSync(action, collection, data);
 
   Map<String, int> _defaultOutputRules() => const {'sona': 6, 'gita': 7};
 
@@ -1063,22 +1028,28 @@ class BhattiService extends OfflineFirstService {
         return [];
       }
 
-      var query = firestore
-          .collection('bhatti_daily_entries')
-          .where(
-            'date',
-            isGreaterThanOrEqualTo: startDate.toIso8601String().split('T')[0],
-          )
-          .where(
-            'date',
-            isLessThanOrEqualTo: endDate.toIso8601String().split('T')[0],
-          );
-
-      if (bhattiName != null) {
-        query = query.where('bhattiName', isEqualTo: bhattiName);
-      }
-
-      final snapshot = await query.get();
+      final filters = <FirestoreQueryFilter>[
+        FirestoreQueryFilter(
+          field: 'date',
+          operator: FirestoreQueryOperator.isGreaterThanOrEqualTo,
+          value: startDate.toIso8601String().split('T')[0],
+        ),
+        FirestoreQueryFilter(
+          field: 'date',
+          operator: FirestoreQueryOperator.isLessThanOrEqualTo,
+          value: endDate.toIso8601String().split('T')[0],
+        ),
+        if (bhattiName != null)
+          FirestoreQueryFilter(
+            field: 'bhattiName',
+            operator: FirestoreQueryOperator.isEqualTo,
+            value: bhattiName,
+          ),
+      ];
+      final snapshot = await FirestoreQueryDelegate(firestore).getCollection(
+        collection: 'bhatti_daily_entries',
+        filters: filters,
+      );
       return snapshot.docs
           .map((doc) => doc.data())
           .where((data) => data['isDeleted'] != true)
@@ -1102,10 +1073,12 @@ class BhattiService extends OfflineFirstService {
         return;
       }
 
-      await firestore
-          .collection('bhatti_daily_entries')
-          .doc(entryData['id'])
-          .set(entryData, fs.SetOptions(merge: true));
+      await _enqueueSyncCommand(
+        queueId: 'bhatti_daily_entry_${entryData['id']}',
+        collection: 'bhatti_daily_entries',
+        action: 'set',
+        payload: entryData,
+      );
     } catch (e) {
       throw handleError(e, 'saveBhattiDailyEntry');
     }

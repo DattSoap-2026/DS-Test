@@ -313,17 +313,20 @@ class _ProductsManagementScreenState extends State<ProductsManagementScreen> {
 
     final actions = [
       if (!effectiveReadOnly) ...[
-        Consumer2<SyncManager, AuthProvider>(
-          builder: (context, syncManager, auth, _) {
-            final isSyncing = syncManager.isSyncing;
-            final pending = syncManager.pendingCount;
+        Consumer2<AppSyncCoordinator, AuthProvider>(
+          builder: (context, appSyncCoordinator, auth, _) {
+            final isSyncing = appSyncCoordinator.isSyncing;
+            final pending = appSyncCoordinator.pendingCount;
             final user = auth.currentUser;
 
             return OutlinedButton.icon(
               onPressed: (isSyncing || user == null)
                   ? null
                   : () async {
-                      await syncManager.syncAll(user, forceRefresh: true);
+                      await appSyncCoordinator.syncAll(
+                        user,
+                        forceRefresh: true,
+                      );
                       if (!mounted) return;
                       await _loadProducts();
                     },

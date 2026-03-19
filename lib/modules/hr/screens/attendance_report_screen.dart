@@ -71,7 +71,7 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
             icon: const Icon(Icons.sync_rounded),
             tooltip: 'Sync & Refresh',
             onPressed: () async {
-              final sync = context.read<SyncManager>();
+              final sync = context.read<AppSyncCoordinator>();
               final user = context.read<AuthProvider>().currentUser;
               if (user != null) {
                 ScaffoldMessenger.of(context).showSnackBar(

@@ -1,5 +1,8 @@
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart' as fs;
+import 'package:flutter_app/core/constants/collection_registry.dart';
+import 'package:flutter_app/core/network/connectivity_service.dart';
+import 'package:flutter_app/core/sync/sync_service.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/role_access_matrix.dart';
@@ -10,7 +13,6 @@ import '../data/local/entities/return_entity.dart';
 import '../data/local/entities/inventory_location_entity.dart';
 import '../data/local/entities/stock_ledger_entity.dart';
 import '../data/local/entities/stock_balance_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import '../data/local/entities/user_entity.dart';
 import '../models/types/return_types.dart';
 import '../models/types/user_types.dart';
@@ -26,11 +28,11 @@ import 'outbox_codec.dart';
 import 'sales_service.dart';
 import 'service_capability_guard.dart';
 
-const returnsCollection = 'returns';
-const productsCollection = 'products';
-const usersCollection = 'users';
-const customersCollection = 'customers';
-const salesCollection = 'sales';
+const returnsCollection = CollectionRegistry.returns;
+const productsCollection = CollectionRegistry.products;
+const usersCollection = CollectionRegistry.users;
+const customersCollection = CollectionRegistry.customers;
+const salesCollection = CollectionRegistry.sales;
 
 /// State machine for return status transitions
 class ReturnStateMachine {
@@ -362,84 +364,6 @@ class ReturnsService extends OfflineFirstService {
     }
   }
 
-  Future<void> _ensureReturnApprovalInventoryAppliedInTxn({
-    required ReturnRequest request,
-    required String referenceId,
-    required String actorUid,
-    String? actorLegacyAppUserId,
-    required DateTime occurredAt,
-  }) async {
-    if (request.returnType == 'stock_return') {
-      final salesmanLocationId =
-          InventoryProjectionService.salesmanLocationIdForUid(
-            request.salesmanId,
-          );
-      final warehouseLocationId =
-          InventoryProjectionService.warehouseMainLocationId;
-      await _ensureInventoryLocationInTxn(warehouseLocationId);
-      await _ensureInventoryLocationInTxn(salesmanLocationId);
-
-      for (final item in _commandItemsFromReturnItems(request.items)) {
-        await _seedSourceBalancesInTxn(
-          sourceLocationId: salesmanLocationId,
-          items: [item],
-          occurredAt: occurredAt,
-        );
-        final command = InventoryCommand.internalTransfer(
-          sourceLocationId: salesmanLocationId,
-          destinationLocationId: warehouseLocationId,
-          referenceId: referenceId,
-          productId: item.productId,
-          quantityBase: item.quantityBase,
-          actorUid: actorUid,
-          actorLegacyAppUserId: actorLegacyAppUserId,
-          reasonCode: 'stock_return_approval',
-          referenceType: 'stock_return',
-          createdAt: occurredAt,
-        );
-        await _inventoryMovementEngine.applyCommandInTxn(command);
-      }
-      return;
-    }
-
-    if (request.disposition == 'Good Stock') {
-      await _applySalesReturnGoodStockInTxn(
-        request: request,
-        actorUid: actorUid,
-        actorLegacyAppUserId: actorLegacyAppUserId,
-        occurredAt: occurredAt,
-        referenceId: referenceId,
-      );
-      return;
-    }
-
-    await _applySalesReturnBadStockInTxn(
-      request: request,
-      actorUid: actorUid,
-      actorLegacyAppUserId: actorLegacyAppUserId,
-      occurredAt: occurredAt,
-      referenceId: referenceId,
-    );
-  }
-
-  Future<void> _ensureReturnApprovalInventoryApplied({
-    required ReturnRequest request,
-    required String referenceId,
-    required String actorUid,
-    String? actorLegacyAppUserId,
-    required DateTime occurredAt,
-  }) async {
-    await _db.db.writeTxn(() async {
-      await _ensureReturnApprovalInventoryAppliedInTxn(
-        request: request,
-        referenceId: referenceId,
-        actorUid: actorUid,
-        actorLegacyAppUserId: actorLegacyAppUserId,
-        occurredAt: occurredAt,
-      );
-    });
-  }
-
   ReturnEntity _buildReturnEntityFromMap(
     Map<String, dynamic> data, {
     required SyncStatus syncStatus,
@@ -494,64 +418,110 @@ class ReturnsService extends OfflineFirstService {
     if (returnId == null || returnId.isEmpty) return '';
 
     final queueId = 'returns_${action}_$returnId';
-    final existing = await _db.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
     final normalizedPayload = OutboxCodec.ensureCommandPayload(
       collection: returnsCollection,
       action: action,
       payload: requestData,
-      existingMeta: existingMeta,
       queueId: queueId,
     );
     requestData
       ..clear()
       ..addAll(normalizedPayload);
 
-    final entity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = returnsCollection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: normalizedPayload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _db.db.writeTxn(() async {
-      await _db.syncQueue.put(entity);
-    });
-    return queueId;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: returnsCollection,
+      documentId: returnId,
+      operation: action,
+      payload: normalizedPayload,
+    );
+    return returnId;
   }
 
-  Future<void> _dequeueReturnSync(String queueId) async {
-    if (queueId.isEmpty) return;
-    final existing = await _db.syncQueue.getById(queueId);
-    if (existing == null) return;
-    await _db.db.writeTxn(() async {
-      await _db.syncQueue.delete(existing.isarId);
-    });
+  Future<void> _enqueueEntityForSync({
+    required String collectionName,
+    required String documentId,
+    required String operation,
+    required Map<String, dynamic> payload,
+  }) async {
+    if (documentId.trim().isEmpty) {
+      return;
+    }
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collectionName,
+      documentId: documentId,
+      operation: operation,
+      payload: payload,
+    );
+  }
+
+  Future<void> _enqueueApprovalSideEffectsForSync(ReturnRequest request) async {
+    final customerId = request.customerId?.trim() ?? '';
+    if (customerId.isNotEmpty) {
+      final customer = await _db.customers.getById(customerId);
+      if (customer != null) {
+        await _enqueueEntityForSync(
+          collectionName: customersCollection,
+          documentId: customer.id,
+          operation: 'update',
+          payload: customer.toJson(),
+        );
+      }
+    }
+
+    final saleId = request.originalSaleId?.trim() ?? '';
+    if (saleId.isNotEmpty) {
+      final sale = await _db.sales.get(fastHash(saleId));
+      if (sale != null) {
+        await _enqueueEntityForSync(
+          collectionName: salesCollection,
+          documentId: sale.id,
+          operation: 'update',
+          payload: sale.toJson(),
+        );
+      }
+    }
+
+    final salesmanId = request.salesmanId.trim();
+    if (salesmanId.isNotEmpty) {
+      final salesman = await _db.users.getById(salesmanId);
+      if (salesman != null) {
+        await _enqueueEntityForSync(
+          collectionName: usersCollection,
+          documentId: salesman.id,
+          operation: 'update',
+          payload: salesman.toJson(),
+        );
+      }
+    }
+
+    final ledgerEntries = await _db.stockLedger
+        .filter()
+        .referenceIdEqualTo(request.id)
+        .findAll();
+    for (final ledgerEntry in ledgerEntries) {
+      await _enqueueEntityForSync(
+        collectionName: CollectionRegistry.stockLedger,
+        documentId: ledgerEntry.id,
+        operation: 'set',
+        payload: ledgerEntry.toJson(),
+      );
+    }
   }
 
   Future<bool> _queueAndSyncReturn({
     required String action,
     required Map<String, dynamic> payload,
   }) async {
-    final queueId = await _enqueueReturnForSync(payload, action: action);
-    if (db == null) return false;
+    final returnId = await _enqueueReturnForSync(payload, action: action);
+    if (returnId.isEmpty || !ConnectivityService.instance.isOnline) {
+      return false;
+    }
     try {
-      await performSync(action, returnsCollection, payload);
-      await _dequeueReturnSync(queueId);
-      return true;
+      await SyncService.instance.syncAllPending();
+      return !await SyncQueueService.instance.hasPendingItem(
+        collectionName: returnsCollection,
+        documentId: returnId,
+      );
     } catch (_) {
       return false;
     }
@@ -583,14 +553,7 @@ class ReturnsService extends OfflineFirstService {
     final existingReturns = await _db.returns.where().findAll();
     final existingIds = existingReturns.map((e) => e.id).toSet();
 
-    final existingQueueItems = await _db.syncQueue
-        .filter()
-        .collectionEqualTo(returnsCollection)
-        .findAll();
-    final queuedIds = <String>{};
-    for (final item in existingQueueItems) {
-      queuedIds.add(item.id);
-    }
+    final pendingReturns = <Map<String, dynamic>>[];
 
     await _db.db.writeTxn(() async {
       for (final entry in legacyList) {
@@ -611,26 +574,27 @@ class ReturnsService extends OfflineFirstService {
         existingIds.add(id);
 
         if (needsSync) {
-          final queueId = 'returns_set_$id';
-          if (!queuedIds.contains(queueId)) {
-            final queueEntity = SyncQueueEntity()
-              ..id = queueId
-              ..collection = returnsCollection
-              ..action = 'set'
-              ..dataJson = OutboxCodec.encodeEnvelope(
-                payload: data,
-                now: DateTime.now(),
-                resetRetryState: true,
-              )
-              ..createdAt = DateTime.now()
-              ..updatedAt = DateTime.now()
-              ..syncStatus = SyncStatus.pending;
-            await _db.syncQueue.put(queueEntity);
-            queuedIds.add(queueId);
-          }
+          pendingReturns.add(Map<String, dynamic>.from(data));
         }
       }
     });
+
+    for (final request in pendingReturns) {
+      final returnId = request['id']?.toString();
+      if (returnId == null || returnId.isEmpty) {
+        continue;
+      }
+      final alreadyQueued = await SyncQueueService.instance.hasPendingItem(
+        collectionName: returnsCollection,
+        documentId: returnId,
+      );
+      if (!alreadyQueued) {
+        await _enqueueReturnForSync(
+          Map<String, dynamic>.from(request),
+          action: 'set',
+        );
+      }
+    }
 
     await prefs.remove(localStorageKey);
     await prefs.setBool(_legacyMigrationFlag, true);
@@ -1001,22 +965,21 @@ class ReturnsService extends OfflineFirstService {
         }
 
         // ── C. Mark request as approved locally ──
+        requestEntity.approvedBy = approverId;
         requestEntity.status = 'approved';
         requestEntity.updatedAt = now;
         requestEntity.syncStatus = SyncStatus.pending;
         await _db.returns.put(requestEntity);
       });
 
+      await _enqueueApprovalSideEffectsForSync(requestEntity.toDomain());
+
       // 🔒 LOCKED FIX #2 (2026-02-16): Fire-and-forget sync — DO NOT await.
       //    The local Isar write is already committed (offline-first).
       //    Sync runs in background; if it fails, the sync queue retries later.
-      final requestData = {
-        'id': returnId,
-        'approverId': approverId,
-        'updatedAt': now.toIso8601String(),
-      };
+      final requestData = requestEntity.toJson();
 
-      _queueAndSyncReturn(action: 'approve', payload: requestData)
+      _queueAndSyncReturn(action: 'update', payload: requestData)
           .then((synced) async {
             if (synced) {
               try {
@@ -1276,6 +1239,7 @@ class ReturnsService extends OfflineFirstService {
 
       // 2. Update Local
       await _db.db.writeTxn(() async {
+        requestEntity.approvedBy = rejectorId;
         requestEntity.status = 'rejected';
         requestEntity.updatedAt = now;
         requestEntity.syncStatus = SyncStatus.pending;
@@ -1283,13 +1247,9 @@ class ReturnsService extends OfflineFirstService {
       });
 
       // 🔒 LOCKED FIX #2 (2026-02-16): Fire-and-forget sync — DO NOT await.
-      final requestData = {
-        'id': returnId,
-        'rejectorId': rejectorId,
-        'updatedAt': now.toIso8601String(),
-      };
+      final requestData = requestEntity.toJson();
 
-      _queueAndSyncReturn(action: 'reject', payload: requestData)
+      _queueAndSyncReturn(action: 'update', payload: requestData)
           .then((synced) async {
             if (synced) {
               try {
@@ -1346,168 +1306,5 @@ class ReturnsService extends OfflineFirstService {
     String action,
     String collection,
     Map<String, dynamic> data,
-  ) async {
-    final firestoreDb = db;
-    if (firestoreDb == null) return;
-
-    try {
-      if (collection == returnsCollection) {
-        if (action == 'approve') {
-          final String returnId = data['id'];
-          final String approverId = data['approverId'];
-          final commandKey =
-              OutboxCodec.readIdempotencyKey(data) ??
-              OutboxCodec.buildCommandKey(
-                collection: collection,
-                action: action,
-                payload: data,
-              );
-
-          // Read the return document first (outside transaction to avoid
-          // platform-channel threading crash on Windows desktop).
-          final returnRef = firestoreDb
-              .collection(returnsCollection)
-              .doc(returnId);
-          final returnDoc = await returnRef.get();
-          if (!returnDoc.exists) return;
-          final returnData = returnDoc.data() ?? const <String, dynamic>{};
-          if (returnData['status']?.toString() == 'approved') {
-            // Idempotent replay guard: financial/stock effects already applied.
-            return;
-          }
-
-          final request = ReturnRequest.fromJson(returnData);
-          final occurredAt =
-              DateTime.tryParse(data['updatedAt']?.toString() ?? '') ??
-              DateTime.now();
-          await _ensureReturnApprovalInventoryApplied(
-            request: request,
-            referenceId: returnId,
-            actorUid: _resolveInventoryActorUid(fallbackUserId: approverId),
-            actorLegacyAppUserId: _resolveInventoryActorLegacyId(approverId),
-            occurredAt: occurredAt,
-          );
-
-          // Use WriteBatch instead of runTransaction — avoids platform
-          // channel crash on Windows while still being atomic for writes.
-          final batch = firestoreDb.batch();
-
-          // T9-P3 REMOVED: direct Firestore stock writes are replaced by
-          // InventoryMovementEngine commands and the inventory-command outbox.
-          if (_isLegacyMutationPathEnabled()) {
-            for (final item in request.items) {
-              final productRef = firestoreDb
-                  .collection(productsCollection)
-                  .doc(item.productId);
-
-              if (request.returnType == 'stock_return') {
-                final salesmanRef = firestoreDb
-                    .collection(usersCollection)
-                    .doc(request.salesmanId);
-                batch.update(productRef, {
-                  'stock': fs.FieldValue.increment(item.quantity),
-                });
-                batch.update(salesmanRef, {
-                  'allocatedStock.${item.productId}.quantity':
-                      fs.FieldValue.increment(-item.quantity),
-                });
-              } else if (request.returnType == 'sales_return') {
-                if (request.disposition == 'Good Stock') {
-                  final salesmanRef = firestoreDb
-                      .collection(usersCollection)
-                      .doc(request.salesmanId);
-                  batch.set(salesmanRef, {
-                    'allocatedStock': {
-                      item.productId: {
-                        'quantity': fs.FieldValue.increment(item.quantity),
-                        'name': item.name,
-                        'unit': item.unit,
-                      },
-                    },
-                  }, fs.SetOptions(merge: true));
-                } else {
-                  batch.update(productRef, {
-                    'stock': fs.FieldValue.increment(item.quantity),
-                  });
-                }
-              }
-            }
-          }
-
-          if (request.returnType == 'sales_return') {
-            double totalCredit = 0;
-            for (final item in request.items) {
-              totalCredit += (item.price ?? 0) * item.quantity;
-            }
-
-            if (request.customerId != null && totalCredit > 0) {
-              final customerRef = firestoreDb
-                  .collection(customersCollection)
-                  .doc(request.customerId);
-              batch.update(customerRef, {
-                'balance': fs.FieldValue.increment(-totalCredit),
-              });
-            }
-
-            if (request.originalSaleId != null) {
-              final saleRef = firestoreDb
-                  .collection(salesCollection)
-                  .doc(request.originalSaleId);
-              final saleSnap = await saleRef.get();
-              if (saleSnap.exists) {
-                final saleData = saleSnap.data()!;
-                final items = (saleData['items'] as List)
-                    .cast<Map<String, dynamic>>();
-                for (final returnItem in request.items) {
-                  for (final saleItem in items) {
-                    if (saleItem['productId'] == returnItem.productId) {
-                      saleItem['returnedQuantity'] =
-                          (saleItem['returnedQuantity'] ?? 0) +
-                          returnItem.quantity;
-                      break;
-                    }
-                  }
-                }
-                batch.update(saleRef, {
-                  'items': items,
-                  'updatedAt': data['updatedAt'],
-                });
-              }
-            }
-          }
-
-          batch.update(returnRef, {
-            'status': 'approved',
-            'updatedAt': data['updatedAt'],
-            'approvedBy': approverId,
-            'approvalIdempotencyKey': commandKey,
-          });
-
-          await batch.commit();
-        } else if (action == 'reject') {
-          await firestoreDb
-              .collection(returnsCollection)
-              .doc(data['id'])
-              .update({
-                'status': 'rejected',
-                'updatedAt': data['updatedAt'],
-                'approvedBy': data['rejectorId'],
-              });
-        } else {
-          // Default set for 'add'/'set'
-          await firestoreDb
-              .collection(collection)
-              .doc(data['id'])
-              .set(data, fs.SetOptions(merge: true));
-        }
-      }
-    } catch (e) {
-      AppLogger.error(
-        'performSync failed for $action on $collection',
-        error: e,
-        tag: 'Returns',
-      );
-      rethrow; // Let the sync queue handle retry
-    }
-  }
+  ) => super.performSync(action, collection, data);
 }

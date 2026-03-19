@@ -1,13 +1,12 @@
 import 'package:isar/isar.dart';
 import 'package:uuid/uuid.dart';
+import '../core/sync/sync_queue_service.dart';
 import '../data/local/entities/product_entity.dart';
 import '../models/types/product_types.dart';
 import '../data/local/base_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import 'database_service.dart';
 import 'base_service.dart';
 import 'field_encryption_service.dart';
-import 'outbox_codec.dart';
 import '../utils/app_logger.dart';
 
 const productsCollection = 'products';
@@ -34,35 +33,16 @@ class ProductsService extends BaseService {
     Map<String, dynamic> payload, {
     String action = 'set',
   }) async {
-    final queueId = OutboxCodec.buildQueueId(
-      productsCollection,
-      payload,
-      explicitRecordKey: payload['id']?.toString(),
+    final documentId = payload['id']?.toString().trim() ?? '';
+    if (documentId.isEmpty) {
+      return;
+    }
+    await SyncQueueService.instance.addToQueue(
+      collectionName: productsCollection,
+      documentId: documentId,
+      operation: action,
+      payload: payload,
     );
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = productsCollection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
   }
 
   Map<String, dynamic> _toSyncPayload(ProductEntity entity) {

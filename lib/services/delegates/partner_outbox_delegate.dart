@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import 'package:flutter_app/data/local/base_entity.dart';
 import 'package:flutter_app/data/local/entities/advance_entity.dart';
 import 'package:flutter_app/data/local/entities/attendance_entity.dart';
@@ -115,36 +116,14 @@ class PartnerOutboxDelegate {
       }
     }
 
-    final now = DateTime.now();
-    final entities = <SyncQueueEntity>[];
     for (final item in items) {
-      final queueId = _partnerOutboxId(item.collection, item.recordId);
-      final existing = existingByQueueId[queueId];
-      final existingMeta = existing == null
-          ? null
-          : OutboxCodec.decode(
-              existing.dataJson,
-              fallbackQueuedAt: existing.createdAt,
-            ).meta;
-      final entity = SyncQueueEntity()
-        ..id = queueId
-        ..collection = item.collection
-        ..action = item.action
-        ..dataJson = OutboxCodec.encodeEnvelope(
-          payload: item.data,
-          existingMeta: existingMeta,
-          now: now,
-          resetRetryState: true,
-        )
-        ..createdAt = existing?.createdAt ?? now
-        ..updatedAt = now
-        ..syncStatus = SyncStatus.pending;
-      entities.add(entity);
+      await SyncQueueService.instance.addToQueue(
+        collectionName: item.collection,
+        documentId: item.recordId,
+        operation: item.action,
+        payload: item.data,
+      );
     }
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.putAll(entities);
-    });
   }
 
   Future<void> deletePartnerOutboxItem(String collection, String recordId) async {

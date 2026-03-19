@@ -22,8 +22,8 @@ class _OpeningStockQueueResetButtonState
     setState(() => _isResetting = true);
 
     try {
-      final syncManager = context.read<SyncManager>();
-      final resetCount = await syncManager.resetStuckOpeningStockRetry();
+      final appSyncCoordinator = context.read<AppSyncCoordinator>();
+      final resetCount = await appSyncCoordinator.resetStuckOpeningStockRetry();
 
       if (mounted) {
         if (resetCount > 0) {
@@ -31,7 +31,7 @@ class _OpeningStockQueueResetButtonState
             context,
             'Reset $resetCount items. Syncing...',
           );
-          syncManager.scheduleDebouncedSync(
+          appSyncCoordinator.scheduleDebouncedSync(
             forceRefresh: false,
             debounce: const Duration(milliseconds: 500),
           );

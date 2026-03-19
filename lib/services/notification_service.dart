@@ -10,6 +10,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/types/user_types.dart';
+import 'delegates/notification_remote_delegate.dart';
+import 'delegates/firestore_query_delegate.dart';
 import '../utils/app_logger.dart';
 
 class NotificationService {
@@ -61,7 +63,7 @@ class NotificationService {
     if (_firestore != null) return _firestore;
     try {
       Firebase.app();
-      _firestore = FirebaseFirestore.instance;
+      _firestore = FirestoreQueryDelegate().firestore;
       _functions ??= FirebaseFunctions.instance;
       return _firestore;
     } catch (_) {
@@ -369,21 +371,25 @@ class NotificationService {
       if (authUid != null && authUid.trim().isNotEmpty) authUid.trim(),
       if (currentEmail != null && currentEmail.isNotEmpty) currentEmail,
     };
+    final delegate = NotificationRemoteDelegate(firestore);
+    final queryDelegate = FirestoreQueryDelegate(firestore);
 
     for (final docId in candidateDocIds) {
       if (docId.isEmpty) continue;
-      final userDoc = firestore.collection('users').doc(docId);
       try {
-        final existing = await userDoc.get();
+        final existing = await queryDelegate.getDocument(
+          collection: 'users',
+          documentId: docId,
+        );
         if (!existing.exists) continue;
 
-        await userDoc.set({
-          'fcmToken': token,
-          'fcmTokenPlatform': _platformLabel(),
-          'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-          'fcmTokenRole': role.value,
-          'fcmTokenUserId': userId,
-        }, SetOptions(merge: true));
+        await delegate.writeUserToken(
+          docId: docId,
+          token: token,
+          platformLabel: _platformLabel(),
+          roleValue: role.value,
+          userId: userId,
+        );
         AppLogger.info(
           'FCM token registered on users/$docId',
           tag: 'Notification',
@@ -805,9 +811,10 @@ class NotificationService {
     };
 
     try {
-      await firestore.collection(_eventCollection).doc(eventId).set(
-        remotePayload,
-        SetOptions(merge: true),
+      await NotificationRemoteDelegate(firestore).publishOutboxEvent(
+        eventCollection: _eventCollection,
+        eventId: eventId,
+        remotePayload: remotePayload,
       );
       AppLogger.info(
         'notification_events/$eventId queued (trigger=$trigger)',

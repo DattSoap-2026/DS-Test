@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_app/core/constants/collection_registry.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import 'offline_first_service.dart';
 import '../services/database_service.dart';
 import '../data/local/entities/trip_entity.dart';
@@ -8,8 +9,6 @@ import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_logger.dart';
 import '../data/local/entities/sale_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
-import 'outbox_codec.dart';
 import 'notification_service.dart';
 
 import '../models/types/sales_types.dart';
@@ -124,44 +123,21 @@ class DispatchService extends OfflineFirstService {
   Future<String> _enqueueTripForSync(Map<String, dynamic> tripData) async {
     final tripId = tripData['id']?.toString();
     if (tripId == null || tripId.isEmpty) return '';
-
-    final queueId = 'delivery_trips_$tripId';
-    final existing = await _db.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    final entity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = tripsCollection
-      ..action = 'set'
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: tripData,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _db.db.writeTxn(() async {
-      await _db.syncQueue.put(entity);
-    });
-    return queueId;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: tripsCollection,
+      documentId: tripId,
+      operation: 'set',
+      payload: tripData,
+    );
+    return tripId;
   }
 
-  Future<void> _dequeueTripForSync(String queueId) async {
-    if (queueId.isEmpty) return;
-    final existing = await _db.syncQueue.getById(queueId);
-    if (existing == null) return;
-    await _db.db.writeTxn(() async {
-      await _db.syncQueue.delete(existing.isarId);
-    });
+  Future<void> _dequeueTripForSync(String tripId) async {
+    if (tripId.isEmpty) return;
+    await SyncQueueService.instance.removeFromQueue(
+      collectionName: tripsCollection,
+      documentId: tripId,
+    );
   }
 
   Future<bool> _queueAndSyncTrip(Map<String, dynamic> tripData) async {
@@ -228,19 +204,7 @@ class DispatchService extends OfflineFirstService {
     final existingTrips = await _db.trips.where().findAll();
     final existingIds = existingTrips.map((e) => e.id).toSet();
 
-    final existingQueueItems = await _db.syncQueue
-        .filter()
-        .collectionEqualTo(tripsCollection)
-        .findAll();
-    final queuedIds = <String>{};
-    for (final item in existingQueueItems) {
-      final decoded = OutboxCodec.decode(
-        item.dataJson,
-        fallbackQueuedAt: item.createdAt,
-      );
-      final id = decoded.payload['id']?.toString();
-      if (id != null && id.isNotEmpty) queuedIds.add(id);
-    }
+    final pendingTrips = <Map<String, dynamic>>[];
 
     await _db.db.writeTxn(() async {
       for (final entry in legacyList) {
@@ -260,24 +224,15 @@ class DispatchService extends OfflineFirstService {
         await _db.trips.put(entity);
         existingIds.add(id);
 
-        if (needsSync && !queuedIds.contains(id)) {
-          final queueEntity = SyncQueueEntity()
-            ..id = 'delivery_trips_$id'
-            ..collection = tripsCollection
-            ..action = 'set'
-            ..dataJson = OutboxCodec.encodeEnvelope(
-              payload: data,
-              now: DateTime.now(),
-              resetRetryState: true,
-            )
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now()
-            ..syncStatus = SyncStatus.pending;
-          await _db.syncQueue.put(queueEntity);
-          queuedIds.add(id);
+        if (needsSync) {
+          pendingTrips.add(Map<String, dynamic>.from(data));
         }
       }
     });
+
+    for (final trip in pendingTrips) {
+      await _enqueueTripForSync(trip);
+    }
 
     await prefs.remove(localStorageKey);
     await prefs.setBool(_legacyMigrationFlag, true);
@@ -391,9 +346,9 @@ class DispatchService extends OfflineFirstService {
         );
       }
 
-      // Note: SyncManager will handle individual sales status updates if needed,
+      // Note: the sync coordinator will handle individual sales status updates if needed,
       // but common practice for "Dispatch" is a bulk update on the server side too.
-      // We'll queue the link logic as a separate action if necessary or handle it in SyncManager.
+      // We'll queue the link logic as a separate action if necessary or handle it in the sync coordinator.
 
       AppLogger.success(
         'Delivery Trip created locally: $tripIdDisplay',
@@ -602,27 +557,15 @@ class DispatchService extends OfflineFirstService {
         if (completedAt != null) 'completedAt': completedAt,
       };
 
-      final queueId =
-          'delivery_trips_update_${trip.id}_${DateTime.now().millisecondsSinceEpoch}';
-      final entity = SyncQueueEntity()
-        ..id = queueId
-        ..collection = tripsCollection
-        ..action = 'update'
-        ..dataJson = OutboxCodec.encodeEnvelope(
-          payload: updateData,
-          now: DateTime.now(),
-          resetRetryState: true,
-        )
-        ..createdAt = DateTime.now()
-        ..updatedAt = DateTime.now()
-        ..syncStatus = SyncStatus.pending;
-
-      await dbService.db.writeTxn(() async {
-        await dbService.syncQueue.put(entity);
-      });
+      await SyncQueueService.instance.addToQueue(
+        collectionName: tripsCollection,
+        documentId: trip.id,
+        operation: 'update',
+        payload: updateData,
+      );
 
       // Try background sync if possible but don't strictly wait for success
-      // In OfflineFirstService, this would be picked up by SyncManager
+      // In OfflineFirstService, this would be picked up by the sync coordinator
 
       return true;
     } catch (e) {

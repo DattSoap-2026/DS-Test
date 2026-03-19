@@ -92,6 +92,35 @@ class SyncQueueService {
     return pending.where((item) => item.collectionName == normalized).length;
   }
 
+  /// Returns whether a queue entry exists for the collection/document pair.
+  Future<bool> hasPendingItem({
+    required String collectionName,
+    required String documentId,
+  }) async {
+    final normalizedCollection = collectionName.trim();
+    final normalizedDocumentId = documentId.trim();
+    if (normalizedCollection.isEmpty || normalizedDocumentId.isEmpty) {
+      return false;
+    }
+
+    try {
+      final existing = await _isarService.syncQueues
+          .filter()
+          .collectionNameEqualTo(normalizedCollection)
+          .documentIdEqualTo(normalizedDocumentId)
+          .findFirst();
+      return existing != null;
+    } catch (error, stackTrace) {
+      SyncLogger.instance.e(
+        'Failed to check pending sync queue item',
+        error: error,
+        stackTrace: stackTrace,
+        time: DateTime.now(),
+      );
+      return false;
+    }
+  }
+
   /// Deletes a processed queue item.
   Future<void> markProcessed(Id id) async {
     try {
@@ -101,6 +130,40 @@ class SyncQueueService {
     } catch (error, stackTrace) {
       SyncLogger.instance.e(
         'Failed to mark queue item as processed',
+        error: error,
+        stackTrace: stackTrace,
+        time: DateTime.now(),
+      );
+    }
+  }
+
+  /// Deletes a queue item by collection/document pair.
+  Future<void> removeFromQueue({
+    required String collectionName,
+    required String documentId,
+  }) async {
+    final normalizedCollection = collectionName.trim();
+    final normalizedDocumentId = documentId.trim();
+    if (normalizedCollection.isEmpty || normalizedDocumentId.isEmpty) {
+      return;
+    }
+
+    try {
+      final existing = await _isarService.syncQueues
+          .filter()
+          .collectionNameEqualTo(normalizedCollection)
+          .documentIdEqualTo(normalizedDocumentId)
+          .findFirst();
+      if (existing == null) {
+        return;
+      }
+
+      await _isarService.isar.writeTxn(() async {
+        await _isarService.syncQueues.delete(existing.id);
+      });
+    } catch (error, stackTrace) {
+      SyncLogger.instance.e(
+        'Failed to delete sync queue item',
         error: error,
         stackTrace: stackTrace,
         time: DateTime.now(),

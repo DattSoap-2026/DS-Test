@@ -229,7 +229,8 @@ class _ConflictListScreenState extends State<ConflictListScreen> {
       context,
       listen: false,
     );
-    final syncManager = Provider.of<SyncManager>(context, listen: false);
+    final appSyncCoordinator =
+        Provider.of<AppSyncCoordinator>(context, listen: false);
 
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
@@ -239,7 +240,7 @@ class _ConflictListScreenState extends State<ConflictListScreen> {
       final success = await conflictService.resolveConflict(
         conflict.id,
         strategy,
-        syncManager: syncManager,
+        syncCoordinator: appSyncCoordinator,
       );
 
       if (!mounted) return;
@@ -268,7 +269,8 @@ class _ConflictListScreenState extends State<ConflictListScreen> {
       context,
       listen: false,
     );
-    final syncManager = Provider.of<SyncManager>(context, listen: false);
+    final appSyncCoordinator =
+        Provider.of<AppSyncCoordinator>(context, listen: false);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     final confirm = await showDialog<bool>(
@@ -303,7 +305,7 @@ class _ConflictListScreenState extends State<ConflictListScreen> {
         final success = await conflictService.resolveConflict(
           conflict.id,
           strategy,
-          syncManager: syncManager,
+          syncCoordinator: appSyncCoordinator,
         );
         if (success) successCount++;
       }

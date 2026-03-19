@@ -13,6 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import '../../services/delegates/firestore_query_delegate.dart';
 import '../../firebase_options.dart';
 
 class FirebaseConfig {
@@ -42,7 +43,7 @@ class FirebaseServices {
       );
 
       _auth = FirebaseAuth.instance;
-      _db = FirebaseFirestore.instance;
+      _db = FirestoreQueryDelegate().firestore;
       _storage = FirebaseStorage.instance;
 
       debugPrint('Firebase Initialized Successfully with Real SDK');
@@ -70,4 +71,3 @@ class FirebaseServices {
 }
 
 final firebaseServices = FirebaseServices();
-

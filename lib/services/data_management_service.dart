@@ -13,11 +13,10 @@ import '../data/local/base_entity.dart';
 import '../data/local/entities/sale_entity.dart';
 import '../data/local/entities/sync_queue_entity.dart';
 import '../data/repositories/user_repository.dart';
+import 'delegates/data_management_remote_delegate.dart';
 
 class DataManagementService extends BaseService {
   final DatabaseService _dbService;
-  static const String _deletedRecordsCollection =
-      CollectionRegistry.deletedRecords;
   static const String _dataCountCacheKey = 'system_data_counts_cache_v1';
   static const Map<String, int> _defaultDataCounts = {
     'sales': 0,
@@ -37,6 +36,12 @@ class DataManagementService extends BaseService {
 
   DataManagementService(super.firebase, [DatabaseService? dbService])
     : _dbService = dbService ?? DatabaseService.instance;
+
+  DataManagementRemoteDelegate? get _remoteDelegate {
+    final firestore = db;
+    if (firestore == null) return null;
+    return DataManagementRemoteDelegate(firestore);
+  }
 
   Map<String, int> _withDefaultDataCounts(Map<String, int> counts) {
     final merged = Map<String, int>.from(_defaultDataCounts);
@@ -132,82 +137,24 @@ class DataManagementService extends BaseService {
     }
   }
 
-  void _stageTombstone({
-    required WriteBatch batch,
-    required DocumentReference<Map<String, dynamic>> docRef,
-    String? entityType,
-    DateTime? deletedAt,
-  }) {
-    final now = deletedAt ?? DateTime.now();
-    final nowIso = now.toIso8601String();
-    final type = (entityType ?? docRef.parent.id).trim();
-    final tombstoneRef = docRef.firestore
-        .collection(_deletedRecordsCollection)
-        .doc('${type}_${docRef.id}_${now.microsecondsSinceEpoch}');
-    batch.set(tombstoneRef, {
-      'entityType': type,
-      'docId': docRef.id,
-      'deletedAt': nowIso,
-      'createdAt': nowIso,
-    });
-  }
-
   Future<bool> _deleteAllDocs(String collectionName) async {
-    try {
-      final firestore = db;
-      if (firestore == null) {
-        handleError(
-          Exception('Firebase not available for $collectionName'),
-          'deleteAllDocs',
-        );
-        return false;
-      }
-
-      final collection = firestore.collection(collectionName);
-      int iterationCount = 0;
-      const maxIterations = 1000;
-      
-      while (iterationCount < maxIterations) {
-        final snapshot = await collection.limit(200).get().timeout(
-          const Duration(seconds: 30),
-          onTimeout: () => throw Exception('Timeout deleting $collectionName'),
-        );
-        if (snapshot.docs.isEmpty) {
-          break;
-        }
-        final batch = firestore.batch();
-        for (final doc in snapshot.docs) {
-          try {
-            _stageTombstone(
-              batch: batch,
-              docRef: doc.reference,
-              entityType: collectionName,
-            );
-            batch.delete(doc.reference);
-          } catch (e) {
-            handleError(e, 'deleteAllDocs_stageTombstone');
-          }
-        }
-        await batch.commit().timeout(
-          const Duration(seconds: 30),
-          onTimeout: () => throw Exception('Timeout committing batch for $collectionName'),
-        );
-        iterationCount++;
-      }
-      
-      if (iterationCount >= maxIterations) {
-        handleError(
-          Exception('Max iterations reached for $collectionName'),
-          'deleteAllDocs',
-        );
-        return false;
-      }
-      
-      return true;
-    } catch (e) {
-      handleError(e, 'deleteAllDocs($collectionName)');
+    final delegate = _remoteDelegate;
+    if (delegate == null) {
+      handleError(
+        Exception('Firebase not available for $collectionName'),
+        'deleteAllDocs',
+      );
       return false;
     }
+
+    final success = await delegate.deleteAllDocs(collectionName);
+    if (!success) {
+      handleError(
+        Exception('Failed deleting remote collection $collectionName'),
+        'deleteAllDocs($collectionName)',
+      );
+    }
+    return success;
   }
 
   static const String _lastSyncPrefix = 'last_sync_';
@@ -422,136 +369,24 @@ class DataManagementService extends BaseService {
     DateTime now, {
     void Function(String message)? onProgress,
   }) async {
-    try {
-      final firestore = db;
-      if (firestore == null) {
-        handleError(
-          Exception('Firebase not available'),
-          'resetRemoteTransactions',
-        );
-        return false;
-      }
-
-      bool allSuccess = true;
-      for (final collection in _transactionCollections) {
-        try {
-          onProgress?.call('Deleting $collection...');
-          final success = await _deleteAllDocs(collection);
-          if (!success) {
-            allSuccess = false;
-            handleError(
-              Exception('Failed to delete $collection'),
-              'resetRemoteTransactions',
-            );
-          }
-        } catch (e) {
-          allSuccess = false;
-          handleError(e, 'resetRemoteTransactions_$collection');
-        }
-      }
-
-      try {
-        onProgress?.call('Clearing allocated stock...');
-        await _clearRemoteAllocatedStock(now);
-      } catch (e) {
-        allSuccess = false;
-        handleError(e, 'resetRemoteTransactions_allocatedStock');
-      }
-
-      try {
-        onProgress?.call('Resetting tank/godown stock to initial state...');
-        await _resetRemoteTankAndGodownStock(now);
-      } catch (e) {
-        allSuccess = false;
-        handleError(e, 'resetRemoteTransactions_tankStock');
-      }
-
-      try {
-        onProgress?.call('Resetting fuel stock to zero...');
-        await _resetFuelStock();
-      } catch (e) {
-        allSuccess = false;
-        handleError(e, 'resetRemoteTransactions_fuelStock');
-      }
-
-      try {
-        onProgress?.call('Resetting all product stock to zero...');
-        await _resetAllProductStockToZero(now);
-      } catch (e) {
-        allSuccess = false;
-        handleError(e, 'resetRemoteTransactions_productStock');
-      }
-
-      return allSuccess;
-    } catch (e) {
-      handleError(e, 'resetRemoteTransactions');
+    final delegate = _remoteDelegate;
+    if (delegate == null) {
+      handleError(Exception('Firebase not available'), 'resetRemoteTransactions');
       return false;
     }
-  }
 
-  Future<bool> _clearRemoteAllocatedStock(DateTime now) async {
-    try {
-      final firestore = db;
-      if (firestore == null) {
-        throw Exception('Firebase not available.');
-      }
-
-      final snapshot = await firestore.collection('users').get();
-      if (snapshot.docs.isEmpty) return true;
-
-      // T9-P5 REMOVED: Direct allocatedStock remote clear
-      // Route through stock_balances reset
-      final salesmanLocationIds = <String>[];
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final role = data['role']?.toString().trim().toLowerCase();
-        if (role == 'salesman') {
-          salesmanLocationIds.add('salesman_van_${doc.id}');
-        }
-      }
-
-      final nowIso = now.toIso8601String();
-      for (int i = 0; i < snapshot.docs.length; i += 400) {
-        final batch = firestore.batch();
-        final chunk = snapshot.docs.skip(i).take(400);
-        for (final doc in chunk) {
-          batch.update(doc.reference, {
-            'allocatedStock': FieldValue.delete(),
-            'allocatedStockJson': FieldValue.delete(),
-            'updatedAt': nowIso,
-          });
-        }
-        await batch.commit();
-      }
-      return true;
-    } catch (e) {
-      handleError(e, 'clearRemoteAllocatedStock');
-      return false;
+    final success = await delegate.resetRemoteTransactions(
+      transactionCollections: _transactionCollections,
+      now: now,
+      onProgress: onProgress,
+    );
+    if (!success) {
+      handleError(
+        Exception('Remote transactional reset reported partial failure'),
+        'resetRemoteTransactions',
+      );
     }
-  }
-
-  Future<bool> _resetAllProductStockToZero(DateTime now) async {
-    try {
-      final firestore = db;
-      if (firestore == null) return false;
-
-      final productsSnap = await firestore.collection('products').get();
-      if (productsSnap.docs.isEmpty) return true;
-
-      final nowIso = now.toIso8601String();
-      for (int i = 0; i < productsSnap.docs.length; i += 400) {
-        final batch = firestore.batch();
-        final chunk = productsSnap.docs.skip(i).take(400);
-        for (final doc in chunk) {
-          batch.update(doc.reference, {'stock': 0.0, 'updatedAt': nowIso});
-        }
-        await batch.commit();
-      }
-      return true;
-    } catch (e) {
-      handleError(e, 'resetAllProductStockToZero');
-      return false;
-    }
+    return success;
   }
 
   String _statusForStock({required double stock, required double capacity}) {
@@ -564,61 +399,6 @@ class DataManagementService extends BaseService {
     if (fillLevel < 5) return 'critical';
     if (fillLevel < 15) return 'low-stock';
     return 'active';
-  }
-
-  Future<bool> _resetRemoteTankAndGodownStock(DateTime now) async {
-    try {
-      final firestore = db;
-      if (firestore == null) return false;
-
-      final tanksSnap = await firestore.collection('tanks').get();
-      if (tanksSnap.docs.isEmpty) return true;
-
-      final nowIso = now.toIso8601String();
-      for (int i = 0; i < tanksSnap.docs.length; i += 400) {
-        final batch = firestore.batch();
-        final chunk = tanksSnap.docs.skip(i).take(400);
-        for (final doc in chunk) {
-          final data = doc.data();
-          final capacity = (data['capacity'] as num?)?.toDouble() ?? 0.0;
-          final type = (data['type'] as String?)?.toLowerCase() ?? 'tank';
-          final update = <String, dynamic>{
-            'currentStock': 0.0,
-            'fillLevel': 0.0,
-            'status': _statusForStock(stock: 0.0, capacity: capacity),
-            'updatedAt': nowIso,
-          };
-          if (type == 'godown') {
-            update['bags'] = 0;
-          }
-          batch.update(doc.reference, update);
-        }
-        await batch.commit();
-      }
-      return true;
-    } catch (e) {
-      handleError(e, 'resetRemoteTankAndGodownStock');
-      return false;
-    }
-  }
-
-  Future<bool> _resetFuelStock() async {
-    try {
-      final firestore = db;
-      if (firestore == null) return false;
-
-      // Reset fuel stock document to 0
-      await firestore.doc('public_settings/fuel_stock').set({
-        'totalLiters': 0.0,
-        'lastUpdated': DateTime.now().toIso8601String(),
-        'resetAt': DateTime.now().toIso8601String(),
-      }, SetOptions(merge: true));
-
-      return true;
-    } catch (e) {
-      handleError(e, 'resetFuelStock');
-      return false;
-    }
   }
 
   Future<bool> _resetLocalTransactionalData(DateTime now) async {
@@ -879,89 +659,14 @@ class DataManagementService extends BaseService {
     bool remoteOk = true;
     bool localOk = true;
 
-    final firestore = db;
-    if (firestore != null) {
-      try {
-        const pageSize = 100;
-        Query<Map<String, dynamic>> salesQuery = firestore
-            .collection('sales')
-            .where('recipientType', isEqualTo: 'customer');
-
-        while (true) {
-          final snap = await salesQuery.limit(pageSize).get();
-          if (snap.docs.isEmpty) break;
-
-          WriteBatch batch = firestore.batch();
-          var opCount = 0;
-          Future<void> commitIfNeeded() async {
-            if (opCount >= 400) {
-              await batch.commit();
-              batch = firestore.batch();
-              opCount = 0;
-            }
-          }
-
-          for (final docSnap in snap.docs) {
-            final sale = docSnap.data();
-            final items = sale['items'] as List? ?? [];
-            final salesmanId = sale['salesmanId'] as String?;
-
-            // Validate and restore allocated stock
-            if (items.isNotEmpty &&
-                salesmanId != null &&
-                salesmanId.isNotEmpty) {
-              final salesmanRef = firestore.collection('users').doc(salesmanId);
-              
-              // Verify salesman exists before updating
-              try {
-                final salesmanDoc = await salesmanRef.get();
-                if (!salesmanDoc.exists) {
-                  handleError(
-                    Exception('Salesman $salesmanId not found'),
-                    'resetAllSales',
-                  );
-                  continue;
-                }
-              } catch (e) {
-                handleError(e, 'resetAllSales_validateSalesman');
-                continue;
-              }
-              
-              for (final item in items) {
-                final pid = item['productId'];
-                final qty = (item['quantity'] as num?)?.toDouble();
-                
-                // Validate product ID and quantity
-                if (pid == null || pid.toString().isEmpty) continue;
-                if (qty == null || qty <= 0) continue;
-                
-                batch.update(salesmanRef, {
-                  'allocatedStock.$pid.quantity': FieldValue.increment(qty),
-                });
-                opCount++;
-                await commitIfNeeded();
-              }
-            }
-
-            _stageTombstone(
-              batch: batch,
-              docRef: docSnap.reference,
-              entityType: 'sales',
-            );
-            batch.delete(docSnap.reference);
-            opCount += 2;
-            await commitIfNeeded();
-          }
-
-          if (opCount > 0) {
-            await batch.commit();
-          }
-        }
-
-        await _deleteAllDocs('sales_targets');
-      } catch (e) {
-        remoteOk = false;
-        handleError(e, 'resetAllSalesRemote');
+    final delegate = _remoteDelegate;
+    if (delegate != null) {
+      remoteOk = await delegate.resetAllSales();
+      if (!remoteOk) {
+        handleError(
+          Exception('Remote sales reset reported partial failure'),
+          'resetAllSalesRemote',
+        );
       }
     }
 
@@ -994,99 +699,15 @@ class DataManagementService extends BaseService {
     bool localOk = true;
     final now = DateTime.now();
 
-    final firestore = db;
-    if (firestore == null) return false;
+    final delegate = _remoteDelegate;
+    if (delegate == null) return false;
 
-    try {
-      const pageSize = 100;
-      
-      // Delete dealer dispatches
-      Query<Map<String, dynamic>> dealerQuery = firestore
-          .collection('sales')
-          .where('recipientType', isEqualTo: 'dealer');
-      
-      while (true) {
-        final snap = await dealerQuery.limit(pageSize).get();
-        if (snap.docs.isEmpty) break;
-        
-        WriteBatch batch = firestore.batch();
-        for (final doc in snap.docs) {
-          final data = doc.data();
-          final items = data['items'] as List? ?? [];
-          
-          for (final item in items) {
-            final pid = item['productId']?.toString();
-            final qty = (item['quantity'] as num?)?.toDouble();
-            if (pid != null && pid.isNotEmpty && qty != null && qty > 0) {
-              batch.update(firestore.collection('products').doc(pid), {
-                'stock': FieldValue.increment(qty),
-              });
-            }
-          }
-          
-          _stageTombstone(batch: batch, docRef: doc.reference, entityType: 'sales');
-          batch.delete(doc.reference);
-        }
-        await batch.commit();
-      }
-      
-      // Delete salesman dispatches
-      Query<Map<String, dynamic>> salesmanQuery = firestore
-          .collection('sales')
-          .where('recipientType', isEqualTo: 'salesman');
-      
-      while (true) {
-        final snap = await salesmanQuery.limit(pageSize).get();
-        if (snap.docs.isEmpty) break;
-        
-        WriteBatch batch = firestore.batch();
-        for (final doc in snap.docs) {
-          final data = doc.data();
-          final items = data['items'] as List? ?? [];
-          
-          for (final item in items) {
-            final pid = item['productId']?.toString();
-            final qty = (item['quantity'] as num?)?.toDouble();
-            if (pid != null && pid.isNotEmpty && qty != null && qty > 0) {
-              batch.update(firestore.collection('products').doc(pid), {
-                'stock': FieldValue.increment(qty),
-              });
-            }
-          }
-          
-          _stageTombstone(batch: batch, docRef: doc.reference, entityType: 'sales');
-          batch.delete(doc.reference);
-        }
-        await batch.commit();
-      }
-
-      // Also clear dedicated dispatches collection shown in UI.
-      Query<Map<String, dynamic>> dispatchesQuery = firestore.collection(
-        'dispatches',
+    remoteOk = await delegate.resetAllDispatches(now);
+    if (!remoteOk) {
+      handleError(
+        Exception('Remote dispatch reset reported partial failure'),
+        'resetAllDispatchesRemote',
       );
-      while (true) {
-        final snap = await dispatchesQuery.limit(pageSize).get();
-        if (snap.docs.isEmpty) break;
-        WriteBatch batch = firestore.batch();
-        for (final doc in snap.docs) {
-          _stageTombstone(
-            batch: batch,
-            docRef: doc.reference,
-            entityType: 'dispatches',
-          );
-          batch.delete(doc.reference);
-        }
-        await batch.commit();
-      }
-
-      // Dispatch reset must also clear salesman allocated stock everywhere.
-      final usersOk = await _clearRemoteAllocatedStock(now);
-      if (!usersOk) {
-        remoteOk = false;
-      }
-    } catch (e) {
-      remoteOk = false;
-      handleError(e, 'resetAllDispatchesRemote');
     }
 
     try {
@@ -1450,36 +1071,19 @@ class DataManagementService extends BaseService {
     UserRepository? localRepo,
   }) async {
     try {
-      final firestore = db;
-      if (firestore == null) return false;
-
-      // 1. Remote Delete (Firestore)
-      final snap = await firestore.collection('users').get();
-      WriteBatch batch = firestore.batch();
-      int opCount = 0;
-
-      Future<void> commitIfNeeded() async {
-        if (opCount >= 400) {
-          await batch.commit();
-          batch = firestore.batch();
-          opCount = 0;
-        }
+      final delegate = _remoteDelegate;
+      if (delegate == null) {
+        return false;
       }
 
-      for (var doc in snap.docs) {
-        if (doc.id == currentUserId) continue; // Don't delete self
-        // Delete ALL other users
-        _stageTombstone(
-          batch: batch,
-          docRef: doc.reference,
-          entityType: 'users',
+      final remoteOk = await delegate.resetAllUsers(currentUserId);
+      if (!remoteOk) {
+        handleError(
+          Exception('Remote user reset reported partial failure'),
+          'resetAllUsers',
         );
-        batch.delete(doc.reference);
-        opCount += 2;
-        await commitIfNeeded();
+        return false;
       }
-
-      if (opCount > 0) await batch.commit();
 
       // 2. Local Delete (Isar)
       if (localRepo != null) {
@@ -1495,47 +1099,11 @@ class DataManagementService extends BaseService {
 
   Future<Map<String, int>> getDataCount() async {
     try {
-      final firestore = db;
-      if (firestore != null) {
-        final results = await Future.wait<AggregateQuerySnapshot>([
-          firestore
-              .collection('sales')
-              .where('recipientType', isEqualTo: 'customer')
-              .count()
-              .get(),
-          firestore
-              .collection('sales')
-              .where('recipientType', whereIn: ['dealer', 'salesman'])
-              .count()
-              .get(),
-          firestore.collection('production_logs').count().get(),
-          firestore.collection('returns').count().get(),
-          firestore.collection('purchase_orders').count().get(),
-          firestore.collection('diesel_logs').count().get(),
-          firestore.collection('tank_transactions').count().get(),
-          firestore.collection('bhatti_batches').count().get(),
-          firestore.collection('vehicle_maintenance_logs').count().get(),
-          firestore.collection('products').count().get(),
-          firestore.collection('routes').count().get(),
-          firestore.collection('route_orders').count().get(),
-          firestore.collection('users').count().get(),
-        ]);
-
-        final remoteCounts = _withDefaultDataCounts({
-          'sales': results[0].count ?? 0,
-          'dispatches': results[1].count ?? 0,
-          'production': results[2].count ?? 0,
-          'returns': results[3].count ?? 0,
-          'purchase_orders': results[4].count ?? 0,
-          'diesel_logs': results[5].count ?? 0,
-          'tank_transactions': results[6].count ?? 0,
-          'bhatti_batches': results[7].count ?? 0,
-          'maintenance': results[8].count ?? 0,
-          'products': results[9].count ?? 0,
-          'routes': results[10].count ?? 0,
-          'route_orders': results[11].count ?? 0,
-          'users': results[12].count ?? 0,
-        });
+      final remoteDelegate = _remoteDelegate;
+      if (remoteDelegate != null) {
+        final remoteCounts = _withDefaultDataCounts(
+          await remoteDelegate.fetchDataCounts(),
+        );
         await _writeDataCountsCache(remoteCounts);
         return remoteCounts;
       }
@@ -1704,26 +1272,16 @@ class DataManagementService extends BaseService {
     String userId,
     String userName,
   ) async {
-    final firestore = db!;
-    final docEntries = docs.entries.toList();
-
-    for (int i = 0; i < docEntries.length; i += 400) {
-      final batch = firestore.batch();
-      final chunk = docEntries.sublist(
-        i,
-        (i + 400 < docEntries.length) ? i + 400 : docEntries.length,
-      );
-
-      for (var entry in chunk) {
-        final docRef = firestore.collection(collectionName).doc(entry.key);
-        batch.set(
-          docRef,
-          _processDocData(entry.value),
-          SetOptions(merge: true),
-        );
-      }
-      await batch.commit();
+    final delegate = _remoteDelegate;
+    if (delegate == null) {
+      throw Exception('Firebase is not initialized.');
     }
+
+    final processedDocs = <String, dynamic>{};
+    for (final entry in docs.entries) {
+      processedDocs[entry.key] = _processDocData(entry.value);
+    }
+    await delegate.batchImportCollection(collectionName, processedDocs);
 
     await createAuditLog(
       collectionName: collectionName,
@@ -1747,38 +1305,10 @@ class DataManagementService extends BaseService {
 
   Future<List<int>?> exportCollectionToExcel(String type) async {
     try {
-      final firestore = db;
-      if (firestore == null) return null;
-      Query q;
-      switch (type) {
-        case 'sales':
-          q = firestore
-              .collection('sales')
-              .where('recipientType', isEqualTo: 'customer');
-          break;
-        case 'dispatches':
-          q = firestore
-              .collection('sales')
-              .where('recipientType', whereIn: ['dealer', 'salesman']);
-          break;
-        case 'routes':
-          q = firestore.collection('routes');
-          break;
-        case 'route_orders':
-          q = firestore.collection('route_orders');
-          break;
-        case 'products':
-          q = firestore.collection('products');
-          break;
-        case 'production':
-          q = firestore.collection('production_logs');
-          break;
-        default:
-          q = firestore.collection(type);
-      }
-
-      final snapshot = await q.get();
-      if (snapshot.docs.isEmpty) return null;
+      final remoteDelegate = _remoteDelegate;
+      if (remoteDelegate == null) return null;
+      final data = await remoteDelegate.fetchCollectionDocuments(type);
+      if (data.isEmpty) return null;
 
       final excel = Excel.createExcel();
       // Access sheet more safely or default to 'Sheet1'
@@ -1787,32 +1317,23 @@ class DataManagementService extends BaseService {
 
       // Headers
       final allKeys = {'id'};
-      for (var d in snapshot.docs) {
-        final data = d.data();
-        if (data is Map<String, dynamic>) {
-          allKeys.addAll(data.keys);
-        }
+      for (final rowData in data) {
+        allKeys.addAll(rowData.keys);
       }
       final headers = allKeys.toList();
       sheet.appendRow(headers.map((h) => TextCellValue(h)).toList());
 
       // Rows
-      for (var d in snapshot.docs) {
-        final data = d.data() as Map<String, dynamic>;
-
+      for (final rowData in data) {
         final row = <CellValue>[];
         for (var h in headers) {
-          if (h == 'id') {
-            row.add(TextCellValue(d.id));
+          final val = rowData[h];
+          if (val == null) {
+            row.add(TextCellValue(''));
+          } else if (val is num) {
+            row.add(IntCellValue(val.toInt()));
           } else {
-            final val = data[h];
-            if (val == null) {
-              row.add(TextCellValue(''));
-            } else if (val is num) {
-              row.add(IntCellValue(val.toInt()));
-            } else {
-              row.add(TextCellValue(val.toString()));
-            }
+            row.add(TextCellValue(val.toString()));
           }
         }
         sheet.appendRow(row);
@@ -1835,49 +1356,11 @@ class DataManagementService extends BaseService {
 
     // ... (Original CSV Implementation) ...
     try {
-      final firestore = db;
-      if (firestore == null) return null;
-
-      Query q;
-      // Same switch as before
-      switch (type) {
-        case 'sales':
-          q = firestore
-              .collection('sales')
-              .where('recipientType', isEqualTo: 'customer');
-          break;
-        case 'dispatches':
-          q = firestore
-              .collection('sales')
-              .where('recipientType', whereIn: ['dealer', 'salesman']);
-          break;
-        case 'routes':
-          q = firestore.collection('routes');
-          break;
-        case 'route_orders':
-          q = firestore.collection('route_orders');
-          break;
-        case 'production':
-          q = firestore.collection('production_logs');
-          break;
-        case 'products':
-          q = firestore.collection('products');
-          break;
-        default:
-          // Try generic
-          try {
-            q = firestore.collection(type);
-          } catch (_) {
-            return null;
-          }
-      }
-
-      final snapshot = await q.get();
-      if (snapshot.docs.isEmpty) return null;
-
-      final List<Map<String, dynamic>> data = snapshot.docs
-          .map((d) => {'id': d.id, ...d.data() as Map<String, dynamic>})
-          .toList();
+      final remoteDelegate = _remoteDelegate;
+      if (remoteDelegate == null) return null;
+      final List<Map<String, dynamic>> data = await remoteDelegate
+          .fetchCollectionDocuments(type);
+      if (data.isEmpty) return null;
 
       final Set<String> allKeys = {'id'};
       for (var doc in data) {

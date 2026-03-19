@@ -2,24 +2,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_app/core/constants/collection_registry.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
+import 'package:flutter_app/core/sync/sync_service.dart';
 import '../models/inventory/opening_stock_entry.dart';
 import '../data/local/base_entity.dart';
 import '../data/local/entities/opening_stock_entity.dart';
 import '../data/local/entities/stock_ledger_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import '../data/local/entities/inventory_location_entity.dart';
 import '../utils/app_logger.dart';
+import 'delegates/firestore_query_delegate.dart';
 import 'database_service.dart';
 import 'package:uuid/uuid.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'inventory_movement_engine.dart';
-import 'outbox_codec.dart';
 
 class OpeningStockService {
   static const String mainWarehouseId = 'warehouse_main';
   static const String _dedupeMigrationFlag =
       'opening_stock_set_balance_migrated_v1';
-  final FirebaseFirestore _firestore;
+  final FirestoreQueryDelegate _remote;
   final Uuid _uuid = const Uuid();
   final DatabaseService _dbService;
   final InventoryMovementEngine _inventoryMovementEngine;
@@ -32,59 +32,24 @@ class OpeningStockService {
     this._dbService,
     this._inventoryMovementEngine, [
     FirebaseFirestore? firestore,
-  ]) : _firestore = firestore ?? FirebaseFirestore.instance;
+  ]) : _remote = FirestoreQueryDelegate(firestore);
 
-  Future<String> _enqueueOutbox({
+  Future<void> _enqueueOutbox({
     required String collection,
     required Map<String, dynamic> payload,
     String action = 'set',
     String? explicitRecordKey,
-    Map<String, dynamic>? actorMeta,
   }) async {
-    final queueId = OutboxCodec.buildQueueId(
-      collection,
-      payload,
-      explicitRecordKey: explicitRecordKey,
+    final documentId = explicitRecordKey?.trim().isNotEmpty == true
+        ? explicitRecordKey!.trim()
+        : payload['id']?.toString().trim() ?? '';
+    if (documentId.isEmpty) return;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: collection,
+      documentId: documentId,
+      operation: action,
+      payload: payload,
     );
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
-    Map<String, dynamic>? mergedMeta;
-    if (existingMeta != null || actorMeta != null) {
-      mergedMeta = {...?existingMeta, ...?actorMeta};
-    }
-
-    final queueEntity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = collection
-      ..action = action
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: mergedMeta,
-        now: now,
-        resetRetryState: true,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(queueEntity);
-    });
-    return queueId;
-  }
-
-  Future<void> _dequeueOutbox(String queueId) async {
-    final existing = await _dbService.syncQueue.getById(queueId);
-    if (existing == null) return;
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.delete(existing.isarId);
-    });
   }
 
   Map<String, dynamic> _openingPayload(OpeningStockEntity entity) {
@@ -290,10 +255,6 @@ class OpeningStockService {
     return entities.map((e) => e.toDomain()).toList();
   }
 
-  /// Gets the Settings collection
-  CollectionReference<Map<String, dynamic>> get _settingsRef =>
-      _firestore.collection(CollectionRegistry.settings);
-
   /// Ensures Main warehouse location exists in database
   Future<void> _ensureMainWarehouseLocation() async {
     if (_warehouseLocationEnsured) return;
@@ -350,7 +311,10 @@ class OpeningStockService {
 
     // 1. CHECK GO-LIVE LOCK (Try Local First if available, or fetch)
     // For now we check Firestore directly for lock, but we could cache this too
-    final generalSettingsDoc = await _settingsRef.doc('general').get();
+    final generalSettingsDoc = await _remote.getDocument(
+      collection: CollectionRegistry.settings,
+      documentId: 'general',
+    );
 
     if (generalSettingsDoc.exists) {
       final data = generalSettingsDoc.data();
@@ -416,17 +380,11 @@ class OpeningStockService {
       openingForSync = openingEntity;
     });
     if (openingForSync != null) {
-      final user = FirebaseAuth.instance.currentUser;
-      final actorMeta = {
-        OutboxCodec.actorUidMetaField: userId.trim(),
-        if (user?.email != null) OutboxCodec.actorEmailMetaField: user!.email!.trim(),
-      };
       await _enqueueOutbox(
         collection: _openingCollection,
         payload: _openingPayload(openingForSync!),
         action: 'set',
         explicitRecordKey: openingForSync!.id,
-        actorMeta: actorMeta,
       );
     }
 
@@ -447,7 +405,7 @@ class OpeningStockService {
       tag: 'Inventory',
     );
 
-    // Note: Remote sync is handled by SyncManager later.
+    // Note: Remote sync is handled by the sync coordinator later.
     // We avoid direct Firestore transaction here to maintain strict offline-first rule.
   }
 
@@ -458,36 +416,28 @@ class OpeningStockService {
       'goLiveCompleted': true,
       'updatedAt': DateTime.now().toIso8601String(),
     };
-    final user = FirebaseAuth.instance.currentUser;
-    final actorMeta = user == null ? null : {
-      OutboxCodec.actorUidMetaField: user.uid.trim(),
-      if (user.email != null) OutboxCodec.actorEmailMetaField: user.email!.trim(),
-    };
-    final queueId = await _enqueueOutbox(
+    await _enqueueOutbox(
       collection: 'settings',
       payload: payload,
       action: 'set',
       explicitRecordKey: 'general',
-      actorMeta: actorMeta,
     );
 
     try {
-      await _settingsRef.doc('general').set({
-        'goLiveCompleted': true,
-        'updatedAt': payload['updatedAt'],
-      }, SetOptions(merge: true));
-      await _dequeueOutbox(queueId);
+      await SyncService.instance.pushAllPending();
     } catch (_) {
-      // Keep durable outbox record for SyncManager retry.
+      // Keep durable outbox record for sync coordinator retry.
     }
   }
 
   /// Checks if the system is already locked
   Future<bool> isSystemLocked() async {
     try {
-      final doc = await _settingsRef
-          .doc('general')
-          .get()
+      final doc = await _remote
+          .getDocument(
+            collection: CollectionRegistry.settings,
+            documentId: 'general',
+          )
           .timeout(const Duration(seconds: 3));
       return doc.data()?['goLiveCompleted'] == true;
     } catch (e) {

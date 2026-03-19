@@ -1,7 +1,10 @@
+// ignore_for_file: unused_element
+
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_app/core/sync/sync_queue_service.dart';
 import 'package:isar/isar.dart' hide Query; // Hide Query
 import 'package:shared_preferences/shared_preferences.dart';
 import '../exceptions/business_rule_exception.dart';
@@ -21,7 +24,7 @@ import 'inventory_projection_service.dart';
 import 'service_capability_guard.dart';
 import '../data/local/entities/stock_ledger_entity.dart'; // Added
 import '../data/local/entities/sale_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
+import '../data/providers/sales_remote_provider.dart';
 import 'outbox_codec.dart';
 
 import '../models/types/sales_types.dart';
@@ -41,6 +44,7 @@ import 'delegates/sales_validation_delegate.dart';
 const salesCollection = 'sales';
 const accountingCompensationLogCollection = 'accounting_compensation_log';
 const salesVoucherPostRetryCollection = 'sales_voucher_posts';
+const syncCommandsCollection = 'sync_commands';
 
 class _LineTotals {
   final SaleItemForUI item;
@@ -188,6 +192,14 @@ class SalesService extends OfflineFirstService {
         payloads,
         collectionName: collectionName ?? salesCollection,
       ),
+     );
+  }
+
+  SalesRemoteProvider _remoteProvider(FirebaseFirestore firestore) {
+    return SalesRemoteProvider(
+      firestore,
+      dbService: _dbService,
+      inventoryMovementEngine: _inventoryMovementEngine,
     );
   }
 
@@ -1119,56 +1131,33 @@ class SalesService extends OfflineFirstService {
     if (saleId == null || saleId.isEmpty) return '';
 
     final queueId = 'sales_$saleId';
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingEnvelope = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          );
-    final existingMeta = existingEnvelope?.meta;
-    final preservedAction = (existing?.action.trim().isNotEmpty ?? false)
-        ? existing!.action
-        : action;
     final payloadForQueue = OutboxCodec.ensureCommandPayload(
       collection: salesCollection,
-      action: preservedAction,
+      action: action,
       payload: saleData,
-      existingMeta: existingMeta,
       queueId: queueId,
     );
-
-    final entity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = salesCollection
-      ..action = preservedAction
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payloadForQueue,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: existing == null,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = existing?.syncStatus ?? SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(entity);
-    });
-    return queueId;
+    await SyncQueueService.instance.addToQueue(
+      collectionName: salesCollection,
+      documentId: saleId,
+      operation: action,
+      payload: payloadForQueue,
+    );
+    return saleId;
   }
 
   Future<bool> _queueAndSyncSale(
     Map<String, dynamic> saleData, {
     String action = 'add',
   }) async {
-    final queueId = await _enqueueSaleForSync(saleData, action: action);
+    final saleId = await _enqueueSaleForSync(saleData, action: action);
     if (_centralQueueSync == null) return false;
     try {
       await _centralQueueSync!.call();
-      final remaining = await _dbService.syncQueue.getById(queueId);
-      return remaining == null;
+      return !await SyncQueueService.instance.hasPendingItem(
+        collectionName: salesCollection,
+        documentId: saleId,
+      );
     } catch (_) {
       return false;
     }
@@ -1268,19 +1257,7 @@ class SalesService extends OfflineFirstService {
     final existingSales = await _fetchAllSalesPaged();
     final existingIds = existingSales.map((e) => e.id).toSet();
 
-    final existingQueueItems = await _dbService.syncQueue
-        .filter()
-        .collectionEqualTo(salesCollection)
-        .findAll();
-    final queuedIds = <String>{};
-    for (final item in existingQueueItems) {
-      final decoded = OutboxCodec.decode(
-        item.dataJson,
-        fallbackQueuedAt: item.createdAt,
-      );
-      final id = decoded.payload['id']?.toString();
-      if (id != null && id.isNotEmpty) queuedIds.add(id);
-    }
+    final pendingSales = <Map<String, dynamic>>[];
 
     await _dbService.db.writeTxn(() async {
       for (final entry in legacyList) {
@@ -1301,24 +1278,25 @@ class SalesService extends OfflineFirstService {
         await _dbService.sales.put(entity);
         existingIds.add(id);
 
-        if (needsSync && !queuedIds.contains(id)) {
-          final queueEntity = SyncQueueEntity()
-            ..id = 'sales_$id'
-            ..collection = salesCollection
-            ..action = 'add'
-            ..dataJson = OutboxCodec.encodeEnvelope(
-              payload: data,
-              now: DateTime.now(),
-              resetRetryState: true,
-            )
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now()
-            ..syncStatus = SyncStatus.pending;
-          await _dbService.syncQueue.put(queueEntity);
-          queuedIds.add(id);
+        if (needsSync) {
+          pendingSales.add(Map<String, dynamic>.from(data));
         }
       }
     });
+
+    for (final sale in pendingSales) {
+      final saleId = sale['id']?.toString();
+      if (saleId == null || saleId.isEmpty) {
+        continue;
+      }
+      final alreadyQueued = await SyncQueueService.instance.hasPendingItem(
+        collectionName: salesCollection,
+        documentId: saleId,
+      );
+      if (!alreadyQueued) {
+        await _enqueueSaleForSync(Map<String, dynamic>.from(sale));
+      }
+    }
 
     await prefs.remove(localStorageKey);
     await prefs.setBool(_legacyMigrationFlag, true);
@@ -1347,421 +1325,13 @@ class SalesService extends OfflineFirstService {
       return;
     }
 
-    // Custom Transaction Logic for Sales
+    final remoteProvider = _remoteProvider(firestore);
     if (action == 'add' && collection == salesCollection) {
-      final recipientType = data['recipientType'];
-      final seriesType = recipientType == 'customer' ? 'Sale' : 'Dispatch';
-
-      final salesmanId = data['salesmanId']?.toString();
-      if (salesmanId == null || salesmanId.isEmpty) {
-        AppLogger.error(
-          'SalesService.performSync ABORT - salesmanId is null or empty',
-          tag: 'Sync',
-        );
-        throw Exception('Salesman ID is missing in sync payload');
-      }
-
-      final saleId = data['id']?.toString();
-      if (saleId == null || saleId.isEmpty) {
-        AppLogger.error(
-          'SalesService.performSync ABORT - saleId is null or empty',
-          tag: 'Sync',
-        );
-        throw Exception('Sale ID is missing in sync payload');
-      }
-
-      final itemsRaw = data['items'];
-      if (itemsRaw is! List) {
-        AppLogger.error(
-          'SalesService.performSync ABORT - items is not a list',
-          tag: 'Sync',
-        );
-        throw Exception('Items is missing or invalid in sync payload');
-      }
-      final items = itemsRaw.cast<Map<String, dynamic>>();
-
-      AppLogger.debug('performSync Tx: START', tag: 'Sync');
       try {
-        final isWindows = Platform.isWindows;
-        if (isWindows) {
-          await _performSalesAddSyncWindows(
-            firestore: firestore,
-            data: data,
-            recipientType: recipientType,
-            seriesType: seriesType,
-            salesmanId: salesmanId,
-            saleId: saleId,
-            items: items,
-          );
-          return;
-        }
-        await firestore.runTransaction((transaction) async {
-          // 1. Salesman Data (User)
-          final salesmanRef = firestore.collection('users').doc(salesmanId);
-          final salesmanSnap = await transaction.get(salesmanRef);
-          if (!salesmanSnap.exists) {
-            throw Exception('User (Salesman/Creator) not found.');
-          }
-          final salesmanData = salesmanSnap.data() ?? const <String, dynamic>{};
-          final salesmanRole = (salesmanData['role'] ?? '')
-              .toString()
-              .trim()
-              .toLowerCase();
-          final isAdminRole =
-              salesmanRole == 'admin' || salesmanRole == 'owner';
-          final canWriteTransactionSeries = isAdminRole;
-
-          // 2. Transaction Series (admin-only by rules)
-          final seriesRef = firestore
-              .collection('transaction_series')
-              .doc(seriesType);
-          Map<String, dynamic>? seriesData;
-          if (canWriteTransactionSeries) {
-            final seriesSnap = await transaction.get(seriesRef);
-            if (seriesSnap.exists) {
-              seriesData = seriesSnap.data();
-            }
-          } else {
-            AppLogger.debug(
-              'performSync Tx: skipping transaction_series update for role=$salesmanRole',
-              tag: 'Sync',
-            );
-          }
-
-          // 3. Create Sale Document (idempotent on saleId)
-          final saleRef = firestore.collection(salesCollection).doc(saleId);
-          final existingSaleSnap = await transaction.get(saleRef);
-          if (existingSaleSnap.exists) {
-            AppLogger.debug(
-              'performSync Tx: ABORT due to idempotency',
-              tag: 'Sync',
-            );
-            return;
-          }
-
-          final validatedItems = <Map<String, dynamic>>[];
-          for (final rawItem in items) {
-            final item = Map<String, dynamic>.from(rawItem);
-            final productId = item['productId']?.toString().trim() ?? '';
-            if (productId.isEmpty) {
-              throw Exception('Sale item payload missing productId');
-            }
-
-            final productRef = firestore.collection('products').doc(productId);
-            final productSnap = await transaction.get(productRef);
-            if (!productSnap.exists) {
-              throw Exception('Product $productId not found');
-            }
-
-            final productData = productSnap.data() ?? const <String, dynamic>{};
-            final payloadPrice = (item['price'] as num?)?.toDouble() ?? 0.0;
-            final authoritativePrice =
-                (productData['price'] as num?)?.toDouble() ?? 0.0;
-            final isFreeItem = item['isFree'] == true;
-            final quantity = (item['quantity'] as num?)?.toInt() ?? 0;
-            if (quantity <= 0) {
-              throw Exception('Invalid quantity for $productId');
-            }
-
-            if (!isFreeItem && authoritativePrice > 0) {
-              if ((payloadPrice - authoritativePrice).abs() > 0.009) {
-                throw Exception(
-                  'Price mismatch for $productId. Expected: $authoritativePrice, Received: $payloadPrice',
-                );
-              }
-            }
-            item['price'] = authoritativePrice;
-
-            if (item['secondaryPrice'] != null &&
-                productData['secondaryPrice'] != null) {
-              final payloadSecondary =
-                  (item['secondaryPrice'] as num?)?.toDouble() ?? 0.0;
-              final authoritativeSecondary =
-                  (productData['secondaryPrice'] as num?)?.toDouble() ?? 0.0;
-              if ((payloadSecondary - authoritativeSecondary).abs() > 0.009) {
-                throw Exception(
-                  'Secondary price mismatch for $productId. Expected: $authoritativeSecondary, Received: $payloadSecondary',
-                );
-              }
-            }
-            if (productData['secondaryPrice'] != null) {
-              item['secondaryPrice'] = (productData['secondaryPrice'] as num?)
-                  ?.toDouble();
-            }
-            if (productData['conversionFactor'] != null) {
-              item['conversionFactor'] =
-                  (productData['conversionFactor'] as num?)?.toDouble();
-            }
-            if (productData['baseUnit'] != null) {
-              item['baseUnit'] = productData['baseUnit'];
-            }
-            if (productData.containsKey('secondaryUnit')) {
-              item['secondaryUnit'] = productData['secondaryUnit'];
-            }
-            if (productData['name'] != null &&
-                productData['name'].toString().trim().isNotEmpty) {
-              item['name'] = productData['name'];
-            }
-            item['discount'] = ((item['discount'] as num?)?.toDouble() ?? 0.0)
-                .clamp(0.0, 100.0);
-
-            validatedItems.add(item);
-          }
-          if (validatedItems.isEmpty) {
-            throw Exception(
-              'Sale payload must contain at least one valid item',
-            );
-          }
-
-          final primaryDiscountPct =
-              ((data['discountPercentage'] as num?)?.toDouble() ?? 0.0).clamp(
-                0.0,
-                100.0,
-              );
-          final additionalDiscountPct =
-              ((data['additionalDiscountPercentage'] as num?)?.toDouble() ??
-                      0.0)
-                  .clamp(0.0, 100.0);
-          final normalizedGstType = _normalizeGstType(
-            data['gstType']?.toString() ?? 'None',
-          );
-          final gstPercentage = normalizedGstType == 'None'
-              ? 0.0
-              : ((data['gstPercentage'] as num?)?.toDouble() ?? 0.0).clamp(
-                  0.0,
-                  100.0,
-                );
-          final calcItems = validatedItems
-              .map(
-                (item) => SaleItemForUI(
-                  productId: item['productId']?.toString() ?? '',
-                  name: item['name']?.toString() ?? '',
-                  quantity: (item['quantity'] as num?)?.toInt() ?? 0,
-                  price: (item['price'] as num?)?.toDouble() ?? 0.0,
-                  isFree: item['isFree'] == true,
-                  discount: (item['discount'] as num?)?.toDouble() ?? 0.0,
-                  secondaryPrice: (item['secondaryPrice'] as num?)?.toDouble(),
-                  conversionFactor: (item['conversionFactor'] as num?)
-                      ?.toDouble(),
-                  baseUnit: item['baseUnit']?.toString() ?? '',
-                  secondaryUnit: item['secondaryUnit']?.toString(),
-                  stock: 0,
-                ),
-              )
-              .toList(growable: false);
-          final calc = _calculateSale(
-            items: calcItems,
-            discountPercentage: primaryDiscountPct,
-            additionalDiscountPercentage: additionalDiscountPct,
-            gstPercentage: gstPercentage,
-            gstType: normalizedGstType,
-          );
-          final authoritativeItems = calc.lines
-              .asMap()
-              .entries
-              .map((entry) {
-                final line = entry.value;
-                final original = validatedItems[entry.key];
-                return {
-                  ...line.toPersistedMap(),
-                  'movementId': _resolveSaleMovementId(
-                    saleId: saleId,
-                    item: original,
-                    itemIndex: entry.key,
-                  ),
-                };
-              })
-              .toList(growable: false);
-
-          final salePayload = Map<String, dynamic>.from(data);
-          salePayload.remove('isSynced');
-          salePayload['status'] = salePayload['status'] == 'pending_sync'
-              ? 'completed'
-              : salePayload['status'];
-          salePayload['items'] = authoritativeItems;
-          salePayload['itemProductIds'] = authoritativeItems
-              .map((item) => item['productId']?.toString() ?? '')
-              .where((id) => id.isNotEmpty)
-              .toList(growable: false);
-          salePayload['discountPercentage'] = primaryDiscountPct;
-          salePayload['additionalDiscountPercentage'] = additionalDiscountPct;
-          salePayload['gstType'] = normalizedGstType;
-          salePayload['gstPercentage'] = gstPercentage;
-          salePayload['subtotal'] = calc.subtotal;
-          salePayload['itemDiscountAmount'] = calc.itemDiscountTotal;
-          salePayload['discountAmount'] = calc.discountAmount;
-          salePayload['additionalDiscountAmount'] =
-              calc.additionalDiscountAmount;
-          salePayload['taxableAmount'] = calc.taxableAmount;
-          salePayload.remove('cgstAmount');
-          salePayload.remove('sgstAmount');
-          salePayload.remove('igstAmount');
-          if (calc.cgstAmount > 0) salePayload['cgstAmount'] = calc.cgstAmount;
-          if (calc.sgstAmount > 0) salePayload['sgstAmount'] = calc.sgstAmount;
-          if (calc.igstAmount > 0) salePayload['igstAmount'] = calc.igstAmount;
-          salePayload['totalAmount'] = calc.totalAmount;
-          salePayload['roundOff'] = _round2(
-            calc.totalAmount - (calc.taxableAmount + calc.totalGstAmount),
-          );
-
-          DocumentReference? customerRef;
-          if (recipientType == 'customer') {
-            final recipientId =
-                salePayload['recipientId']?.toString().trim() ?? '';
-            if (recipientId.isEmpty) {
-              throw Exception(
-                'Customer recipient ID is missing in sync payload',
-              );
-            }
-            customerRef = firestore.collection('customers').doc(recipientId);
-            final customerSnap = await transaction.get(customerRef);
-            if (!customerSnap.exists) {
-              throw Exception('Customer $recipientId not found');
-            }
-          }
-
-          if (seriesData != null) {
-            final sData = seriesData;
-            final current = sData['current'] ?? 0;
-            final next = current + 1;
-            transaction.update(seriesRef, {'current': next});
-            salePayload['humanReadableId'] =
-                '${sData['prefix'] ?? "INV"}-$next';
-          }
-
-          transaction.set(saleRef, salePayload);
-
-          await _ensureSaleInventoryAppliedIfNeeded(
-            saleId: saleId,
-            recipientType: recipientType.toString(),
-            salesmanUid: salesmanId,
-            items: authoritativeItems,
-            recipientSalesmanUid: data['recipientId']?.toString(),
-            sourceWarehouseId: data['sourceWarehouseId']?.toString(),
-          );
-
-          // 4. Stock operations
-          // T9-P2 REMOVED: direct Firestore stock writes replaced by
-          // InventoryMovementEngine sale_complete / dispatch_create.
-          // if (recipientType == 'customer') {
-          //   final allocated =
-          //       salesmanData['allocatedStock'] as Map<String, dynamic>? ?? {};
-          //   for (var item in validatedItems) {
-          //     final pId = item['productId'];
-          //     final qty = (item['quantity'] as num).toDouble();
-          //     final isFree = item['isFree'] == true;
-          //     final stockItem = allocated[pId] as Map<String, dynamic>? ?? {};
-          //     final available = isFree
-          //         ? (stockItem['freeQuantity'] as num? ?? 0).toDouble()
-          //         : (stockItem['quantity'] as num? ?? 0).toDouble();
-          //     if (available < qty) {
-          //       throw Exception(
-          //         'Insufficient allocated stock for $pId. Available: $available, Required: $qty',
-          //       );
-          //     }
-          //     final field = isFree
-          //         ? 'allocatedStock.$pId.freeQuantity'
-          //         : 'allocatedStock.$pId.quantity';
-          //     transaction.update(salesmanRef, {
-          //       field: FieldValue.increment(-qty),
-          //     });
-          //   }
-          // } else if (recipientType == 'dealer' || recipientType == 'salesman') {
-          //   DocumentReference? recipientRef;
-          //   if (recipientType == 'salesman') {
-          //     recipientRef = firestore.collection('users').doc(data['recipientId']);
-          //     final recipientSnap = await transaction.get(recipientRef);
-          //     if (!recipientSnap.exists) {
-          //       throw Exception(
-          //         'Recipient Salesman ${data['recipientId']} not found',
-          //       );
-          //     }
-          //   }
-          //   for (var item in validatedItems) {
-          //     final pRef = firestore.collection('products').doc(item['productId']);
-          //     final pSnap = await transaction.get(pRef);
-          //     if (!pSnap.exists) {
-          //       throw Exception('Product ${item['productId']} not found');
-          //     }
-          //     final pData = pSnap.data() as Map<String, dynamic>;
-          //     final currentStock = (pData['stock'] as num? ?? 0).toDouble();
-          //     final qty = (item['quantity'] as num).toDouble();
-          //     if (currentStock < qty) {
-          //       throw Exception(
-          //         'Insufficient main stock for ${item['productId']}. Available: $currentStock',
-          //       );
-          //     }
-          //     transaction.update(pRef, {'stock': FieldValue.increment(-qty)});
-          //     if (recipientType == 'salesman' && recipientRef != null) {
-          //       transaction.set(recipientRef, {
-          //         'allocatedStock': {
-          //           item['productId']: {
-          //             'quantity': FieldValue.increment(qty),
-          //             'name': pData['name'],
-          //             'baseUnit': pData['baseUnit'],
-          //             'secondaryUnit': pData['secondaryUnit'],
-          //             'conversionFactor': pData['conversionFactor'],
-          //             'price': pData['price'],
-          //           },
-          //         },
-          //       }, SetOptions(merge: true));
-          //     }
-          //   }
-          // }
-
-          // 5. Stock movement logs (deterministic IDs)
-          final movementSource = (data['saleType'] == 'DIRECT_DEALER')
-              ? 'sale'
-              : 'dispatch';
-          for (var i = 0; i < authoritativeItems.length; i++) {
-            final item = authoritativeItems[i];
-            final movementId = _resolveSaleMovementId(
-              saleId: saleId,
-              item: item,
-              itemIndex: i,
-            );
-            final movementRef = firestore
-                .collection('stock_movements')
-                .doc(movementId);
-            transaction.set(movementRef, {
-              'id': movementId,
-              'type': 'out',
-              'source': movementSource,
-              'productId': item['productId'],
-              'productName': item['name'],
-              'quantity': item['quantity'],
-              'referenceId': data['id'],
-              'referenceNumber': salePayload['humanReadableId'],
-              'referenceType': 'sale',
-              'notes': 'Sync: Sale to ${data['recipientName']}',
-              'createdBy': salesmanId,
-              'createdByName': data['salesmanName'],
-              'createdAt': FieldValue.serverTimestamp(),
-            }, SetOptions(merge: true));
-          }
-
-          // 6. Customer balance adjustment
-          if (recipientType == 'customer') {
-            final totalAmt = calc.totalAmount;
-            if (totalAmt > 0 && customerRef != null) {
-              transaction.update(customerRef, {
-                'balance': FieldValue.increment(totalAmt),
-              });
-            }
-          }
-
-          final auditRef = firestore.collection('audit_logs').doc();
-          transaction.set(auditRef, {
-            'collectionName': 'sales',
-            'docId': data['id'],
-            'action': 'create_sync',
-            'userId': salesmanId,
-            'timestamp': DateTime.now().toIso8601String(),
-          });
-        });
+        await remoteProvider.performSyncAdd(data);
       } catch (e) {
         AppLogger.error(
-          'SalesService.performSync FAILED inside try-catch block for add',
+          'SalesService.performSync failed for add',
           tag: 'Sync',
           error: e,
         );
@@ -1771,201 +1341,15 @@ class SalesService extends OfflineFirstService {
     }
 
     if (action == 'edit' && collection == salesCollection) {
-      final saleId = data['id']?.toString().trim();
-      if (saleId == null || saleId.isEmpty) {
-        throw Exception('Sale ID is required for edit sync');
-      }
-
-      final saleRef = firestore.collection(salesCollection).doc(saleId);
-      final precheck = await saleRef.get();
-      if (!precheck.exists) {
-        final createPayload = _stripEditSyncMetadata(data);
-        await performSync('add', salesCollection, createPayload);
-        return;
-      }
-      final commandKey = _buildSaleEditCommandKey(data);
-      final commandRef = firestore
-          .collection('audit_logs')
-          .doc(_buildCommandAuditDocId(commandKey));
       try {
-        final isWindows = Platform.isWindows;
-        if (isWindows) {
-          await _performSalesEditSyncWindows(
-            firestore: firestore,
-            data: data,
-            saleId: saleId,
-            saleRef: saleRef,
-            commandKey: commandKey,
-            commandRef: commandRef,
-          );
-          return;
-        }
-        await firestore.runTransaction((transaction) async {
-          final processedCommand = await transaction.get(commandRef);
-          if (processedCommand.exists) {
-            return;
-          }
-
-          final saleSnap = await transaction.get(saleRef);
-          if (!saleSnap.exists) {
-            throw Exception('Sale not found for edit sync: $saleId');
-          }
-          final currentData = Map<String, dynamic>.from(
-            saleSnap.data() ?? <String, dynamic>{},
-          );
-          final currentStatus = (currentData['status'] ?? '')
-              .toString()
-              .trim()
-              .toLowerCase();
-          if (currentStatus == 'cancelled') {
-            throw Exception('Cannot edit cancelled sale: $saleId');
-          }
-
-          final recipientType =
-              (data['recipientType'] ?? currentData['recipientType'] ?? '')
-                  .toString();
-          final recipientId =
-              (data['recipientId'] ?? currentData['recipientId'] ?? '')
-                  .toString();
-          final previousRecipientType =
-              (data['previousRecipientType'] ??
-                      currentData['recipientType'] ??
-                      '')
-                  .toString();
-          final previousRecipientId =
-              (data['previousRecipientId'] ?? currentData['recipientId'] ?? '')
-                  .toString();
-          final oldTotalAmount =
-              (data['oldTotalAmount'] as num? ??
-                      currentData['totalAmount'] as num? ??
-                      0)
-                  .toDouble();
-          final newTotalAmount =
-              (data['totalAmount'] as num? ??
-                      currentData['totalAmount'] as num? ??
-                      0)
-                  .toDouble();
-          final totalDelta =
-              (data['totalDelta'] as num?)?.toDouble() ??
-              _round2(newTotalAmount - oldTotalAmount);
-          final salesmanId =
-              (data['salesmanId'] ?? currentData['salesmanId'] ?? '')
-                  .toString();
-
-          final previousItems = (currentData['items'] is List)
-              ? (currentData['items'] as List)
-                    .whereType<Map>()
-                    .map(
-                      (item) => Map<String, dynamic>.from(
-                        item.map(
-                          (key, value) => MapEntry(key.toString(), value),
-                        ),
-                      ),
-                    )
-                    .toList(growable: false)
-              : const <Map<String, dynamic>>[];
-          final nextItems = (data['items'] is List)
-              ? (data['items'] as List)
-                    .whereType<Map>()
-                    .map(
-                      (item) => Map<String, dynamic>.from(
-                        item.map(
-                          (key, value) => MapEntry(key.toString(), value),
-                        ),
-                      ),
-                    )
-                    .toList(growable: false)
-              : const <Map<String, dynamic>>[];
-
-          await _ensureSaleEditInventoryAppliedIfNeeded(
-            saleId: saleId,
-            previousRecipientType: previousRecipientType,
-            nextRecipientType: recipientType,
-            salesmanUid: salesmanId,
-            previousItems: previousItems,
-            nextItems: nextItems,
-            commandKey: commandKey,
-            actorUid: data['editedBy']?.toString(),
-            actorLegacyAppUserId: data['editedBy']?.toString(),
-            nextSourceWarehouseId: data['sourceWarehouseId']?.toString(),
-          );
-
-          if (recipientType == 'customer') {
-            // T9-P2 REMOVED: direct Firestore allocatedStock edits replaced by
-            // InventoryMovementEngine sale_reversal -> sale_complete.
-            final normalizedRecipientId = recipientId.trim();
-            final normalizedPreviousRecipientId = previousRecipientId.trim();
-            final recipientChanged =
-                normalizedPreviousRecipientId.isNotEmpty &&
-                normalizedRecipientId.isNotEmpty &&
-                normalizedPreviousRecipientId != normalizedRecipientId;
-
-            if (recipientChanged &&
-                previousRecipientType.trim().toLowerCase() == 'customer') {
-              if (oldTotalAmount.abs() >= 1e-9) {
-                final previousCustomerRef = firestore
-                    .collection('customers')
-                    .doc(normalizedPreviousRecipientId);
-                transaction.update(previousCustomerRef, {
-                  'balance': FieldValue.increment(-oldTotalAmount),
-                });
-              }
-              if (newTotalAmount.abs() >= 1e-9) {
-                final nextCustomerRef = firestore
-                    .collection('customers')
-                    .doc(normalizedRecipientId);
-                transaction.update(nextCustomerRef, {
-                  'balance': FieldValue.increment(newTotalAmount),
-                });
-              }
-            } else if (normalizedRecipientId.isNotEmpty &&
-                totalDelta.abs() >= 1e-9) {
-              final customerRef = firestore
-                  .collection('customers')
-                  .doc(normalizedRecipientId);
-              transaction.update(customerRef, {
-                'balance': FieldValue.increment(totalDelta),
-              });
-            }
-          } else if (recipientType == 'dealer' || recipientType == 'salesman') {
-            // T9-P2 REMOVED: direct Firestore product stock edits replaced by
-            // InventoryMovementEngine sale_reversal -> sale_complete.
-          }
-
-          final salePatch =
-              _stripEditSyncMetadata(Map<String, dynamic>.from(data))
-                ..remove('id')
-                ..['updatedAt'] = DateTime.now().toIso8601String()
-                ..['lastEditCommandKey'] = commandKey;
-          transaction.set(saleRef, salePatch, SetOptions(merge: true));
-
-          transaction.set(commandRef, {
-            'collectionName': 'sales',
-            'docId': saleId,
-            'action': 'edit_sync_command',
-            'commandKey': commandKey,
-            'userId': data['editedBy'] ?? salesmanId,
-            'timestamp': DateTime.now().toIso8601String(),
-          });
-
-          final auditRef = firestore.collection('audit_logs').doc();
-          transaction.set(auditRef, {
-            'collectionName': 'sales',
-            'docId': saleId,
-            'action': 'edit_sync',
-            'commandKey': commandKey,
-            'userId': data['editedBy'] ?? salesmanId,
-            'timestamp': DateTime.now().toIso8601String(),
-          });
-        });
+        await remoteProvider.performSyncEdit(data);
       } catch (e) {
-        AppLogger.error('Sales edit sync batch failed', error: e, tag: 'Sync');
+        AppLogger.error('Sales edit sync failed', error: e, tag: 'Sync');
         rethrow;
       }
       return;
     }
 
-    // Default behavior
     await super.performSync(action, collection, data);
   }
 
@@ -1978,359 +1362,7 @@ class SalesService extends OfflineFirstService {
     required String saleId,
     required List<Map<String, dynamic>> items,
   }) async {
-    // Windows Desktop: use batch path to avoid runTransaction native crash.
-    final batch = firestore.batch();
-
-    // 1. Salesman Data (User)
-    final salesmanRef = firestore.collection('users').doc(salesmanId);
-    final salesmanSnap = await salesmanRef.get();
-    if (!salesmanSnap.exists) {
-      throw Exception('User (Salesman/Creator) not found.');
-    }
-    final salesmanData = salesmanSnap.data() ?? const <String, dynamic>{};
-    final salesmanRole = (salesmanData['role'] ?? '')
-        .toString()
-        .trim()
-        .toLowerCase();
-    final isAdminRole = salesmanRole == 'admin' || salesmanRole == 'owner';
-    final canWriteTransactionSeries = isAdminRole;
-
-    // 2. Transaction Series (admin-only by rules)
-    final seriesRef = firestore
-        .collection('transaction_series')
-        .doc(seriesType);
-    Map<String, dynamic>? seriesData;
-    if (canWriteTransactionSeries) {
-      final seriesSnap = await seriesRef.get();
-      if (seriesSnap.exists) {
-        seriesData = seriesSnap.data();
-      }
-    } else {
-      AppLogger.debug(
-        'performSync Tx: skipping transaction_series update for role=$salesmanRole',
-        tag: 'Sync',
-      );
-    }
-
-    // 3. Create Sale Document (idempotent on saleId)
-    final saleRef = firestore.collection(salesCollection).doc(saleId);
-    final existingSaleSnap = await saleRef.get();
-    if (existingSaleSnap.exists) {
-      AppLogger.debug('performSync Tx: ABORT due to idempotency', tag: 'Sync');
-      return;
-    }
-
-    final validatedItems = <Map<String, dynamic>>[];
-    for (final rawItem in items) {
-      final item = Map<String, dynamic>.from(rawItem);
-      final productId = item['productId']?.toString().trim() ?? '';
-      if (productId.isEmpty) {
-        throw Exception('Sale item payload missing productId');
-      }
-
-      final productRef = firestore.collection('products').doc(productId);
-      final productSnap = await productRef.get();
-      if (!productSnap.exists) {
-        throw Exception('Product $productId not found');
-      }
-
-      final productData = productSnap.data() ?? const <String, dynamic>{};
-      final payloadPrice = (item['price'] as num?)?.toDouble() ?? 0.0;
-      final authoritativePrice =
-          (productData['price'] as num?)?.toDouble() ?? 0.0;
-      final isFreeItem = item['isFree'] == true;
-      final quantity = (item['quantity'] as num?)?.toInt() ?? 0;
-      if (quantity <= 0) {
-        throw Exception('Invalid quantity for $productId');
-      }
-
-      if (!isFreeItem && authoritativePrice > 0) {
-        if ((payloadPrice - authoritativePrice).abs() > 0.009) {
-          throw Exception(
-            'Price mismatch for $productId. Expected: $authoritativePrice, Received: $payloadPrice',
-          );
-        }
-      }
-      item['price'] = authoritativePrice;
-
-      if (item['secondaryPrice'] != null &&
-          productData['secondaryPrice'] != null) {
-        final payloadSecondary =
-            (item['secondaryPrice'] as num?)?.toDouble() ?? 0.0;
-        final authoritativeSecondary =
-            (productData['secondaryPrice'] as num?)?.toDouble() ?? 0.0;
-        if ((payloadSecondary - authoritativeSecondary).abs() > 0.009) {
-          throw Exception(
-            'Secondary price mismatch for $productId. Expected: $authoritativeSecondary, Received: $payloadSecondary',
-          );
-        }
-      }
-      if (productData['secondaryPrice'] != null) {
-        item['secondaryPrice'] = (productData['secondaryPrice'] as num?)
-            ?.toDouble();
-      }
-      if (productData['conversionFactor'] != null) {
-        item['conversionFactor'] = (productData['conversionFactor'] as num?)
-            ?.toDouble();
-      }
-      if (productData['baseUnit'] != null) {
-        item['baseUnit'] = productData['baseUnit'];
-      }
-      if (productData.containsKey('secondaryUnit')) {
-        item['secondaryUnit'] = productData['secondaryUnit'];
-      }
-      if (productData['name'] != null &&
-          productData['name'].toString().trim().isNotEmpty) {
-        item['name'] = productData['name'];
-      }
-      item['discount'] = ((item['discount'] as num?)?.toDouble() ?? 0.0).clamp(
-        0.0,
-        100.0,
-      );
-
-      validatedItems.add(item);
-    }
-    if (validatedItems.isEmpty) {
-      throw Exception('Sale payload must contain at least one valid item');
-    }
-
-    final primaryDiscountPct =
-        ((data['discountPercentage'] as num?)?.toDouble() ?? 0.0).clamp(
-          0.0,
-          100.0,
-        );
-    final additionalDiscountPct =
-        ((data['additionalDiscountPercentage'] as num?)?.toDouble() ?? 0.0)
-            .clamp(0.0, 100.0);
-    final normalizedGstType = _normalizeGstType(
-      data['gstType']?.toString() ?? 'None',
-    );
-    final gstPercentage = normalizedGstType == 'None'
-        ? 0.0
-        : ((data['gstPercentage'] as num?)?.toDouble() ?? 0.0).clamp(
-            0.0,
-            100.0,
-          );
-    final calcItems = validatedItems
-        .map(
-          (item) => SaleItemForUI(
-            productId: item['productId']?.toString() ?? '',
-            name: item['name']?.toString() ?? '',
-            quantity: (item['quantity'] as num?)?.toInt() ?? 0,
-            price: (item['price'] as num?)?.toDouble() ?? 0.0,
-            isFree: item['isFree'] == true,
-            discount: (item['discount'] as num?)?.toDouble() ?? 0.0,
-            secondaryPrice: (item['secondaryPrice'] as num?)?.toDouble(),
-            conversionFactor: (item['conversionFactor'] as num?)?.toDouble(),
-            baseUnit: item['baseUnit']?.toString() ?? '',
-            secondaryUnit: item['secondaryUnit']?.toString(),
-            stock: 0,
-          ),
-        )
-        .toList(growable: false);
-    final calc = _calculateSale(
-      items: calcItems,
-      discountPercentage: primaryDiscountPct,
-      additionalDiscountPercentage: additionalDiscountPct,
-      gstPercentage: gstPercentage,
-      gstType: normalizedGstType,
-    );
-    final authoritativeItems = calc.lines
-        .asMap()
-        .entries
-        .map((entry) {
-          final line = entry.value;
-          final original = validatedItems[entry.key];
-          return {
-            ...line.toPersistedMap(),
-            'movementId': _resolveSaleMovementId(
-              saleId: saleId,
-              item: original,
-              itemIndex: entry.key,
-            ),
-          };
-        })
-        .toList(growable: false);
-
-    final salePayload = Map<String, dynamic>.from(data);
-    salePayload.remove('isSynced');
-    salePayload['status'] = salePayload['status'] == 'pending_sync'
-        ? 'completed'
-        : salePayload['status'];
-    salePayload['items'] = authoritativeItems;
-    salePayload['itemProductIds'] = authoritativeItems
-        .map((item) => item['productId']?.toString() ?? '')
-        .where((id) => id.isNotEmpty)
-        .toList(growable: false);
-    salePayload['discountPercentage'] = primaryDiscountPct;
-    salePayload['additionalDiscountPercentage'] = additionalDiscountPct;
-    salePayload['gstType'] = normalizedGstType;
-    salePayload['gstPercentage'] = gstPercentage;
-    salePayload['subtotal'] = calc.subtotal;
-    salePayload['itemDiscountAmount'] = calc.itemDiscountTotal;
-    salePayload['discountAmount'] = calc.discountAmount;
-    salePayload['additionalDiscountAmount'] = calc.additionalDiscountAmount;
-    salePayload['taxableAmount'] = calc.taxableAmount;
-    salePayload.remove('cgstAmount');
-    salePayload.remove('sgstAmount');
-    salePayload.remove('igstAmount');
-    if (calc.cgstAmount > 0) salePayload['cgstAmount'] = calc.cgstAmount;
-    if (calc.sgstAmount > 0) salePayload['sgstAmount'] = calc.sgstAmount;
-    if (calc.igstAmount > 0) salePayload['igstAmount'] = calc.igstAmount;
-    salePayload['totalAmount'] = calc.totalAmount;
-    salePayload['roundOff'] = _round2(
-      calc.totalAmount - (calc.taxableAmount + calc.totalGstAmount),
-    );
-
-    DocumentReference? customerRef;
-    if (recipientType == 'customer') {
-      final recipientId = salePayload['recipientId']?.toString().trim() ?? '';
-      if (recipientId.isEmpty) {
-        throw Exception('Customer recipient ID is missing in sync payload');
-      }
-      customerRef = firestore.collection('customers').doc(recipientId);
-      final customerSnap = await customerRef.get();
-      if (!customerSnap.exists) {
-        throw Exception('Customer $recipientId not found');
-      }
-    }
-
-    if (seriesData != null) {
-      final sData = seriesData;
-      final current = sData['current'] ?? 0;
-      final next = current + 1;
-      batch.update(seriesRef, {'current': next});
-      salePayload['humanReadableId'] = '${sData['prefix'] ?? "INV"}-$next';
-    }
-
-    batch.set(saleRef, salePayload);
-
-    await _ensureSaleInventoryAppliedIfNeeded(
-      saleId: saleId,
-      recipientType: recipientType.toString(),
-      salesmanUid: salesmanId,
-      items: authoritativeItems,
-      recipientSalesmanUid: data['recipientId']?.toString(),
-      actorUid: salesmanId,
-      actorLegacyAppUserId: data['editedBy']?.toString(),
-    );
-
-    // 4. Stock operations
-    // T9-P2 REMOVED: direct Firestore stock writes replaced by
-    // InventoryMovementEngine sale_complete / dispatch_create.
-    // if (recipientType == 'customer') {
-    //   final allocated =
-    //       salesmanData['allocatedStock'] as Map<String, dynamic>? ?? {};
-    //   for (var item in validatedItems) {
-    //     final pId = item['productId'];
-    //     final qty = (item['quantity'] as num).toDouble();
-    //     final isFree = item['isFree'] == true;
-    //     final stockItem = allocated[pId] as Map<String, dynamic>? ?? {};
-    //     final available = isFree
-    //         ? (stockItem['freeQuantity'] as num? ?? 0).toDouble()
-    //         : (stockItem['quantity'] as num? ?? 0).toDouble();
-    //     if (available < qty) {
-    //       throw Exception(
-    //         'Insufficient allocated stock for $pId. Available: $available, Required: $qty',
-    //       );
-    //     }
-    //     final field = isFree
-    //         ? 'allocatedStock.$pId.freeQuantity'
-    //         : 'allocatedStock.$pId.quantity';
-    //     batch.update(salesmanRef, {field: FieldValue.increment(-qty)});
-    //   }
-    // } else if (recipientType == 'dealer' || recipientType == 'salesman') {
-    //   DocumentReference? recipientRef;
-    //   if (recipientType == 'salesman') {
-    //     recipientRef = firestore.collection('users').doc(data['recipientId']);
-    //     final recipientSnap = await recipientRef.get();
-    //     if (!recipientSnap.exists) {
-    //       throw Exception(
-    //         'Recipient Salesman ${data['recipientId']} not found',
-    //       );
-    //     }
-    //   }
-    //   for (var item in validatedItems) {
-    //     final pRef = firestore.collection('products').doc(item['productId']);
-    //     final pSnap = await pRef.get();
-    //     if (!pSnap.exists) {
-    //       throw Exception('Product ${item['productId']} not found');
-    //     }
-    //     final pData = pSnap.data() as Map<String, dynamic>;
-    //     final currentStock = (pData['stock'] as num? ?? 0).toDouble();
-    //     final qty = (item['quantity'] as num).toDouble();
-    //     if (currentStock < qty) {
-    //       throw Exception(
-    //         'Insufficient main stock for ${item['productId']}. Available: $currentStock',
-    //       );
-    //     }
-    //     batch.update(pRef, {'stock': FieldValue.increment(-qty)});
-    //     if (recipientType == 'salesman' && recipientRef != null) {
-    //       batch.set(recipientRef, {
-    //         'allocatedStock': {
-    //           item['productId']: {
-    //             'quantity': FieldValue.increment(qty),
-    //             'name': pData['name'],
-    //             'baseUnit': pData['baseUnit'],
-    //             'secondaryUnit': pData['secondaryUnit'],
-    //             'conversionFactor': pData['conversionFactor'],
-    //             'price': pData['price'],
-    //           },
-    //         },
-    //       }, SetOptions(merge: true));
-    //     }
-    //   }
-    // }
-
-    // 5. Stock movement logs (deterministic IDs)
-    final movementSource = (data['saleType'] == 'DIRECT_DEALER')
-        ? 'sale'
-        : 'dispatch';
-    for (var i = 0; i < authoritativeItems.length; i++) {
-      final item = authoritativeItems[i];
-      final movementId = _resolveSaleMovementId(
-        saleId: saleId,
-        item: item,
-        itemIndex: i,
-      );
-      final movementRef = firestore
-          .collection('stock_movements')
-          .doc(movementId);
-      batch.set(movementRef, {
-        'id': movementId,
-        'type': 'out',
-        'source': movementSource,
-        'productId': item['productId'],
-        'productName': item['name'],
-        'quantity': item['quantity'],
-        'referenceId': data['id'],
-        'referenceNumber': salePayload['humanReadableId'],
-        'referenceType': 'sale',
-        'notes': 'Sync: Sale to ${data['recipientName']}',
-        'createdBy': salesmanId,
-        'createdByName': data['salesmanName'],
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-
-    // 6. Customer balance adjustment
-    if (recipientType == 'customer') {
-      final totalAmt = calc.totalAmount;
-      if (totalAmt > 0 && customerRef != null) {
-        batch.update(customerRef, {'balance': FieldValue.increment(totalAmt)});
-      }
-    }
-
-    final auditRef = firestore.collection('audit_logs').doc();
-    batch.set(auditRef, {
-      'collectionName': 'sales',
-      'docId': data['id'],
-      'action': 'create_sync',
-      'userId': salesmanId,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-
-    await batch.commit();
+    await _remoteProvider(firestore).performSyncAdd(data);
   }
 
   Future<void> _performSalesEditSyncWindows({
@@ -2341,153 +1373,7 @@ class SalesService extends OfflineFirstService {
     required String commandKey,
     required DocumentReference<Map<String, dynamic>> commandRef,
   }) async {
-    final batch = firestore.batch();
-
-    final processedCommand = await commandRef.get();
-    if (processedCommand.exists) {
-      return;
-    }
-
-    final saleSnap = await saleRef.get();
-    if (!saleSnap.exists) {
-      throw Exception('Sale not found for edit sync: $saleId');
-    }
-    final currentData = Map<String, dynamic>.from(
-      saleSnap.data() ?? <String, dynamic>{},
-    );
-    final currentStatus = (currentData['status'] ?? '')
-        .toString()
-        .trim()
-        .toLowerCase();
-    if (currentStatus == 'cancelled') {
-      throw Exception('Cannot edit cancelled sale: $saleId');
-    }
-
-    final recipientType =
-        (data['recipientType'] ?? currentData['recipientType'] ?? '')
-            .toString();
-    final recipientId =
-        (data['recipientId'] ?? currentData['recipientId'] ?? '').toString();
-    final previousRecipientType =
-        (data['previousRecipientType'] ?? currentData['recipientType'] ?? '')
-            .toString();
-    final previousRecipientId =
-        (data['previousRecipientId'] ?? currentData['recipientId'] ?? '')
-            .toString();
-    final oldTotalAmount =
-        (data['oldTotalAmount'] as num? ??
-                currentData['totalAmount'] as num? ??
-                0)
-            .toDouble();
-    final newTotalAmount =
-        (data['totalAmount'] as num? ?? currentData['totalAmount'] as num? ?? 0)
-            .toDouble();
-    final totalDelta =
-        (data['totalDelta'] as num?)?.toDouble() ??
-        _round2(newTotalAmount - oldTotalAmount);
-    final salesmanId = (data['salesmanId'] ?? currentData['salesmanId'] ?? '')
-        .toString();
-
-    final previousItems = (currentData['items'] is List)
-        ? (currentData['items'] as List)
-              .whereType<Map>()
-              .map(
-                (item) => Map<String, dynamic>.from(
-                  item.map((key, value) => MapEntry(key.toString(), value)),
-                ),
-              )
-              .toList(growable: false)
-        : const <Map<String, dynamic>>[];
-    final nextItems = (data['items'] is List)
-        ? (data['items'] as List)
-              .whereType<Map>()
-              .map(
-                (item) => Map<String, dynamic>.from(
-                  item.map((key, value) => MapEntry(key.toString(), value)),
-                ),
-              )
-              .toList(growable: false)
-        : const <Map<String, dynamic>>[];
-
-    await _ensureSaleEditInventoryAppliedIfNeeded(
-      saleId: saleId,
-      previousRecipientType: previousRecipientType,
-      nextRecipientType: recipientType,
-      salesmanUid: salesmanId,
-      previousItems: previousItems,
-      nextItems: nextItems,
-      commandKey: commandKey,
-      actorUid: data['editedBy']?.toString(),
-      actorLegacyAppUserId: data['editedBy']?.toString(),
-    );
-
-    if (recipientType == 'customer') {
-      // T9-P2 REMOVED: direct Firestore allocatedStock edits replaced by
-      // InventoryMovementEngine sale_reversal -> sale_complete.
-      final normalizedRecipientId = recipientId.trim();
-      final normalizedPreviousRecipientId = previousRecipientId.trim();
-      final recipientChanged =
-          normalizedPreviousRecipientId.isNotEmpty &&
-          normalizedRecipientId.isNotEmpty &&
-          normalizedPreviousRecipientId != normalizedRecipientId;
-
-      if (recipientChanged &&
-          previousRecipientType.trim().toLowerCase() == 'customer') {
-        if (oldTotalAmount.abs() >= 1e-9) {
-          final previousCustomerRef = firestore
-              .collection('customers')
-              .doc(normalizedPreviousRecipientId);
-          batch.update(previousCustomerRef, {
-            'balance': FieldValue.increment(-oldTotalAmount),
-          });
-        }
-        if (newTotalAmount.abs() >= 1e-9) {
-          final nextCustomerRef = firestore
-              .collection('customers')
-              .doc(normalizedRecipientId);
-          batch.update(nextCustomerRef, {
-            'balance': FieldValue.increment(newTotalAmount),
-          });
-        }
-      } else if (normalizedRecipientId.isNotEmpty && totalDelta.abs() >= 1e-9) {
-        final customerRef = firestore
-            .collection('customers')
-            .doc(normalizedRecipientId);
-        batch.update(customerRef, {
-          'balance': FieldValue.increment(totalDelta),
-        });
-      }
-    } else if (recipientType == 'dealer' || recipientType == 'salesman') {
-      // T9-P2 REMOVED: direct Firestore product stock edits replaced by
-      // InventoryMovementEngine sale_reversal -> sale_complete.
-    }
-
-    final salePatch = _stripEditSyncMetadata(Map<String, dynamic>.from(data))
-      ..remove('id')
-      ..['updatedAt'] = DateTime.now().toIso8601String()
-      ..['lastEditCommandKey'] = commandKey;
-    batch.set(saleRef, salePatch, SetOptions(merge: true));
-
-    batch.set(commandRef, {
-      'collectionName': 'sales',
-      'docId': saleId,
-      'action': 'edit_sync_command',
-      'commandKey': commandKey,
-      'userId': data['editedBy'] ?? salesmanId,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-
-    final auditRef = firestore.collection('audit_logs').doc();
-    batch.set(auditRef, {
-      'collectionName': 'sales',
-      'docId': saleId,
-      'action': 'edit_sync',
-      'commandKey': commandKey,
-      'userId': data['editedBy'] ?? salesmanId,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-
-    await batch.commit();
+    await _remoteProvider(firestore).performSyncEdit(data);
   }
 
   Future<void> _updateSaleItemReturnedQtyRemoteWindows({
@@ -2497,76 +1383,11 @@ class SalesService extends OfflineFirstService {
     required String productId,
     required int additionalReturnedQty,
   }) async {
-    final docSnap = await saleRef.get();
-    if (!docSnap.exists) return;
-
-    final data = docSnap.data();
-    if (data == null) {
-      AppLogger.warning(
-        'Skipping returned qty sync for sale=$saleId (remote payload missing)',
-        tag: 'Sales',
-      );
-      return;
-    }
-
-    final rawItems = data['items'];
-    if (rawItems is! List) {
-      AppLogger.warning(
-        'Skipping returned qty sync for sale=$saleId (items is not a list)',
-        tag: 'Sales',
-      );
-      return;
-    }
-
-    final parsedItems = <Map<String, dynamic>>[];
-    var hasMalformedItem = false;
-    for (final raw in rawItems) {
-      if (raw is! Map) {
-        hasMalformedItem = true;
-        continue;
-      }
-      parsedItems.add(
-        Map<String, dynamic>.from(
-          raw.map((key, value) => MapEntry(key.toString(), value)),
-        ),
-      );
-    }
-    if (parsedItems.isEmpty) {
-      AppLogger.warning(
-        'Skipping returned qty sync for sale=$saleId (no valid sale items)',
-        tag: 'Sales',
-      );
-      return;
-    }
-
-    var matchedProduct = false;
-    for (final item in parsedItems) {
-      if (item['productId']?.toString() == productId) {
-        final currentReturned =
-            (item['returnedQuantity'] as num?)?.toInt() ?? 0;
-        item['returnedQuantity'] = currentReturned + additionalReturnedQty;
-        matchedProduct = true;
-        break;
-      }
-    }
-    if (!matchedProduct) {
-      AppLogger.warning(
-        'Skipping returned qty sync for sale=$saleId (product not found: $productId)',
-        tag: 'Sales',
-      );
-      return;
-    }
-
-    if (hasMalformedItem) {
-      AppLogger.warning(
-        'Sale $saleId contains malformed remote items; applied safe partial parse for returned qty update',
-        tag: 'Sales',
-      );
-    }
-
-    final batch = firestore.batch();
-    batch.update(saleRef, {'items': parsedItems});
-    await batch.commit();
+    await _remoteProvider(firestore).updateReturnedQuantity(
+      saleId: saleId,
+      productId: productId,
+      additionalReturnedQty: additionalReturnedQty,
+    );
   }
 
   Future<void> _cancelSaleRemoteWindows({
@@ -2576,34 +1397,12 @@ class SalesService extends OfflineFirstService {
     required String userId,
     required String nowIso,
   }) async {
-    final saleRef = firestore.collection(salesCollection).doc(saleId);
-    final saleSnap = await saleRef.get();
-    if (!saleSnap.exists) return;
-
-    final batch = firestore.batch();
-    batch.update(saleRef, {
-      'status': 'cancelled',
-      'cancelReason': reason,
-      'cancelledBy': userId,
-      'cancelledAt': nowIso,
-      'paidAmount': 0,
-      'paymentStatus': 'cancelled',
-      'commissionAmount': 0,
-      'updatedAt': nowIso,
-    });
-
-    final saleData = saleSnap.data() as Map<String, dynamic>;
-    if ((saleData['recipientType'] as String?) == 'customer') {
-      final customerId = saleData['recipientId']?.toString();
-      if (customerId != null && customerId.isNotEmpty) {
-        final totalRemote =
-            (saleData['totalAmount'] as num?)?.toDouble() ?? 0.0;
-        final custRef = firestore.collection('customers').doc(customerId);
-        batch.update(custRef, {'balance': FieldValue.increment(-totalRemote)});
-      }
-    }
-
-    await batch.commit();
+    await _remoteProvider(firestore).cancelSale(
+      saleId: saleId,
+      reason: reason,
+      userId: userId,
+      nowIso: nowIso,
+    );
   }
 
   Future<Map<String, String>> _resolveSalesmanIdentity() async {
@@ -3203,42 +2002,21 @@ class SalesService extends OfflineFirstService {
     final saleId = _accountingDelegate.sanitizeDimensionValue(saleData['id']);
     if (saleId.isEmpty) return;
 
-    final queueId = '${salesVoucherPostRetryCollection}_$saleId';
-    final existing = await _dbService.syncQueue.getById(queueId);
-    final now = DateTime.now();
-    final existingMeta = existing == null
-        ? null
-        : OutboxCodec.decode(
-            existing.dataJson,
-            fallbackQueuedAt: existing.createdAt,
-          ).meta;
-
     final payload = <String, dynamic>{
       'id': saleId,
       'saleData': saleData,
       'salesmanId': salesmanId,
       'salesmanName': salesmanName,
       if (reason != null && reason.trim().isNotEmpty) 'lastError': reason,
-      'updatedAt': now.toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
     };
 
-    final entity = SyncQueueEntity()
-      ..id = queueId
-      ..collection = salesVoucherPostRetryCollection
-      ..action = 'set'
-      ..dataJson = OutboxCodec.encodeEnvelope(
-        payload: payload,
-        existingMeta: existingMeta,
-        now: now,
-        resetRetryState: false,
-      )
-      ..createdAt = existing?.createdAt ?? now
-      ..updatedAt = now
-      ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.put(entity);
-    });
+    await SyncQueueService.instance.addToQueue(
+      collectionName: salesVoucherPostRetryCollection,
+      documentId: saleId,
+      operation: 'set',
+      payload: payload,
+    );
 
     AppLogger.warning(
       'Queued sales voucher retry for sale $saleId',
@@ -3537,26 +2315,41 @@ class SalesService extends OfflineFirstService {
   Future<bool> dispatchSaleClient(String saleId, String vehicleNumber) async {
     try {
       await _requireSalesMutationActor('dispatch sale');
-      final firestore = db;
-      if (firestore == null) throw Exception('Offline');
-
-      final docRef = firestore.collection(salesCollection).doc(saleId);
-      await docRef.update({
-        'vehicleNumber': vehicleNumber,
-        'status': 'inTransit',
+      await _migrateLegacySalesIfNeeded();
+      final now = DateTime.now();
+      final nowIso = now.toIso8601String();
+      String userId = '';
+      await _dbService.db.writeTxn(() async {
+        final saleEntity = await _dbService.sales.getById(saleId);
+        if (saleEntity == null) {
+          throw Exception('Sale data not found');
+        }
+        saleEntity
+          ..vehicleNumber = vehicleNumber
+          ..status = 'inTransit'
+          ..syncStatus = SyncStatus.pending
+          ..updatedAt = now;
+        userId = saleEntity.salesmanId;
+        await _dbService.sales.put(saleEntity);
       });
 
-      final docSnapshot = await docRef.get();
-      final data = docSnapshot.data();
-      if (data == null) throw Exception('Sale data not found');
-      final userId = data['salesmanId']; // fixed null check
+      await syncToFirebase(
+        'update',
+        {
+          'id': saleId,
+          'vehicleNumber': vehicleNumber,
+          'status': 'inTransit',
+          'updatedAt': nowIso,
+        },
+        collectionName: salesCollection,
+      );
 
       await createAuditLog(
         collectionName: salesCollection,
         docId: saleId,
         action: 'dispatch',
         changes: {'vehicleNumber': vehicleNumber},
-        userId: userId ?? '',
+        userId: userId,
       );
 
       return true;
@@ -3863,6 +2656,7 @@ class SalesService extends OfflineFirstService {
     try {
       await _requireSalesMutationActor('update sale returned quantity');
       await _migrateLegacySalesIfNeeded();
+      Map<String, dynamic>? syncPayload;
       // 1. Update Locally (Isar)
       await _dbService.db.writeTxn(() async {
         final saleEntity = await _dbService.sales.get(fastHash(saleId));
@@ -3881,94 +2675,19 @@ class SalesService extends OfflineFirstService {
         saleEntity.syncStatus = SyncStatus.pending;
         saleEntity.updatedAt = DateTime.now();
         await _dbService.sales.put(saleEntity);
+        syncPayload = {
+          'id': saleId,
+          'items': items.map((item) => item.toJson()).toList(growable: false),
+          'updatedAt': saleEntity.updatedAt.toIso8601String(),
+        };
       });
 
-      // 2. Sync to Firebase (via Transaction on server)
-      final firestore = db;
-      if (firestore != null) {
-        final saleRef = firestore.collection(salesCollection).doc(saleId);
-        final isWindows = Platform.isWindows;
-        if (isWindows) {
-          await _updateSaleItemReturnedQtyRemoteWindows(
-            firestore: firestore,
-            saleRef: saleRef,
-            saleId: saleId,
-            productId: productId,
-            additionalReturnedQty: additionalReturnedQty,
-          );
-        } else {
-          await firestore.runTransaction((transaction) async {
-            final docSnap = await transaction.get(saleRef);
-            if (!docSnap.exists) return;
-
-            final data = docSnap.data();
-            if (data == null) {
-              AppLogger.warning(
-                'Skipping returned qty sync for sale=$saleId (remote payload missing)',
-                tag: 'Sales',
-              );
-              return;
-            }
-
-            final rawItems = data['items'];
-            if (rawItems is! List) {
-              AppLogger.warning(
-                'Skipping returned qty sync for sale=$saleId (items is not a list)',
-                tag: 'Sales',
-              );
-              return;
-            }
-
-            final parsedItems = <Map<String, dynamic>>[];
-            var hasMalformedItem = false;
-            for (final raw in rawItems) {
-              if (raw is! Map) {
-                hasMalformedItem = true;
-                continue;
-              }
-              parsedItems.add(
-                Map<String, dynamic>.from(
-                  raw.map((key, value) => MapEntry(key.toString(), value)),
-                ),
-              );
-            }
-            if (parsedItems.isEmpty) {
-              AppLogger.warning(
-                'Skipping returned qty sync for sale=$saleId (no valid sale items)',
-                tag: 'Sales',
-              );
-              return;
-            }
-
-            var matchedProduct = false;
-            for (final item in parsedItems) {
-              if (item['productId']?.toString() == productId) {
-                final currentReturned =
-                    (item['returnedQuantity'] as num?)?.toInt() ?? 0;
-                item['returnedQuantity'] =
-                    currentReturned + additionalReturnedQty;
-                matchedProduct = true;
-                break;
-              }
-            }
-            if (!matchedProduct) {
-              AppLogger.warning(
-                'Skipping returned qty sync for sale=$saleId (product not found: $productId)',
-                tag: 'Sales',
-              );
-              return;
-            }
-
-            if (hasMalformedItem) {
-              AppLogger.warning(
-                'Sale $saleId contains malformed remote items; applied safe partial parse for returned qty update',
-                tag: 'Sales',
-              );
-            }
-
-            transaction.update(saleRef, {'items': parsedItems});
-          });
-        }
+      if (syncPayload != null) {
+        await syncToFirebase(
+          'update',
+          syncPayload!,
+          collectionName: salesCollection,
+        );
       }
     } catch (e) {
       handleError(e, 'updateSaleItemReturnedQty');
@@ -4334,6 +3053,7 @@ class SalesService extends OfflineFirstService {
     try {
       await _requireSalesMutationActor('cancel sale');
       await _migrateLegacySalesIfNeeded();
+      Map<String, dynamic>? syncPayload;
       await _dbService.db.writeTxn(() async {
         final saleEntity = await _dbService.sales.get(fastHash(saleId));
         if (saleEntity == null) throw Exception('Sale not found');
@@ -4368,6 +3088,8 @@ class SalesService extends OfflineFirstService {
         saleEntity.syncStatus = SyncStatus.pending;
 
         await _dbService.sales.put(saleEntity);
+        syncPayload = saleEntity.toJson()
+          ..['updatedAt'] = saleEntity.updatedAt.toIso8601String();
 
         // 2. Revert Stock (Delegated to InventoryService) - only first time
         if (!alreadyCancelled) {
@@ -4385,52 +3107,12 @@ class SalesService extends OfflineFirstService {
         }
       });
 
-      // 3. Sync Update to Firestore (Best Effort)
-      final firestore = db;
-      if (firestore != null) {
-        final nowIso = DateTime.now().toIso8601String();
-        final isWindows = Platform.isWindows;
-        if (isWindows) {
-          await _cancelSaleRemoteWindows(
-            firestore: firestore,
-            saleId: saleId,
-            reason: reason,
-            userId: userId,
-            nowIso: nowIso,
-          );
-        } else {
-          await firestore.runTransaction((transaction) async {
-            final saleRef = firestore.collection(salesCollection).doc(saleId);
-            final saleSnap = await transaction.get(saleRef);
-            if (saleSnap.exists) {
-              transaction.update(saleRef, {
-                'status': 'cancelled',
-                'cancelReason': reason,
-                'cancelledBy': userId,
-                'cancelledAt': nowIso,
-                'paidAmount': 0,
-                'paymentStatus': 'cancelled',
-                'commissionAmount': 0,
-                'updatedAt': nowIso,
-              });
-
-              final saleData = saleSnap.data() as Map<String, dynamic>;
-              if ((saleData['recipientType'] as String?) == 'customer') {
-                final customerId = saleData['recipientId']?.toString();
-                if (customerId != null && customerId.isNotEmpty) {
-                  final totalRemote =
-                      (saleData['totalAmount'] as num?)?.toDouble() ?? 0.0;
-                  final custRef = firestore
-                      .collection('customers')
-                      .doc(customerId);
-                  transaction.update(custRef, {
-                    'balance': FieldValue.increment(-totalRemote),
-                  });
-                }
-              }
-            }
-          });
-        }
+      if (syncPayload != null) {
+        await syncToFirebase(
+          'update',
+          syncPayload!,
+          collectionName: salesCollection,
+        );
       }
     } catch (e) {
       handleError(e, 'cancelSale');
