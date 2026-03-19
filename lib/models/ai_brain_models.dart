@@ -17,6 +17,8 @@ class AIChatMessage {
   late String content;
 
   String? contextData; // Optional JSON metadata
+  DateTime lastModified = DateTime.now();
+  int version = 1;
 
   bool get isUser => role == MessageRole.user;
 }
@@ -31,6 +33,8 @@ class AILearningItem {
   late String content;
 
   DateTime learnedAt = DateTime.now();
+  DateTime lastModified = DateTime.now();
+  int version = 1;
 
   double confidence = 1.0;
 }
@@ -45,6 +49,8 @@ class AIInsightCache {
   late String value; // JSON blob
 
   DateTime expiresAt = DateTime.now().add(const Duration(days: 7));
+  DateTime lastModified = DateTime.now();
+  int version = 1;
 }
 
 @collection
@@ -54,4 +60,6 @@ class AIBrainSettings {
   bool enableLearning = true;
   String? preferredModel;
   double temperature = 0.7;
+  DateTime lastModified = DateTime.now();
+  int version = 1;
 }

@@ -53,42 +53,62 @@ const ProductionDailyEntryEntitySchema = CollectionSchema(
       name: r'departmentName',
       type: IsarType.string,
     ),
-    r'id': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 7,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'id': PropertySchema(
+      id: 8,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 10,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
     r'items': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'items',
       type: IsarType.objectList,
       target: r'ProductionItemEntity',
     ),
+    r'lastSynced': PropertySchema(
+      id: 12,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'notes': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'notes',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _ProductionDailyEntryEntitysyncStatusEnumValueMap,
     ),
     r'teamCode': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'teamCode',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 17,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _productionDailyEntryEntityEstimateSize,
@@ -142,6 +162,7 @@ int _productionDailyEntryEntityEstimateSize(
   bytesCount += 3 + object.createdByName.length * 3;
   bytesCount += 3 + object.departmentCode.length * 3;
   bytesCount += 3 + object.departmentName.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.id.length * 3;
   bytesCount += 3 + object.items.length * 3;
   {
@@ -180,18 +201,22 @@ void _productionDailyEntryEntitySerialize(
   writer.writeDateTime(offsets[4], object.deletedAt);
   writer.writeString(offsets[5], object.departmentCode);
   writer.writeString(offsets[6], object.departmentName);
-  writer.writeString(offsets[7], object.id);
-  writer.writeBool(offsets[8], object.isDeleted);
+  writer.writeString(offsets[7], object.deviceId);
+  writer.writeString(offsets[8], object.id);
+  writer.writeBool(offsets[9], object.isDeleted);
+  writer.writeBool(offsets[10], object.isSynced);
   writer.writeObjectList<ProductionItemEntity>(
-    offsets[9],
+    offsets[11],
     allOffsets,
     ProductionItemEntitySchema.serialize,
     object.items,
   );
-  writer.writeString(offsets[10], object.notes);
-  writer.writeByte(offsets[11], object.syncStatus.index);
-  writer.writeString(offsets[12], object.teamCode);
-  writer.writeDateTime(offsets[13], object.updatedAt);
+  writer.writeDateTime(offsets[12], object.lastSynced);
+  writer.writeString(offsets[13], object.notes);
+  writer.writeByte(offsets[14], object.syncStatus.index);
+  writer.writeString(offsets[15], object.teamCode);
+  writer.writeDateTime(offsets[16], object.updatedAt);
+  writer.writeLong(offsets[17], object.version);
 }
 
 ProductionDailyEntryEntity _productionDailyEntryEntityDeserialize(
@@ -208,21 +233,25 @@ ProductionDailyEntryEntity _productionDailyEntryEntityDeserialize(
   object.deletedAt = reader.readDateTimeOrNull(offsets[4]);
   object.departmentCode = reader.readString(offsets[5]);
   object.departmentName = reader.readString(offsets[6]);
-  object.id = reader.readString(offsets[7]);
-  object.isDeleted = reader.readBool(offsets[8]);
+  object.deviceId = reader.readString(offsets[7]);
+  object.id = reader.readString(offsets[8]);
+  object.isDeleted = reader.readBool(offsets[9]);
+  object.isSynced = reader.readBool(offsets[10]);
   object.items = reader.readObjectList<ProductionItemEntity>(
-        offsets[9],
+        offsets[11],
         ProductionItemEntitySchema.deserialize,
         allOffsets,
         ProductionItemEntity(),
       ) ??
       [];
-  object.notes = reader.readStringOrNull(offsets[10]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[12]);
+  object.notes = reader.readStringOrNull(offsets[13]);
   object.syncStatus = _ProductionDailyEntryEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[11])] ??
+          reader.readByteOrNull(offsets[14])] ??
       SyncStatus.pending;
-  object.teamCode = reader.readStringOrNull(offsets[12]);
-  object.updatedAt = reader.readDateTime(offsets[13]);
+  object.teamCode = reader.readStringOrNull(offsets[15]);
+  object.updatedAt = reader.readDateTime(offsets[16]);
+  object.version = reader.readLong(offsets[17]);
   return object;
 }
 
@@ -250,8 +279,12 @@ P _productionDailyEntryEntityDeserializeProp<P>(
     case 7:
       return (reader.readString(offset)) as P;
     case 8:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 9:
+      return (reader.readBool(offset)) as P;
+    case 10:
+      return (reader.readBool(offset)) as P;
+    case 11:
       return (reader.readObjectList<ProductionItemEntity>(
             offset,
             ProductionItemEntitySchema.deserialize,
@@ -259,16 +292,20 @@ P _productionDailyEntryEntityDeserializeProp<P>(
             ProductionItemEntity(),
           ) ??
           []) as P;
-    case 10:
+    case 12:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 13:
       return (reader.readStringOrNull(offset)) as P;
-    case 11:
+    case 14:
       return (_ProductionDailyEntryEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 12:
+    case 15:
       return (reader.readStringOrNull(offset)) as P;
-    case 13:
+    case 16:
       return (reader.readDateTime(offset)) as P;
+    case 17:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1322,6 +1359,144 @@ extension ProductionDailyEntryEntityQueryFilter on QueryBuilder<
   }
 
   QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+          QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+          QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
       QAfterFilterCondition> idEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1470,6 +1645,16 @@ extension ProductionDailyEntryEntityQueryFilter on QueryBuilder<
   }
 
   QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
       QAfterFilterCondition> isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1611,6 +1796,80 @@ extension ProductionDailyEntryEntityQueryFilter on QueryBuilder<
         upper,
         includeUpper,
       );
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
@@ -2037,6 +2296,62 @@ extension ProductionDailyEntryEntityQueryFilter on QueryBuilder<
       ));
     });
   }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterFilterCondition> versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension ProductionDailyEntryEntityQueryObject on QueryBuilder<
@@ -2153,6 +2468,20 @@ extension ProductionDailyEntryEntityQuerySortBy on QueryBuilder<
   }
 
   QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
       QAfterSortBy> sortById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -2177,6 +2506,34 @@ extension ProductionDailyEntryEntityQuerySortBy on QueryBuilder<
       QAfterSortBy> sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2233,6 +2590,20 @@ extension ProductionDailyEntryEntityQuerySortBy on QueryBuilder<
       QAfterSortBy> sortByUpdatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 }
@@ -2338,6 +2709,20 @@ extension ProductionDailyEntryEntityQuerySortThenBy on QueryBuilder<
   }
 
   QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
       QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -2366,6 +2751,20 @@ extension ProductionDailyEntryEntityQuerySortThenBy on QueryBuilder<
   }
 
   QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
       QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -2376,6 +2775,20 @@ extension ProductionDailyEntryEntityQuerySortThenBy on QueryBuilder<
       QAfterSortBy> thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2432,6 +2845,20 @@ extension ProductionDailyEntryEntityQuerySortThenBy on QueryBuilder<
       QAfterSortBy> thenByUpdatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QAfterSortBy> thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 }
@@ -2491,6 +2918,13 @@ extension ProductionDailyEntryEntityQueryWhereDistinct on QueryBuilder<
   }
 
   QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QDistinct> distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
       QDistinct> distinctById({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'id', caseSensitive: caseSensitive);
@@ -2501,6 +2935,20 @@ extension ProductionDailyEntryEntityQueryWhereDistinct on QueryBuilder<
       QDistinct> distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QDistinct> distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -2529,6 +2977,13 @@ extension ProductionDailyEntryEntityQueryWhereDistinct on QueryBuilder<
       QDistinct> distinctByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, ProductionDailyEntryEntity,
+      QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
     });
   }
 }
@@ -2592,6 +3047,13 @@ extension ProductionDailyEntryEntityQueryProperty on QueryBuilder<
   }
 
   QueryBuilder<ProductionDailyEntryEntity, String, QQueryOperations>
+      deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, String, QQueryOperations>
       idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
@@ -2605,10 +3067,24 @@ extension ProductionDailyEntryEntityQueryProperty on QueryBuilder<
     });
   }
 
+  QueryBuilder<ProductionDailyEntryEntity, bool, QQueryOperations>
+      isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
   QueryBuilder<ProductionDailyEntryEntity, List<ProductionItemEntity>,
       QQueryOperations> itemsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'items');
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -2637,6 +3113,13 @@ extension ProductionDailyEntryEntityQueryProperty on QueryBuilder<
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<ProductionDailyEntryEntity, int, QQueryOperations>
+      versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

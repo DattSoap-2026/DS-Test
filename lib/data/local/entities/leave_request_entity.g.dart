@@ -33,71 +33,91 @@ const LeaveRequestEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'employeeId': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 3,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'employeeId': PropertySchema(
+      id: 4,
       name: r'employeeId',
       type: IsarType.string,
     ),
     r'endDate': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'endDate',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 8,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 9,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'leaveType': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'leaveType',
       type: IsarType.string,
     ),
     r'reason': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'reason',
       type: IsarType.string,
     ),
     r'rejectionReason': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'rejectionReason',
       type: IsarType.string,
     ),
     r'requestedAt': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'requestedAt',
       type: IsarType.string,
     ),
     r'startDate': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'startDate',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _LeaveRequestEntitysyncStatusEnumValueMap,
     ),
     r'totalDays': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'totalDays',
       type: IsarType.long,
     ),
     r'updatedAt': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 19,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _leaveRequestEntityEstimateSize,
@@ -185,6 +205,7 @@ int _leaveRequestEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.employeeId.length * 3;
   bytesCount += 3 + object.endDate.length * 3;
   bytesCount += 3 + object.id.length * 3;
@@ -216,19 +237,23 @@ void _leaveRequestEntitySerialize(
   writer.writeString(offsets[0], object.approvedAt);
   writer.writeString(offsets[1], object.approvedBy);
   writer.writeDateTime(offsets[2], object.deletedAt);
-  writer.writeString(offsets[3], object.employeeId);
-  writer.writeString(offsets[4], object.endDate);
-  writer.writeString(offsets[5], object.id);
-  writer.writeBool(offsets[6], object.isDeleted);
-  writer.writeString(offsets[7], object.leaveType);
-  writer.writeString(offsets[8], object.reason);
-  writer.writeString(offsets[9], object.rejectionReason);
-  writer.writeString(offsets[10], object.requestedAt);
-  writer.writeString(offsets[11], object.startDate);
-  writer.writeString(offsets[12], object.status);
-  writer.writeByte(offsets[13], object.syncStatus.index);
-  writer.writeLong(offsets[14], object.totalDays);
-  writer.writeDateTime(offsets[15], object.updatedAt);
+  writer.writeString(offsets[3], object.deviceId);
+  writer.writeString(offsets[4], object.employeeId);
+  writer.writeString(offsets[5], object.endDate);
+  writer.writeString(offsets[6], object.id);
+  writer.writeBool(offsets[7], object.isDeleted);
+  writer.writeBool(offsets[8], object.isSynced);
+  writer.writeDateTime(offsets[9], object.lastSynced);
+  writer.writeString(offsets[10], object.leaveType);
+  writer.writeString(offsets[11], object.reason);
+  writer.writeString(offsets[12], object.rejectionReason);
+  writer.writeString(offsets[13], object.requestedAt);
+  writer.writeString(offsets[14], object.startDate);
+  writer.writeString(offsets[15], object.status);
+  writer.writeByte(offsets[16], object.syncStatus.index);
+  writer.writeLong(offsets[17], object.totalDays);
+  writer.writeDateTime(offsets[18], object.updatedAt);
+  writer.writeLong(offsets[19], object.version);
 }
 
 LeaveRequestEntity _leaveRequestEntityDeserialize(
@@ -241,21 +266,25 @@ LeaveRequestEntity _leaveRequestEntityDeserialize(
   object.approvedAt = reader.readStringOrNull(offsets[0]);
   object.approvedBy = reader.readStringOrNull(offsets[1]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[2]);
-  object.employeeId = reader.readString(offsets[3]);
-  object.endDate = reader.readString(offsets[4]);
-  object.id = reader.readString(offsets[5]);
-  object.isDeleted = reader.readBool(offsets[6]);
-  object.leaveType = reader.readString(offsets[7]);
-  object.reason = reader.readStringOrNull(offsets[8]);
-  object.rejectionReason = reader.readStringOrNull(offsets[9]);
-  object.requestedAt = reader.readString(offsets[10]);
-  object.startDate = reader.readString(offsets[11]);
-  object.status = reader.readString(offsets[12]);
+  object.deviceId = reader.readString(offsets[3]);
+  object.employeeId = reader.readString(offsets[4]);
+  object.endDate = reader.readString(offsets[5]);
+  object.id = reader.readString(offsets[6]);
+  object.isDeleted = reader.readBool(offsets[7]);
+  object.isSynced = reader.readBool(offsets[8]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[9]);
+  object.leaveType = reader.readString(offsets[10]);
+  object.reason = reader.readStringOrNull(offsets[11]);
+  object.rejectionReason = reader.readStringOrNull(offsets[12]);
+  object.requestedAt = reader.readString(offsets[13]);
+  object.startDate = reader.readString(offsets[14]);
+  object.status = reader.readString(offsets[15]);
   object.syncStatus = _LeaveRequestEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[13])] ??
+          reader.readByteOrNull(offsets[16])] ??
       SyncStatus.pending;
-  object.totalDays = reader.readLong(offsets[14]);
-  object.updatedAt = reader.readDateTime(offsets[15]);
+  object.totalDays = reader.readLong(offsets[17]);
+  object.updatedAt = reader.readDateTime(offsets[18]);
+  object.version = reader.readLong(offsets[19]);
   return object;
 }
 
@@ -279,27 +308,35 @@ P _leaveRequestEntityDeserializeProp<P>(
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
-    case 7:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 10:
       return (reader.readString(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
+      return (reader.readString(offset)) as P;
+    case 14:
+      return (reader.readString(offset)) as P;
+    case 15:
+      return (reader.readString(offset)) as P;
+    case 16:
       return (_LeaveRequestEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 14:
+    case 17:
       return (reader.readLong(offset)) as P;
-    case 15:
+    case 18:
       return (reader.readDateTime(offset)) as P;
+    case 19:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1029,6 +1066,142 @@ extension LeaveRequestEntityQueryFilter
   }
 
   QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
       employeeIdEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1447,6 +1620,16 @@ extension LeaveRequestEntityQueryFilter
   }
 
   QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1494,6 +1677,80 @@ extension LeaveRequestEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -2521,6 +2778,62 @@ extension LeaveRequestEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension LeaveRequestEntityQueryObject
@@ -2570,6 +2883,20 @@ extension LeaveRequestEntityQuerySortBy
       sortByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -2626,6 +2953,34 @@ extension LeaveRequestEntityQuerySortBy
       sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2754,6 +3109,20 @@ extension LeaveRequestEntityQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension LeaveRequestEntityQuerySortThenBy
@@ -2797,6 +3166,20 @@ extension LeaveRequestEntityQuerySortThenBy
       thenByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -2857,6 +3240,20 @@ extension LeaveRequestEntityQuerySortThenBy
   }
 
   QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -2867,6 +3264,20 @@ extension LeaveRequestEntityQuerySortThenBy
       thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2995,6 +3406,20 @@ extension LeaveRequestEntityQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension LeaveRequestEntityQueryWhereDistinct
@@ -3017,6 +3442,13 @@ extension LeaveRequestEntityQueryWhereDistinct
       distinctByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
     });
   }
 
@@ -3045,6 +3477,20 @@ extension LeaveRequestEntityQueryWhereDistinct
       distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -3111,6 +3557,13 @@ extension LeaveRequestEntityQueryWhereDistinct
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<LeaveRequestEntity, LeaveRequestEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension LeaveRequestEntityQueryProperty
@@ -3143,6 +3596,13 @@ extension LeaveRequestEntityQueryProperty
   }
 
   QueryBuilder<LeaveRequestEntity, String, QQueryOperations>
+      deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, String, QQueryOperations>
       employeeIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'employeeId');
@@ -3164,6 +3624,19 @@ extension LeaveRequestEntityQueryProperty
   QueryBuilder<LeaveRequestEntity, bool, QQueryOperations> isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -3224,6 +3697,12 @@ extension LeaveRequestEntityQueryProperty
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<LeaveRequestEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

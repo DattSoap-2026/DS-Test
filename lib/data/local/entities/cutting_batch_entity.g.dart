@@ -78,169 +78,189 @@ const CuttingBatchEntitySchema = CollectionSchema(
       name: r'departmentName',
       type: IsarType.string,
     ),
-    r'finishedGoodId': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 12,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'finishedGoodId': PropertySchema(
+      id: 13,
       name: r'finishedGoodId',
       type: IsarType.string,
     ),
     r'finishedGoodName': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'finishedGoodName',
       type: IsarType.string,
     ),
     r'finishedGoodsStockAdjusted': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'finishedGoodsStockAdjusted',
       type: IsarType.bool,
     ),
     r'id': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'id',
       type: IsarType.string,
     ),
     r'inputWeightKg': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'inputWeightKg',
       type: IsarType.double,
     ),
     r'isDeleted': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 19,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 20,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'operatorId': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'operatorId',
       type: IsarType.string,
     ),
     r'operatorName': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'operatorName',
       type: IsarType.string,
     ),
     r'outputWeightKg': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'outputWeightKg',
       type: IsarType.double,
     ),
     r'rejectionReason': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'rejectionReason',
       type: IsarType.string,
     ),
     r'semiFinishedProductId': PropertySchema(
-      id: 22,
+      id: 25,
       name: r'semiFinishedProductId',
       type: IsarType.string,
     ),
     r'semiFinishedProductName': PropertySchema(
-      id: 23,
+      id: 26,
       name: r'semiFinishedProductName',
       type: IsarType.string,
     ),
     r'semiFinishedStockAdjusted': PropertySchema(
-      id: 24,
+      id: 27,
       name: r'semiFinishedStockAdjusted',
       type: IsarType.bool,
     ),
     r'shift': PropertySchema(
-      id: 25,
+      id: 28,
       name: r'shift',
       type: IsarType.string,
     ),
     r'stage': PropertySchema(
-      id: 26,
+      id: 29,
       name: r'stage',
       type: IsarType.string,
     ),
     r'standardWeightGm': PropertySchema(
-      id: 27,
+      id: 30,
       name: r'standardWeightGm',
       type: IsarType.double,
     ),
     r'supervisorId': PropertySchema(
-      id: 28,
+      id: 31,
       name: r'supervisorId',
       type: IsarType.string,
     ),
     r'supervisorName': PropertySchema(
-      id: 29,
+      id: 32,
       name: r'supervisorName',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 30,
+      id: 33,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _CuttingBatchEntitysyncStatusEnumValueMap,
     ),
     r'tolerancePercent': PropertySchema(
-      id: 31,
+      id: 34,
       name: r'tolerancePercent',
       type: IsarType.double,
     ),
     r'totalBatchWeightKg': PropertySchema(
-      id: 32,
+      id: 35,
       name: r'totalBatchWeightKg',
       type: IsarType.double,
     ),
     r'totalFinishedWeightKg': PropertySchema(
-      id: 33,
+      id: 36,
       name: r'totalFinishedWeightKg',
       type: IsarType.double,
     ),
     r'unitsProduced': PropertySchema(
-      id: 34,
+      id: 37,
       name: r'unitsProduced',
       type: IsarType.long,
     ),
     r'updatedAt': PropertySchema(
-      id: 35,
+      id: 38,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
+    r'version': PropertySchema(
+      id: 39,
+      name: r'version',
+      type: IsarType.long,
+    ),
     r'wasteRemark': PropertySchema(
-      id: 36,
+      id: 40,
       name: r'wasteRemark',
       type: IsarType.string,
     ),
     r'wasteStockAdjusted': PropertySchema(
-      id: 37,
+      id: 41,
       name: r'wasteStockAdjusted',
       type: IsarType.bool,
     ),
     r'wasteType': PropertySchema(
-      id: 38,
+      id: 42,
       name: r'wasteType',
       type: IsarType.string,
     ),
     r'wasteWeightKg': PropertySchema(
-      id: 39,
+      id: 43,
       name: r'wasteWeightKg',
       type: IsarType.double,
     ),
     r'weightBalanceValid': PropertySchema(
-      id: 40,
+      id: 44,
       name: r'weightBalanceValid',
       type: IsarType.bool,
     ),
     r'weightDifferenceKg': PropertySchema(
-      id: 41,
+      id: 45,
       name: r'weightDifferenceKg',
       type: IsarType.double,
     ),
     r'weightDifferencePercent': PropertySchema(
-      id: 42,
+      id: 46,
       name: r'weightDifferencePercent',
       type: IsarType.double,
     ),
     r'weightValidationMessage': PropertySchema(
-      id: 43,
+      id: 47,
       name: r'weightValidationMessage',
       type: IsarType.string,
     ),
     r'weightValidationPassed': PropertySchema(
-      id: 44,
+      id: 48,
       name: r'weightValidationPassed',
       type: IsarType.bool,
     )
@@ -361,6 +381,7 @@ int _cuttingBatchEntityEstimateSize(
   bytesCount += 3 + object.batchNumber.length * 3;
   bytesCount += 3 + object.departmentId.length * 3;
   bytesCount += 3 + object.departmentName.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.finishedGoodId.length * 3;
   bytesCount += 3 + object.finishedGoodName.length * 3;
   bytesCount += 3 + object.id.length * 3;
@@ -412,39 +433,43 @@ void _cuttingBatchEntitySerialize(
   writer.writeDateTime(offsets[9], object.deletedAt);
   writer.writeString(offsets[10], object.departmentId);
   writer.writeString(offsets[11], object.departmentName);
-  writer.writeString(offsets[12], object.finishedGoodId);
-  writer.writeString(offsets[13], object.finishedGoodName);
-  writer.writeBool(offsets[14], object.finishedGoodsStockAdjusted);
-  writer.writeString(offsets[15], object.id);
-  writer.writeDouble(offsets[16], object.inputWeightKg);
-  writer.writeBool(offsets[17], object.isDeleted);
-  writer.writeString(offsets[18], object.operatorId);
-  writer.writeString(offsets[19], object.operatorName);
-  writer.writeDouble(offsets[20], object.outputWeightKg);
-  writer.writeString(offsets[21], object.rejectionReason);
-  writer.writeString(offsets[22], object.semiFinishedProductId);
-  writer.writeString(offsets[23], object.semiFinishedProductName);
-  writer.writeBool(offsets[24], object.semiFinishedStockAdjusted);
-  writer.writeString(offsets[25], object.shift);
-  writer.writeString(offsets[26], object.stage);
-  writer.writeDouble(offsets[27], object.standardWeightGm);
-  writer.writeString(offsets[28], object.supervisorId);
-  writer.writeString(offsets[29], object.supervisorName);
-  writer.writeByte(offsets[30], object.syncStatus.index);
-  writer.writeDouble(offsets[31], object.tolerancePercent);
-  writer.writeDouble(offsets[32], object.totalBatchWeightKg);
-  writer.writeDouble(offsets[33], object.totalFinishedWeightKg);
-  writer.writeLong(offsets[34], object.unitsProduced);
-  writer.writeDateTime(offsets[35], object.updatedAt);
-  writer.writeString(offsets[36], object.wasteRemark);
-  writer.writeBool(offsets[37], object.wasteStockAdjusted);
-  writer.writeString(offsets[38], object.wasteType);
-  writer.writeDouble(offsets[39], object.wasteWeightKg);
-  writer.writeBool(offsets[40], object.weightBalanceValid);
-  writer.writeDouble(offsets[41], object.weightDifferenceKg);
-  writer.writeDouble(offsets[42], object.weightDifferencePercent);
-  writer.writeString(offsets[43], object.weightValidationMessage);
-  writer.writeBool(offsets[44], object.weightValidationPassed);
+  writer.writeString(offsets[12], object.deviceId);
+  writer.writeString(offsets[13], object.finishedGoodId);
+  writer.writeString(offsets[14], object.finishedGoodName);
+  writer.writeBool(offsets[15], object.finishedGoodsStockAdjusted);
+  writer.writeString(offsets[16], object.id);
+  writer.writeDouble(offsets[17], object.inputWeightKg);
+  writer.writeBool(offsets[18], object.isDeleted);
+  writer.writeBool(offsets[19], object.isSynced);
+  writer.writeDateTime(offsets[20], object.lastSynced);
+  writer.writeString(offsets[21], object.operatorId);
+  writer.writeString(offsets[22], object.operatorName);
+  writer.writeDouble(offsets[23], object.outputWeightKg);
+  writer.writeString(offsets[24], object.rejectionReason);
+  writer.writeString(offsets[25], object.semiFinishedProductId);
+  writer.writeString(offsets[26], object.semiFinishedProductName);
+  writer.writeBool(offsets[27], object.semiFinishedStockAdjusted);
+  writer.writeString(offsets[28], object.shift);
+  writer.writeString(offsets[29], object.stage);
+  writer.writeDouble(offsets[30], object.standardWeightGm);
+  writer.writeString(offsets[31], object.supervisorId);
+  writer.writeString(offsets[32], object.supervisorName);
+  writer.writeByte(offsets[33], object.syncStatus.index);
+  writer.writeDouble(offsets[34], object.tolerancePercent);
+  writer.writeDouble(offsets[35], object.totalBatchWeightKg);
+  writer.writeDouble(offsets[36], object.totalFinishedWeightKg);
+  writer.writeLong(offsets[37], object.unitsProduced);
+  writer.writeDateTime(offsets[38], object.updatedAt);
+  writer.writeLong(offsets[39], object.version);
+  writer.writeString(offsets[40], object.wasteRemark);
+  writer.writeBool(offsets[41], object.wasteStockAdjusted);
+  writer.writeString(offsets[42], object.wasteType);
+  writer.writeDouble(offsets[43], object.wasteWeightKg);
+  writer.writeBool(offsets[44], object.weightBalanceValid);
+  writer.writeDouble(offsets[45], object.weightDifferenceKg);
+  writer.writeDouble(offsets[46], object.weightDifferencePercent);
+  writer.writeString(offsets[47], object.weightValidationMessage);
+  writer.writeBool(offsets[48], object.weightValidationPassed);
 }
 
 CuttingBatchEntity _cuttingBatchEntityDeserialize(
@@ -466,41 +491,45 @@ CuttingBatchEntity _cuttingBatchEntityDeserialize(
   object.deletedAt = reader.readDateTimeOrNull(offsets[9]);
   object.departmentId = reader.readString(offsets[10]);
   object.departmentName = reader.readString(offsets[11]);
-  object.finishedGoodId = reader.readString(offsets[12]);
-  object.finishedGoodName = reader.readString(offsets[13]);
-  object.finishedGoodsStockAdjusted = reader.readBool(offsets[14]);
-  object.id = reader.readString(offsets[15]);
-  object.inputWeightKg = reader.readDouble(offsets[16]);
-  object.isDeleted = reader.readBool(offsets[17]);
-  object.operatorId = reader.readString(offsets[18]);
-  object.operatorName = reader.readString(offsets[19]);
-  object.outputWeightKg = reader.readDouble(offsets[20]);
-  object.rejectionReason = reader.readStringOrNull(offsets[21]);
-  object.semiFinishedProductId = reader.readString(offsets[22]);
-  object.semiFinishedProductName = reader.readString(offsets[23]);
-  object.semiFinishedStockAdjusted = reader.readBool(offsets[24]);
-  object.shift = reader.readString(offsets[25]);
-  object.stage = reader.readString(offsets[26]);
-  object.standardWeightGm = reader.readDouble(offsets[27]);
-  object.supervisorId = reader.readString(offsets[28]);
-  object.supervisorName = reader.readString(offsets[29]);
+  object.deviceId = reader.readString(offsets[12]);
+  object.finishedGoodId = reader.readString(offsets[13]);
+  object.finishedGoodName = reader.readString(offsets[14]);
+  object.finishedGoodsStockAdjusted = reader.readBool(offsets[15]);
+  object.id = reader.readString(offsets[16]);
+  object.inputWeightKg = reader.readDouble(offsets[17]);
+  object.isDeleted = reader.readBool(offsets[18]);
+  object.isSynced = reader.readBool(offsets[19]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[20]);
+  object.operatorId = reader.readString(offsets[21]);
+  object.operatorName = reader.readString(offsets[22]);
+  object.outputWeightKg = reader.readDouble(offsets[23]);
+  object.rejectionReason = reader.readStringOrNull(offsets[24]);
+  object.semiFinishedProductId = reader.readString(offsets[25]);
+  object.semiFinishedProductName = reader.readString(offsets[26]);
+  object.semiFinishedStockAdjusted = reader.readBool(offsets[27]);
+  object.shift = reader.readString(offsets[28]);
+  object.stage = reader.readString(offsets[29]);
+  object.standardWeightGm = reader.readDouble(offsets[30]);
+  object.supervisorId = reader.readString(offsets[31]);
+  object.supervisorName = reader.readString(offsets[32]);
   object.syncStatus = _CuttingBatchEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[30])] ??
+          reader.readByteOrNull(offsets[33])] ??
       SyncStatus.pending;
-  object.tolerancePercent = reader.readDouble(offsets[31]);
-  object.totalBatchWeightKg = reader.readDouble(offsets[32]);
-  object.totalFinishedWeightKg = reader.readDouble(offsets[33]);
-  object.unitsProduced = reader.readLong(offsets[34]);
-  object.updatedAt = reader.readDateTime(offsets[35]);
-  object.wasteRemark = reader.readStringOrNull(offsets[36]);
-  object.wasteStockAdjusted = reader.readBool(offsets[37]);
-  object.wasteType = reader.readString(offsets[38]);
-  object.wasteWeightKg = reader.readDouble(offsets[39]);
-  object.weightBalanceValid = reader.readBool(offsets[40]);
-  object.weightDifferenceKg = reader.readDouble(offsets[41]);
-  object.weightDifferencePercent = reader.readDouble(offsets[42]);
-  object.weightValidationMessage = reader.readStringOrNull(offsets[43]);
-  object.weightValidationPassed = reader.readBool(offsets[44]);
+  object.tolerancePercent = reader.readDouble(offsets[34]);
+  object.totalBatchWeightKg = reader.readDouble(offsets[35]);
+  object.totalFinishedWeightKg = reader.readDouble(offsets[36]);
+  object.unitsProduced = reader.readLong(offsets[37]);
+  object.updatedAt = reader.readDateTime(offsets[38]);
+  object.version = reader.readLong(offsets[39]);
+  object.wasteRemark = reader.readStringOrNull(offsets[40]);
+  object.wasteStockAdjusted = reader.readBool(offsets[41]);
+  object.wasteType = reader.readString(offsets[42]);
+  object.wasteWeightKg = reader.readDouble(offsets[43]);
+  object.weightBalanceValid = reader.readBool(offsets[44]);
+  object.weightDifferenceKg = reader.readDouble(offsets[45]);
+  object.weightDifferencePercent = reader.readDouble(offsets[46]);
+  object.weightValidationMessage = reader.readStringOrNull(offsets[47]);
+  object.weightValidationPassed = reader.readBool(offsets[48]);
   return object;
 }
 
@@ -540,68 +569,76 @@ P _cuttingBatchEntityDeserializeProp<P>(
     case 13:
       return (reader.readString(offset)) as P;
     case 14:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 15:
-      return (reader.readString(offset)) as P;
-    case 16:
-      return (reader.readDouble(offset)) as P;
-    case 17:
       return (reader.readBool(offset)) as P;
-    case 18:
+    case 16:
       return (reader.readString(offset)) as P;
-    case 19:
-      return (reader.readString(offset)) as P;
-    case 20:
+    case 17:
       return (reader.readDouble(offset)) as P;
+    case 18:
+      return (reader.readBool(offset)) as P;
+    case 19:
+      return (reader.readBool(offset)) as P;
+    case 20:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 21:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 22:
       return (reader.readString(offset)) as P;
     case 23:
-      return (reader.readString(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 24:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 25:
       return (reader.readString(offset)) as P;
     case 26:
       return (reader.readString(offset)) as P;
     case 27:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 28:
       return (reader.readString(offset)) as P;
     case 29:
       return (reader.readString(offset)) as P;
     case 30:
+      return (reader.readDouble(offset)) as P;
+    case 31:
+      return (reader.readString(offset)) as P;
+    case 32:
+      return (reader.readString(offset)) as P;
+    case 33:
       return (_CuttingBatchEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 31:
-      return (reader.readDouble(offset)) as P;
-    case 32:
-      return (reader.readDouble(offset)) as P;
-    case 33:
-      return (reader.readDouble(offset)) as P;
     case 34:
-      return (reader.readLong(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 35:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 36:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 37:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 38:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 39:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 40:
-      return (reader.readBool(offset)) as P;
-    case 41:
-      return (reader.readDouble(offset)) as P;
-    case 42:
-      return (reader.readDouble(offset)) as P;
-    case 43:
       return (reader.readStringOrNull(offset)) as P;
+    case 41:
+      return (reader.readBool(offset)) as P;
+    case 42:
+      return (reader.readString(offset)) as P;
+    case 43:
+      return (reader.readDouble(offset)) as P;
     case 44:
+      return (reader.readBool(offset)) as P;
+    case 45:
+      return (reader.readDouble(offset)) as P;
+    case 46:
+      return (reader.readDouble(offset)) as P;
+    case 47:
+      return (reader.readStringOrNull(offset)) as P;
+    case 48:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2217,6 +2254,142 @@ extension CuttingBatchEntityQueryFilter
   }
 
   QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
       finishedGoodIdEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -2711,6 +2884,16 @@ extension CuttingBatchEntityQueryFilter
   }
 
   QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2758,6 +2941,80 @@ extension CuttingBatchEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -4520,6 +4777,62 @@ extension CuttingBatchEntityQueryFilter
   }
 
   QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterFilterCondition>
       wasteRemarkIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -5371,6 +5684,20 @@ extension CuttingBatchEntityQuerySortBy
   }
 
   QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
       sortByFinishedGoodId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'finishedGoodId', Sort.asc);
@@ -5451,6 +5778,34 @@ extension CuttingBatchEntityQuerySortBy
       sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -5703,6 +6058,20 @@ extension CuttingBatchEntityQuerySortBy
       sortByUpdatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 
@@ -6004,6 +6373,20 @@ extension CuttingBatchEntityQuerySortThenBy
   }
 
   QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
       thenByFinishedGoodId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'finishedGoodId', Sort.asc);
@@ -6088,6 +6471,20 @@ extension CuttingBatchEntityQuerySortThenBy
   }
 
   QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -6098,6 +6495,20 @@ extension CuttingBatchEntityQuerySortThenBy
       thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -6354,6 +6765,20 @@ extension CuttingBatchEntityQuerySortThenBy
   }
 
   QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QAfterSortBy>
       thenByWasteRemark() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'wasteRemark', Sort.asc);
@@ -6568,6 +6993,13 @@ extension CuttingBatchEntityQueryWhereDistinct
   }
 
   QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QDistinct>
       distinctByFinishedGoodId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'finishedGoodId',
@@ -6608,6 +7040,20 @@ extension CuttingBatchEntityQueryWhereDistinct
       distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -6738,6 +7184,13 @@ extension CuttingBatchEntityQueryWhereDistinct
       distinctByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, CuttingBatchEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
     });
   }
 
@@ -6897,6 +7350,13 @@ extension CuttingBatchEntityQueryProperty
   }
 
   QueryBuilder<CuttingBatchEntity, String, QQueryOperations>
+      deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, String, QQueryOperations>
       finishedGoodIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'finishedGoodId');
@@ -6933,6 +7393,19 @@ extension CuttingBatchEntityQueryProperty
   QueryBuilder<CuttingBatchEntity, bool, QQueryOperations> isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -7057,6 +7530,12 @@ extension CuttingBatchEntityQueryProperty
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<CuttingBatchEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 

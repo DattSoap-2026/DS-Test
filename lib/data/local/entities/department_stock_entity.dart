@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import '../base_entity.dart';
+import '../entity_json_utils.dart';
 import '../../../services/bhatti_service.dart';
 
 part 'department_stock_entity.g.dart';
@@ -18,7 +19,8 @@ class DepartmentStockEntity extends BaseEntity {
 
   late String unit;
 
-  Map<String, dynamic> toFirebaseJson() {
+  /// Converts this entity into a sync-safe json map.
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'departmentName': departmentName,
@@ -26,11 +28,19 @@ class DepartmentStockEntity extends BaseEntity {
       'productName': productName,
       'stock': stock,
       'unit': unit,
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
       'isDeleted': isDeleted,
       'deletedAt': deletedAt?.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
     };
   }
+
+  Map<String, dynamic> toFirebaseJson() => toJson();
 
   DepartmentStock toDomain() {
     return DepartmentStock(
@@ -44,21 +54,31 @@ class DepartmentStockEntity extends BaseEntity {
   }
 
   static DepartmentStockEntity fromFirebaseJson(Map<String, dynamic> json) {
-    final entity = DepartmentStockEntity()
-      ..id =
-          json['id'] as String? ??
-          "${json['departmentName']}_${json['productId']}"
-      ..departmentName = json['departmentName'] as String
-      ..productId = json['productId'] as String
-      ..productName = json['productName'] as String? ?? 'Unknown'
-      ..stock = (json['stock'] as num?)?.toDouble() ?? 0.0
-      ..unit = json['unit'] as String? ?? 'Unit'
-      ..updatedAt = DateTime.parse(
-        json['updatedAt'] as String? ?? DateTime.now().toIso8601String(),
-      )
-      ..isDeleted = json['isDeleted'] == true
-      ..deletedAt = DateTime.tryParse(json['deletedAt']?.toString() ?? '');
+    return fromJson(json);
+  }
 
-    return entity;
+  /// Builds an entity from a sync-safe json map.
+  static DepartmentStockEntity fromJson(Map<String, dynamic> json) {
+    return DepartmentStockEntity()
+      ..id = parseString(
+        json['id'],
+        fallback:
+            '${parseString(json['departmentName'])}_${parseString(json['productId'])}',
+      )
+      ..departmentName = parseString(json['departmentName'])
+      ..productId = parseString(json['productId'])
+      ..productName = parseString(json['productName'], fallback: 'Unknown')
+      ..stock = parseDouble(json['stock'])
+      ..unit = parseString(json['unit'], fallback: 'Unit')
+      ..updatedAt = parseDate(
+        json['updatedAt'] ?? json['lastModified'],
+      )
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId'], fallback: '');
   }
 }

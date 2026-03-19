@@ -102,259 +102,279 @@ const ProductEntitySchema = CollectionSchema(
       name: r'description',
       type: IsarType.string,
     ),
-    r'entityType': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 17,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'entityType': PropertySchema(
+      id: 18,
       name: r'entityType',
       type: IsarType.string,
     ),
     r'expectedOutputQty': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'expectedOutputQty',
       type: IsarType.double,
     ),
     r'expiryDays': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'expiryDays',
       type: IsarType.double,
     ),
     r'gstRate': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'gstRate',
       type: IsarType.double,
     ),
     r'hazardLevel': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'hazardLevel',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'id',
       type: IsarType.string,
     ),
     r'imageUrl': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'imageUrl',
       type: IsarType.string,
     ),
     r'internalCost': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'internalCost',
       type: IsarType.double,
     ),
     r'isDeleted': PropertySchema(
-      id: 25,
+      id: 26,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 27,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
     r'isTankMaterial': PropertySchema(
-      id: 26,
+      id: 28,
       name: r'isTankMaterial',
       type: IsarType.bool,
     ),
     r'itemType': PropertySchema(
-      id: 27,
+      id: 29,
       name: r'itemType',
       type: IsarType.string,
     ),
     r'lastCost': PropertySchema(
-      id: 28,
+      id: 30,
       name: r'lastCost',
       type: IsarType.double,
     ),
+    r'lastSynced': PropertySchema(
+      id: 31,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'localImagePath': PropertySchema(
-      id: 29,
+      id: 32,
       name: r'localImagePath',
       type: IsarType.string,
     ),
     r'minimumSafetyStock': PropertySchema(
-      id: 30,
+      id: 33,
       name: r'minimumSafetyStock',
       type: IsarType.double,
     ),
     r'mrp': PropertySchema(
-      id: 31,
+      id: 34,
       name: r'mrp',
       type: IsarType.double,
     ),
     r'name': PropertySchema(
-      id: 32,
+      id: 35,
       name: r'name',
       type: IsarType.string,
     ),
     r'packagingRecipeJson': PropertySchema(
-      id: 33,
+      id: 36,
       name: r'packagingRecipeJson',
       type: IsarType.string,
     ),
     r'packagingType': PropertySchema(
-      id: 34,
+      id: 37,
       name: r'packagingType',
       type: IsarType.string,
     ),
     r'ppeRequired': PropertySchema(
-      id: 35,
+      id: 38,
       name: r'ppeRequired',
       type: IsarType.stringList,
     ),
     r'price': PropertySchema(
-      id: 36,
+      id: 39,
       name: r'price',
       type: IsarType.double,
     ),
     r'productionFormula': PropertySchema(
-      id: 37,
+      id: 40,
       name: r'productionFormula',
       type: IsarType.string,
     ),
     r'productionLossPercent': PropertySchema(
-      id: 38,
+      id: 41,
       name: r'productionLossPercent',
       type: IsarType.double,
     ),
     r'productionStage': PropertySchema(
-      id: 39,
+      id: 42,
       name: r'productionStage',
       type: IsarType.string,
     ),
     r'purchasePrice': PropertySchema(
-      id: 40,
+      id: 43,
       name: r'purchasePrice',
       type: IsarType.double,
     ),
     r'reorderLevel': PropertySchema(
-      id: 41,
+      id: 44,
       name: r'reorderLevel',
       type: IsarType.double,
     ),
     r'safetyPrecautions': PropertySchema(
-      id: 42,
+      id: 45,
       name: r'safetyPrecautions',
       type: IsarType.string,
     ),
     r'secondaryPrice': PropertySchema(
-      id: 43,
+      id: 46,
       name: r'secondaryPrice',
       type: IsarType.double,
     ),
     r'secondaryUnit': PropertySchema(
-      id: 44,
+      id: 47,
       name: r'secondaryUnit',
       type: IsarType.string,
     ),
     r'shelfLife': PropertySchema(
-      id: 45,
+      id: 48,
       name: r'shelfLife',
       type: IsarType.double,
     ),
     r'simpleSchemeBuy': PropertySchema(
-      id: 46,
+      id: 49,
       name: r'simpleSchemeBuy',
       type: IsarType.double,
     ),
     r'simpleSchemeGet': PropertySchema(
-      id: 47,
+      id: 50,
       name: r'simpleSchemeGet',
       type: IsarType.double,
     ),
     r'sizeVariant': PropertySchema(
-      id: 48,
+      id: 51,
       name: r'sizeVariant',
       type: IsarType.string,
     ),
     r'sku': PropertySchema(
-      id: 49,
+      id: 52,
       name: r'sku',
       type: IsarType.string,
     ),
     r'standardBatchInputKg': PropertySchema(
-      id: 50,
+      id: 53,
       name: r'standardBatchInputKg',
       type: IsarType.double,
     ),
     r'standardBatchOutputPcs': PropertySchema(
-      id: 51,
+      id: 54,
       name: r'standardBatchOutputPcs',
       type: IsarType.double,
     ),
     r'status': PropertySchema(
-      id: 52,
+      id: 55,
       name: r'status',
       type: IsarType.string,
     ),
     r'stock': PropertySchema(
-      id: 53,
+      id: 56,
       name: r'stock',
       type: IsarType.double,
     ),
     r'stockAlertLevel': PropertySchema(
-      id: 54,
+      id: 57,
       name: r'stockAlertLevel',
       type: IsarType.double,
     ),
     r'storageConditions': PropertySchema(
-      id: 55,
+      id: 58,
       name: r'storageConditions',
       type: IsarType.string,
     ),
     r'storageRequirements': PropertySchema(
-      id: 56,
+      id: 59,
       name: r'storageRequirements',
       type: IsarType.stringList,
     ),
     r'subcategory': PropertySchema(
-      id: 57,
+      id: 60,
       name: r'subcategory',
       type: IsarType.string,
     ),
     r'supplierId': PropertySchema(
-      id: 58,
+      id: 61,
       name: r'supplierId',
       type: IsarType.string,
     ),
     r'supplierName': PropertySchema(
-      id: 59,
+      id: 62,
       name: r'supplierName',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 60,
+      id: 63,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _ProductEntitysyncStatusEnumValueMap,
     ),
     r'type': PropertySchema(
-      id: 61,
+      id: 64,
       name: r'type',
       type: IsarType.string,
     ),
     r'unitWeightGrams': PropertySchema(
-      id: 62,
+      id: 65,
       name: r'unitWeightGrams',
       type: IsarType.double,
     ),
     r'unitsPerBundle': PropertySchema(
-      id: 63,
+      id: 66,
       name: r'unitsPerBundle',
       type: IsarType.long,
     ),
     r'updatedAt': PropertySchema(
-      id: 64,
+      id: 67,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
+    r'version': PropertySchema(
+      id: 68,
+      name: r'version',
+      type: IsarType.long,
+    ),
     r'volumePerUnit': PropertySchema(
-      id: 65,
+      id: 69,
       name: r'volumePerUnit',
       type: IsarType.double,
     ),
     r'wastagePercent': PropertySchema(
-      id: 66,
+      id: 70,
       name: r'wastagePercent',
       type: IsarType.double,
     ),
     r'weightPerUnit': PropertySchema(
-      id: 67,
+      id: 71,
       name: r'weightPerUnit',
       type: IsarType.double,
     )
@@ -513,6 +533,7 @@ int _productEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.entityType;
     if (value != null) {
@@ -664,57 +685,61 @@ void _productEntitySerialize(
   writer.writeDouble(offsets[14], object.density);
   writer.writeString(offsets[15], object.departmentId);
   writer.writeString(offsets[16], object.description);
-  writer.writeString(offsets[17], object.entityType);
-  writer.writeDouble(offsets[18], object.expectedOutputQty);
-  writer.writeDouble(offsets[19], object.expiryDays);
-  writer.writeDouble(offsets[20], object.gstRate);
-  writer.writeString(offsets[21], object.hazardLevel);
-  writer.writeString(offsets[22], object.id);
-  writer.writeString(offsets[23], object.imageUrl);
-  writer.writeDouble(offsets[24], object.internalCost);
-  writer.writeBool(offsets[25], object.isDeleted);
-  writer.writeBool(offsets[26], object.isTankMaterial);
-  writer.writeString(offsets[27], object.itemType);
-  writer.writeDouble(offsets[28], object.lastCost);
-  writer.writeString(offsets[29], object.localImagePath);
-  writer.writeDouble(offsets[30], object.minimumSafetyStock);
-  writer.writeDouble(offsets[31], object.mrp);
-  writer.writeString(offsets[32], object.name);
-  writer.writeString(offsets[33], object.packagingRecipeJson);
-  writer.writeString(offsets[34], object.packagingType);
-  writer.writeStringList(offsets[35], object.ppeRequired);
-  writer.writeDouble(offsets[36], object.price);
-  writer.writeString(offsets[37], object.productionFormula);
-  writer.writeDouble(offsets[38], object.productionLossPercent);
-  writer.writeString(offsets[39], object.productionStage);
-  writer.writeDouble(offsets[40], object.purchasePrice);
-  writer.writeDouble(offsets[41], object.reorderLevel);
-  writer.writeString(offsets[42], object.safetyPrecautions);
-  writer.writeDouble(offsets[43], object.secondaryPrice);
-  writer.writeString(offsets[44], object.secondaryUnit);
-  writer.writeDouble(offsets[45], object.shelfLife);
-  writer.writeDouble(offsets[46], object.simpleSchemeBuy);
-  writer.writeDouble(offsets[47], object.simpleSchemeGet);
-  writer.writeString(offsets[48], object.sizeVariant);
-  writer.writeString(offsets[49], object.sku);
-  writer.writeDouble(offsets[50], object.standardBatchInputKg);
-  writer.writeDouble(offsets[51], object.standardBatchOutputPcs);
-  writer.writeString(offsets[52], object.status);
-  writer.writeDouble(offsets[53], object.stock);
-  writer.writeDouble(offsets[54], object.stockAlertLevel);
-  writer.writeString(offsets[55], object.storageConditions);
-  writer.writeStringList(offsets[56], object.storageRequirements);
-  writer.writeString(offsets[57], object.subcategory);
-  writer.writeString(offsets[58], object.supplierId);
-  writer.writeString(offsets[59], object.supplierName);
-  writer.writeByte(offsets[60], object.syncStatus.index);
-  writer.writeString(offsets[61], object.type);
-  writer.writeDouble(offsets[62], object.unitWeightGrams);
-  writer.writeLong(offsets[63], object.unitsPerBundle);
-  writer.writeDateTime(offsets[64], object.updatedAt);
-  writer.writeDouble(offsets[65], object.volumePerUnit);
-  writer.writeDouble(offsets[66], object.wastagePercent);
-  writer.writeDouble(offsets[67], object.weightPerUnit);
+  writer.writeString(offsets[17], object.deviceId);
+  writer.writeString(offsets[18], object.entityType);
+  writer.writeDouble(offsets[19], object.expectedOutputQty);
+  writer.writeDouble(offsets[20], object.expiryDays);
+  writer.writeDouble(offsets[21], object.gstRate);
+  writer.writeString(offsets[22], object.hazardLevel);
+  writer.writeString(offsets[23], object.id);
+  writer.writeString(offsets[24], object.imageUrl);
+  writer.writeDouble(offsets[25], object.internalCost);
+  writer.writeBool(offsets[26], object.isDeleted);
+  writer.writeBool(offsets[27], object.isSynced);
+  writer.writeBool(offsets[28], object.isTankMaterial);
+  writer.writeString(offsets[29], object.itemType);
+  writer.writeDouble(offsets[30], object.lastCost);
+  writer.writeDateTime(offsets[31], object.lastSynced);
+  writer.writeString(offsets[32], object.localImagePath);
+  writer.writeDouble(offsets[33], object.minimumSafetyStock);
+  writer.writeDouble(offsets[34], object.mrp);
+  writer.writeString(offsets[35], object.name);
+  writer.writeString(offsets[36], object.packagingRecipeJson);
+  writer.writeString(offsets[37], object.packagingType);
+  writer.writeStringList(offsets[38], object.ppeRequired);
+  writer.writeDouble(offsets[39], object.price);
+  writer.writeString(offsets[40], object.productionFormula);
+  writer.writeDouble(offsets[41], object.productionLossPercent);
+  writer.writeString(offsets[42], object.productionStage);
+  writer.writeDouble(offsets[43], object.purchasePrice);
+  writer.writeDouble(offsets[44], object.reorderLevel);
+  writer.writeString(offsets[45], object.safetyPrecautions);
+  writer.writeDouble(offsets[46], object.secondaryPrice);
+  writer.writeString(offsets[47], object.secondaryUnit);
+  writer.writeDouble(offsets[48], object.shelfLife);
+  writer.writeDouble(offsets[49], object.simpleSchemeBuy);
+  writer.writeDouble(offsets[50], object.simpleSchemeGet);
+  writer.writeString(offsets[51], object.sizeVariant);
+  writer.writeString(offsets[52], object.sku);
+  writer.writeDouble(offsets[53], object.standardBatchInputKg);
+  writer.writeDouble(offsets[54], object.standardBatchOutputPcs);
+  writer.writeString(offsets[55], object.status);
+  writer.writeDouble(offsets[56], object.stock);
+  writer.writeDouble(offsets[57], object.stockAlertLevel);
+  writer.writeString(offsets[58], object.storageConditions);
+  writer.writeStringList(offsets[59], object.storageRequirements);
+  writer.writeString(offsets[60], object.subcategory);
+  writer.writeString(offsets[61], object.supplierId);
+  writer.writeString(offsets[62], object.supplierName);
+  writer.writeByte(offsets[63], object.syncStatus.index);
+  writer.writeString(offsets[64], object.type);
+  writer.writeDouble(offsets[65], object.unitWeightGrams);
+  writer.writeLong(offsets[66], object.unitsPerBundle);
+  writer.writeDateTime(offsets[67], object.updatedAt);
+  writer.writeLong(offsets[68], object.version);
+  writer.writeDouble(offsets[69], object.volumePerUnit);
+  writer.writeDouble(offsets[70], object.wastagePercent);
+  writer.writeDouble(offsets[71], object.weightPerUnit);
 }
 
 ProductEntity _productEntityDeserialize(
@@ -741,59 +766,63 @@ ProductEntity _productEntityDeserialize(
   object.density = reader.readDoubleOrNull(offsets[14]);
   object.departmentId = reader.readStringOrNull(offsets[15]);
   object.description = reader.readStringOrNull(offsets[16]);
-  object.entityType = reader.readStringOrNull(offsets[17]);
-  object.expectedOutputQty = reader.readDoubleOrNull(offsets[18]);
-  object.expiryDays = reader.readDoubleOrNull(offsets[19]);
-  object.gstRate = reader.readDoubleOrNull(offsets[20]);
-  object.hazardLevel = reader.readStringOrNull(offsets[21]);
-  object.id = reader.readString(offsets[22]);
-  object.imageUrl = reader.readStringOrNull(offsets[23]);
-  object.internalCost = reader.readDoubleOrNull(offsets[24]);
-  object.isDeleted = reader.readBool(offsets[25]);
-  object.isTankMaterial = reader.readBoolOrNull(offsets[26]);
-  object.itemType = reader.readString(offsets[27]);
-  object.lastCost = reader.readDoubleOrNull(offsets[28]);
-  object.localImagePath = reader.readStringOrNull(offsets[29]);
-  object.minimumSafetyStock = reader.readDoubleOrNull(offsets[30]);
-  object.mrp = reader.readDoubleOrNull(offsets[31]);
-  object.name = reader.readString(offsets[32]);
-  object.packagingRecipeJson = reader.readStringOrNull(offsets[33]);
-  object.packagingType = reader.readStringOrNull(offsets[34]);
-  object.ppeRequired = reader.readStringList(offsets[35]);
-  object.price = reader.readDoubleOrNull(offsets[36]);
-  object.productionFormula = reader.readStringOrNull(offsets[37]);
-  object.productionLossPercent = reader.readDoubleOrNull(offsets[38]);
-  object.productionStage = reader.readStringOrNull(offsets[39]);
-  object.purchasePrice = reader.readDoubleOrNull(offsets[40]);
-  object.reorderLevel = reader.readDoubleOrNull(offsets[41]);
-  object.safetyPrecautions = reader.readStringOrNull(offsets[42]);
-  object.secondaryPrice = reader.readDoubleOrNull(offsets[43]);
-  object.secondaryUnit = reader.readStringOrNull(offsets[44]);
-  object.shelfLife = reader.readDoubleOrNull(offsets[45]);
-  object.simpleSchemeBuy = reader.readDoubleOrNull(offsets[46]);
-  object.simpleSchemeGet = reader.readDoubleOrNull(offsets[47]);
-  object.sizeVariant = reader.readStringOrNull(offsets[48]);
-  object.sku = reader.readString(offsets[49]);
-  object.standardBatchInputKg = reader.readDoubleOrNull(offsets[50]);
-  object.standardBatchOutputPcs = reader.readDoubleOrNull(offsets[51]);
-  object.status = reader.readStringOrNull(offsets[52]);
-  object.stock = reader.readDoubleOrNull(offsets[53]);
-  object.stockAlertLevel = reader.readDoubleOrNull(offsets[54]);
-  object.storageConditions = reader.readStringOrNull(offsets[55]);
-  object.storageRequirements = reader.readStringList(offsets[56]);
-  object.subcategory = reader.readStringOrNull(offsets[57]);
-  object.supplierId = reader.readStringOrNull(offsets[58]);
-  object.supplierName = reader.readStringOrNull(offsets[59]);
+  object.deviceId = reader.readString(offsets[17]);
+  object.entityType = reader.readStringOrNull(offsets[18]);
+  object.expectedOutputQty = reader.readDoubleOrNull(offsets[19]);
+  object.expiryDays = reader.readDoubleOrNull(offsets[20]);
+  object.gstRate = reader.readDoubleOrNull(offsets[21]);
+  object.hazardLevel = reader.readStringOrNull(offsets[22]);
+  object.id = reader.readString(offsets[23]);
+  object.imageUrl = reader.readStringOrNull(offsets[24]);
+  object.internalCost = reader.readDoubleOrNull(offsets[25]);
+  object.isDeleted = reader.readBool(offsets[26]);
+  object.isSynced = reader.readBool(offsets[27]);
+  object.isTankMaterial = reader.readBoolOrNull(offsets[28]);
+  object.itemType = reader.readString(offsets[29]);
+  object.lastCost = reader.readDoubleOrNull(offsets[30]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[31]);
+  object.localImagePath = reader.readStringOrNull(offsets[32]);
+  object.minimumSafetyStock = reader.readDoubleOrNull(offsets[33]);
+  object.mrp = reader.readDoubleOrNull(offsets[34]);
+  object.name = reader.readString(offsets[35]);
+  object.packagingRecipeJson = reader.readStringOrNull(offsets[36]);
+  object.packagingType = reader.readStringOrNull(offsets[37]);
+  object.ppeRequired = reader.readStringList(offsets[38]);
+  object.price = reader.readDoubleOrNull(offsets[39]);
+  object.productionFormula = reader.readStringOrNull(offsets[40]);
+  object.productionLossPercent = reader.readDoubleOrNull(offsets[41]);
+  object.productionStage = reader.readStringOrNull(offsets[42]);
+  object.purchasePrice = reader.readDoubleOrNull(offsets[43]);
+  object.reorderLevel = reader.readDoubleOrNull(offsets[44]);
+  object.safetyPrecautions = reader.readStringOrNull(offsets[45]);
+  object.secondaryPrice = reader.readDoubleOrNull(offsets[46]);
+  object.secondaryUnit = reader.readStringOrNull(offsets[47]);
+  object.shelfLife = reader.readDoubleOrNull(offsets[48]);
+  object.simpleSchemeBuy = reader.readDoubleOrNull(offsets[49]);
+  object.simpleSchemeGet = reader.readDoubleOrNull(offsets[50]);
+  object.sizeVariant = reader.readStringOrNull(offsets[51]);
+  object.sku = reader.readString(offsets[52]);
+  object.standardBatchInputKg = reader.readDoubleOrNull(offsets[53]);
+  object.standardBatchOutputPcs = reader.readDoubleOrNull(offsets[54]);
+  object.status = reader.readStringOrNull(offsets[55]);
+  object.stock = reader.readDoubleOrNull(offsets[56]);
+  object.stockAlertLevel = reader.readDoubleOrNull(offsets[57]);
+  object.storageConditions = reader.readStringOrNull(offsets[58]);
+  object.storageRequirements = reader.readStringList(offsets[59]);
+  object.subcategory = reader.readStringOrNull(offsets[60]);
+  object.supplierId = reader.readStringOrNull(offsets[61]);
+  object.supplierName = reader.readStringOrNull(offsets[62]);
   object.syncStatus = _ProductEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[60])] ??
+          reader.readByteOrNull(offsets[63])] ??
       SyncStatus.pending;
-  object.type = reader.readString(offsets[61]);
-  object.unitWeightGrams = reader.readDoubleOrNull(offsets[62]);
-  object.unitsPerBundle = reader.readLongOrNull(offsets[63]);
-  object.updatedAt = reader.readDateTime(offsets[64]);
-  object.volumePerUnit = reader.readDoubleOrNull(offsets[65]);
-  object.wastagePercent = reader.readDoubleOrNull(offsets[66]);
-  object.weightPerUnit = reader.readDoubleOrNull(offsets[67]);
+  object.type = reader.readString(offsets[64]);
+  object.unitWeightGrams = reader.readDoubleOrNull(offsets[65]);
+  object.unitsPerBundle = reader.readLongOrNull(offsets[66]);
+  object.updatedAt = reader.readDateTime(offsets[67]);
+  object.version = reader.readLong(offsets[68]);
+  object.volumePerUnit = reader.readDoubleOrNull(offsets[69]);
+  object.wastagePercent = reader.readDoubleOrNull(offsets[70]);
+  object.weightPerUnit = reader.readDoubleOrNull(offsets[71]);
   return object;
 }
 
@@ -839,53 +868,53 @@ P _productEntityDeserializeProp<P>(
     case 16:
       return (reader.readStringOrNull(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 18:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 19:
       return (reader.readDoubleOrNull(offset)) as P;
     case 20:
       return (reader.readDoubleOrNull(offset)) as P;
     case 21:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 22:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 23:
-      return (reader.readStringOrNull(offset)) as P;
-    case 24:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 25:
-      return (reader.readBool(offset)) as P;
-    case 26:
-      return (reader.readBoolOrNull(offset)) as P;
-    case 27:
       return (reader.readString(offset)) as P;
-    case 28:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 29:
+    case 24:
       return (reader.readStringOrNull(offset)) as P;
+    case 25:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 26:
+      return (reader.readBool(offset)) as P;
+    case 27:
+      return (reader.readBool(offset)) as P;
+    case 28:
+      return (reader.readBoolOrNull(offset)) as P;
+    case 29:
+      return (reader.readString(offset)) as P;
     case 30:
       return (reader.readDoubleOrNull(offset)) as P;
     case 31:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 32:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 33:
-      return (reader.readStringOrNull(offset)) as P;
-    case 34:
-      return (reader.readStringOrNull(offset)) as P;
-    case 35:
-      return (reader.readStringList(offset)) as P;
-    case 36:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 34:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 35:
+      return (reader.readString(offset)) as P;
+    case 36:
+      return (reader.readStringOrNull(offset)) as P;
     case 37:
       return (reader.readStringOrNull(offset)) as P;
     case 38:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringList(offset)) as P;
     case 39:
-      return (reader.readStringOrNull(offset)) as P;
-    case 40:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 40:
+      return (reader.readStringOrNull(offset)) as P;
     case 41:
       return (reader.readDoubleOrNull(offset)) as P;
     case 42:
@@ -893,23 +922,23 @@ P _productEntityDeserializeProp<P>(
     case 43:
       return (reader.readDoubleOrNull(offset)) as P;
     case 44:
-      return (reader.readStringOrNull(offset)) as P;
-    case 45:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 45:
+      return (reader.readStringOrNull(offset)) as P;
     case 46:
       return (reader.readDoubleOrNull(offset)) as P;
     case 47:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 48:
       return (reader.readStringOrNull(offset)) as P;
+    case 48:
+      return (reader.readDoubleOrNull(offset)) as P;
     case 49:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 50:
       return (reader.readDoubleOrNull(offset)) as P;
     case 51:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 52:
       return (reader.readStringOrNull(offset)) as P;
+    case 52:
+      return (reader.readString(offset)) as P;
     case 53:
       return (reader.readDoubleOrNull(offset)) as P;
     case 54:
@@ -917,30 +946,38 @@ P _productEntityDeserializeProp<P>(
     case 55:
       return (reader.readStringOrNull(offset)) as P;
     case 56:
-      return (reader.readStringList(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 57:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 58:
       return (reader.readStringOrNull(offset)) as P;
     case 59:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringList(offset)) as P;
     case 60:
+      return (reader.readStringOrNull(offset)) as P;
+    case 61:
+      return (reader.readStringOrNull(offset)) as P;
+    case 62:
+      return (reader.readStringOrNull(offset)) as P;
+    case 63:
       return (_ProductEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 61:
-      return (reader.readString(offset)) as P;
-    case 62:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 63:
-      return (reader.readLongOrNull(offset)) as P;
     case 64:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 65:
       return (reader.readDoubleOrNull(offset)) as P;
     case 66:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 67:
+      return (reader.readDateTime(offset)) as P;
+    case 68:
+      return (reader.readLong(offset)) as P;
+    case 69:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 70:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 71:
       return (reader.readDoubleOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -3452,6 +3489,142 @@ extension ProductEntityQueryFilter
   }
 
   QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
       entityTypeIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -4394,6 +4567,16 @@ extension ProductEntityQueryFilter
   }
 
   QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
       isTankMaterialIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -4693,6 +4876,80 @@ extension ProductEntityQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -9035,6 +9292,62 @@ extension ProductEntityQueryFilter
   }
 
   QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterFilterCondition>
       volumePerUnitIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -9494,6 +9807,19 @@ extension ProductEntityQuerySortBy
     });
   }
 
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> sortByEntityType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'entityType', Sort.asc);
@@ -9611,6 +9937,19 @@ extension ProductEntityQuerySortBy
     });
   }
 
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy>
       sortByIsTankMaterial() {
     return QueryBuilder.apply(this, (query) {
@@ -9648,6 +9987,19 @@ extension ProductEntityQuerySortBy
       sortByLastCostDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastCost', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -10107,6 +10459,18 @@ extension ProductEntityQuerySortBy
     });
   }
 
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy>
       sortByVolumePerUnit() {
     return QueryBuilder.apply(this, (query) {
@@ -10351,6 +10715,19 @@ extension ProductEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> thenByEntityType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'entityType', Sort.asc);
@@ -10468,6 +10845,19 @@ extension ProductEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy>
       thenByIsTankMaterial() {
     return QueryBuilder.apply(this, (query) {
@@ -10517,6 +10907,19 @@ extension ProductEntityQuerySortThenBy
       thenByLastCostDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastCost', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -10976,6 +11379,18 @@ extension ProductEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy> thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProductEntity, ProductEntity, QAfterSortBy>
       thenByVolumePerUnit() {
     return QueryBuilder.apply(this, (query) {
@@ -11137,6 +11552,13 @@ extension ProductEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ProductEntity, ProductEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ProductEntity, ProductEntity, QDistinct> distinctByEntityType(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -11197,6 +11619,12 @@ extension ProductEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ProductEntity, ProductEntity, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
   QueryBuilder<ProductEntity, ProductEntity, QDistinct>
       distinctByIsTankMaterial() {
     return QueryBuilder.apply(this, (query) {
@@ -11214,6 +11642,12 @@ extension ProductEntityQueryWhereDistinct
   QueryBuilder<ProductEntity, ProductEntity, QDistinct> distinctByLastCost() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastCost');
+    });
+  }
+
+  QueryBuilder<ProductEntity, ProductEntity, QDistinct> distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -11471,6 +11905,12 @@ extension ProductEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ProductEntity, ProductEntity, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
+
   QueryBuilder<ProductEntity, ProductEntity, QDistinct>
       distinctByVolumePerUnit() {
     return QueryBuilder.apply(this, (query) {
@@ -11610,6 +12050,12 @@ extension ProductEntityQueryProperty
     });
   }
 
+  QueryBuilder<ProductEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<ProductEntity, String?, QQueryOperations> entityTypeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'entityType');
@@ -11666,6 +12112,12 @@ extension ProductEntityQueryProperty
     });
   }
 
+  QueryBuilder<ProductEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
   QueryBuilder<ProductEntity, bool?, QQueryOperations>
       isTankMaterialProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -11682,6 +12134,13 @@ extension ProductEntityQueryProperty
   QueryBuilder<ProductEntity, double?, QQueryOperations> lastCostProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastCost');
+    });
+  }
+
+  QueryBuilder<ProductEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -11921,6 +12380,12 @@ extension ProductEntityQueryProperty
   QueryBuilder<ProductEntity, DateTime, QQueryOperations> updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<ProductEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 

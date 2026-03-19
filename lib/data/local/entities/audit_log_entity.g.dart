@@ -48,61 +48,81 @@ const AuditLogEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'deviceInfo': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 6,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'deviceInfo': PropertySchema(
+      id: 7,
       name: r'deviceInfo',
       type: IsarType.string,
     ),
     r'documentId': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'documentId',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'id',
       type: IsarType.string,
     ),
     r'ipAddress': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'ipAddress',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 12,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 13,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'notes': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'notes',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _AuditLogEntitysyncStatusEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'userId': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'userId',
       type: IsarType.string,
     ),
     r'userName': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'userName',
       type: IsarType.string,
     ),
     r'userRole': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'userRole',
       type: IsarType.string,
+    ),
+    r'version': PropertySchema(
+      id: 20,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _auditLogEntityEstimateSize,
@@ -212,6 +232,7 @@ int _auditLogEntityEstimateSize(
     }
   }
   bytesCount += 3 + object.collectionName.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.deviceInfo;
     if (value != null) {
@@ -250,17 +271,21 @@ void _auditLogEntitySerialize(
   writer.writeString(offsets[3], object.collectionName);
   writer.writeDateTime(offsets[4], object.createdAt);
   writer.writeDateTime(offsets[5], object.deletedAt);
-  writer.writeString(offsets[6], object.deviceInfo);
-  writer.writeString(offsets[7], object.documentId);
-  writer.writeString(offsets[8], object.id);
-  writer.writeString(offsets[9], object.ipAddress);
-  writer.writeBool(offsets[10], object.isDeleted);
-  writer.writeString(offsets[11], object.notes);
-  writer.writeByte(offsets[12], object.syncStatus.index);
-  writer.writeDateTime(offsets[13], object.updatedAt);
-  writer.writeString(offsets[14], object.userId);
-  writer.writeString(offsets[15], object.userName);
-  writer.writeString(offsets[16], object.userRole);
+  writer.writeString(offsets[6], object.deviceId);
+  writer.writeString(offsets[7], object.deviceInfo);
+  writer.writeString(offsets[8], object.documentId);
+  writer.writeString(offsets[9], object.id);
+  writer.writeString(offsets[10], object.ipAddress);
+  writer.writeBool(offsets[11], object.isDeleted);
+  writer.writeBool(offsets[12], object.isSynced);
+  writer.writeDateTime(offsets[13], object.lastSynced);
+  writer.writeString(offsets[14], object.notes);
+  writer.writeByte(offsets[15], object.syncStatus.index);
+  writer.writeDateTime(offsets[16], object.updatedAt);
+  writer.writeString(offsets[17], object.userId);
+  writer.writeString(offsets[18], object.userName);
+  writer.writeString(offsets[19], object.userRole);
+  writer.writeLong(offsets[20], object.version);
 }
 
 AuditLogEntity _auditLogEntityDeserialize(
@@ -278,19 +303,23 @@ AuditLogEntity _auditLogEntityDeserialize(
   object.collectionName = reader.readString(offsets[3]);
   object.createdAt = reader.readDateTime(offsets[4]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[5]);
-  object.deviceInfo = reader.readStringOrNull(offsets[6]);
-  object.documentId = reader.readString(offsets[7]);
-  object.id = reader.readString(offsets[8]);
-  object.ipAddress = reader.readStringOrNull(offsets[9]);
-  object.isDeleted = reader.readBool(offsets[10]);
-  object.notes = reader.readStringOrNull(offsets[11]);
+  object.deviceId = reader.readString(offsets[6]);
+  object.deviceInfo = reader.readStringOrNull(offsets[7]);
+  object.documentId = reader.readString(offsets[8]);
+  object.id = reader.readString(offsets[9]);
+  object.ipAddress = reader.readStringOrNull(offsets[10]);
+  object.isDeleted = reader.readBool(offsets[11]);
+  object.isSynced = reader.readBool(offsets[12]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[13]);
+  object.notes = reader.readStringOrNull(offsets[14]);
   object.syncStatus = _AuditLogEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[12])] ??
+          reader.readByteOrNull(offsets[15])] ??
       SyncStatus.pending;
-  object.updatedAt = reader.readDateTime(offsets[13]);
-  object.userId = reader.readString(offsets[14]);
-  object.userName = reader.readString(offsets[15]);
-  object.userRole = reader.readString(offsets[16]);
+  object.updatedAt = reader.readDateTime(offsets[16]);
+  object.userId = reader.readString(offsets[17]);
+  object.userName = reader.readString(offsets[18]);
+  object.userRole = reader.readString(offsets[19]);
+  object.version = reader.readLong(offsets[20]);
   return object;
 }
 
@@ -316,29 +345,37 @@ P _auditLogEntityDeserializeProp<P>(
     case 5:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
-    case 7:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
       return (reader.readString(offset)) as P;
     case 9:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
-    case 11:
       return (reader.readStringOrNull(offset)) as P;
+    case 11:
+      return (reader.readBool(offset)) as P;
     case 12:
+      return (reader.readBool(offset)) as P;
+    case 13:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
       return (_AuditLogEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 13:
-      return (reader.readDateTime(offset)) as P;
-    case 14:
-      return (reader.readString(offset)) as P;
-    case 15:
-      return (reader.readString(offset)) as P;
     case 16:
+      return (reader.readDateTime(offset)) as P;
+    case 17:
       return (reader.readString(offset)) as P;
+    case 18:
+      return (reader.readString(offset)) as P;
+    case 19:
+      return (reader.readString(offset)) as P;
+    case 20:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1518,6 +1555,142 @@ extension AuditLogEntityQueryFilter
   }
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
       deviceInfoIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2107,6 +2280,16 @@ extension AuditLogEntityQueryFilter
   }
 
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2154,6 +2337,80 @@ extension AuditLogEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -2835,6 +3092,62 @@ extension AuditLogEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension AuditLogEntityQueryObject
@@ -2925,6 +3238,19 @@ extension AuditLogEntityQuerySortBy
     });
   }
 
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
       sortByDeviceInfo() {
     return QueryBuilder.apply(this, (query) {
@@ -2988,6 +3314,33 @@ extension AuditLogEntityQuerySortBy
       sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3066,6 +3419,19 @@ extension AuditLogEntityQuerySortBy
       sortByUserRoleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'userRole', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 }
@@ -3152,6 +3518,19 @@ extension AuditLogEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
       thenByDeviceInfo() {
     return QueryBuilder.apply(this, (query) {
@@ -3218,6 +3597,19 @@ extension AuditLogEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -3228,6 +3620,20 @@ extension AuditLogEntityQuerySortThenBy
       thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3308,6 +3714,19 @@ extension AuditLogEntityQuerySortThenBy
       return query.addSortBy(r'userRole', Sort.desc);
     });
   }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension AuditLogEntityQueryWhereDistinct
@@ -3354,6 +3773,13 @@ extension AuditLogEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<AuditLogEntity, AuditLogEntity, QDistinct> distinctByDeviceInfo(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3386,6 +3812,19 @@ extension AuditLogEntityQueryWhereDistinct
       distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -3428,6 +3867,12 @@ extension AuditLogEntityQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'userRole', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, AuditLogEntity, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
     });
   }
 }
@@ -3479,6 +3924,12 @@ extension AuditLogEntityQueryProperty
     });
   }
 
+  QueryBuilder<AuditLogEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<AuditLogEntity, String?, QQueryOperations> deviceInfoProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'deviceInfo');
@@ -3506,6 +3957,19 @@ extension AuditLogEntityQueryProperty
   QueryBuilder<AuditLogEntity, bool, QQueryOperations> isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -3543,6 +4007,12 @@ extension AuditLogEntityQueryProperty
   QueryBuilder<AuditLogEntity, String, QQueryOperations> userRoleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'userRole');
+    });
+  }
+
+  QueryBuilder<AuditLogEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

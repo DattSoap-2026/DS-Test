@@ -1,7 +1,9 @@
 import 'package:isar/isar.dart';
-import '../base_entity.dart';
 import '../../../services/customers_service.dart';
 import '../../../services/field_encryption_service.dart';
+
+import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'customer_entity.g.dart';
 
@@ -258,6 +260,106 @@ class CustomerEntity extends BaseEntity {
     if (pan != null) {
       pan = fieldEncryption.encryptString(pan!, _ctx(id, 'pan'));
     }
+  }
+
+  /// Converts this entity into a sync-safe json map.
+  Map<String, dynamic> toJson() {
+    final domain = toDomain();
+    return <String, dynamic>{
+      'id': id,
+      'shopName': domain.shopName,
+      'ownerName': domain.ownerName,
+      'mobile': domain.mobile,
+      'alternateMobile': domain.alternateMobile,
+      'email': domain.email,
+      'address': domain.address,
+      'addressLine2': domain.addressLine2,
+      'city': domain.city,
+      'state': domain.state,
+      'pincode': domain.pincode,
+      'gstin': domain.gstin,
+      'pan': domain.pan,
+      'route': domain.route,
+      'routeSequence': domain.routeSequence,
+      'status': domain.status,
+      'balance': domain.balance,
+      'creditLimit': domain.creditLimit,
+      'paymentTerms': domain.paymentTerms,
+      'latitude': domain.latitude,
+      'longitude': domain.longitude,
+      'createdAt': domain.createdAt,
+      'createdBy': domain.createdBy,
+      'createdByName': domain.createdByName,
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
+  /// Builds an entity from a sync-safe json map.
+  static CustomerEntity fromJson(Map<String, dynamic> json) {
+    final fieldEncryption = FieldEncryptionService.instance;
+    final id = parseString(json['id']);
+    String? encryptNullable(dynamic value, String field) {
+      final normalized = value?.toString();
+      if (normalized == null || normalized.isEmpty) {
+        return null;
+      }
+      return fieldEncryption.encryptString(normalized, _ctx(id, field));
+    }
+
+    return CustomerEntity()
+      ..id = id
+      ..shopName = parseString(json['shopName'])
+      ..ownerName = parseString(json['ownerName'])
+      ..mobile = fieldEncryption.encryptString(
+        parseString(json['mobile']),
+        _ctx(id, 'mobile'),
+      )
+      ..alternateMobile = encryptNullable(json['alternateMobile'], 'altMobile')
+      ..email = encryptNullable(json['email'], 'email')
+      ..address = fieldEncryption.encryptString(
+        parseString(json['address']),
+        _ctx(id, 'address'),
+      )
+      ..addressLine2 = encryptNullable(json['addressLine2'], 'address2')
+      ..city = encryptNullable(json['city'], 'city')
+      ..state = encryptNullable(json['state'], 'state')
+      ..pincode = encryptNullable(json['pincode'], 'pincode')
+      ..gstin = encryptNullable(json['gstin'], 'gstin')
+      ..pan = encryptNullable(json['pan'], 'pan')
+      ..route = parseString(json['route'])
+      ..routeSequence =
+          json['routeSequence'] == null ? null : parseInt(json['routeSequence'])
+      ..status = parseString(json['status'], fallback: 'active')
+      ..balance = parseDouble(json['balance'])
+      ..creditLimit =
+          json['creditLimit'] == null ? null : parseDouble(json['creditLimit'])
+      ..paymentTerms = json['paymentTerms']?.toString()
+      ..latitude =
+          json['latitude'] == null ? null : parseDouble(json['latitude'])
+      ..longitude =
+          json['longitude'] == null ? null : parseDouble(json['longitude'])
+      ..createdAt = parseString(
+        json['createdAt'],
+        fallback: DateTime.now().toIso8601String(),
+      )
+      ..createdBy = json['createdBy']?.toString()
+      ..createdByName = json['createdByName']?.toString()
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId'], fallback: '');
   }
 
   static String _ctx(String id, String field) => 'customer:$id:$field';

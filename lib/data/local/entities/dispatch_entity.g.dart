@@ -37,106 +37,126 @@ const DispatchEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'dispatchId': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 4,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'dispatchId': PropertySchema(
+      id: 5,
       name: r'dispatchId',
       type: IsarType.string,
     ),
     r'dispatchRoute': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'dispatchRoute',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isOrderBasedDispatch': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isOrderBasedDispatch',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 10,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
     r'itemsJson': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'itemsJson',
       type: IsarType.string,
     ),
+    r'lastSynced': PropertySchema(
+      id: 12,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'orderId': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'orderId',
       type: IsarType.string,
     ),
     r'orderNo': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'orderNo',
       type: IsarType.string,
     ),
     r'receivedAt': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'receivedAt',
       type: IsarType.dateTime,
     ),
     r'salesRoute': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'salesRoute',
       type: IsarType.string,
     ),
     r'salesmanId': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'salesmanId',
       type: IsarType.string,
     ),
     r'salesmanName': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'salesmanName',
       type: IsarType.string,
     ),
     r'source': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'source',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'status',
       type: IsarType.string,
     ),
     r'storeId': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'storeId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _DispatchEntitysyncStatusEnumValueMap,
     ),
     r'totalAmount': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'totalAmount',
       type: IsarType.double,
     ),
     r'totalQuantity': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'totalQuantity',
       type: IsarType.long,
     ),
     r'updatedAt': PropertySchema(
-      id: 22,
+      id: 25,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'vehicleNumber': PropertySchema(
-      id: 23,
+      id: 26,
       name: r'vehicleNumber',
       type: IsarType.string,
+    ),
+    r'version': PropertySchema(
+      id: 27,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _dispatchEntityEstimateSize,
@@ -237,6 +257,7 @@ int _dispatchEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.dispatchId.length * 3;
   bytesCount += 3 + object.dispatchRoute.length * 3;
   bytesCount += 3 + object.id.length * 3;
@@ -278,26 +299,30 @@ void _dispatchEntitySerialize(
   writer.writeString(offsets[1], object.dealerId);
   writer.writeString(offsets[2], object.dealerName);
   writer.writeDateTime(offsets[3], object.deletedAt);
-  writer.writeString(offsets[4], object.dispatchId);
-  writer.writeString(offsets[5], object.dispatchRoute);
-  writer.writeString(offsets[6], object.id);
-  writer.writeBool(offsets[7], object.isDeleted);
-  writer.writeBool(offsets[8], object.isOrderBasedDispatch);
-  writer.writeString(offsets[9], object.itemsJson);
-  writer.writeString(offsets[10], object.orderId);
-  writer.writeString(offsets[11], object.orderNo);
-  writer.writeDateTime(offsets[12], object.receivedAt);
-  writer.writeString(offsets[13], object.salesRoute);
-  writer.writeString(offsets[14], object.salesmanId);
-  writer.writeString(offsets[15], object.salesmanName);
-  writer.writeString(offsets[16], object.source);
-  writer.writeString(offsets[17], object.status);
-  writer.writeString(offsets[18], object.storeId);
-  writer.writeByte(offsets[19], object.syncStatus.index);
-  writer.writeDouble(offsets[20], object.totalAmount);
-  writer.writeLong(offsets[21], object.totalQuantity);
-  writer.writeDateTime(offsets[22], object.updatedAt);
-  writer.writeString(offsets[23], object.vehicleNumber);
+  writer.writeString(offsets[4], object.deviceId);
+  writer.writeString(offsets[5], object.dispatchId);
+  writer.writeString(offsets[6], object.dispatchRoute);
+  writer.writeString(offsets[7], object.id);
+  writer.writeBool(offsets[8], object.isDeleted);
+  writer.writeBool(offsets[9], object.isOrderBasedDispatch);
+  writer.writeBool(offsets[10], object.isSynced);
+  writer.writeString(offsets[11], object.itemsJson);
+  writer.writeDateTime(offsets[12], object.lastSynced);
+  writer.writeString(offsets[13], object.orderId);
+  writer.writeString(offsets[14], object.orderNo);
+  writer.writeDateTime(offsets[15], object.receivedAt);
+  writer.writeString(offsets[16], object.salesRoute);
+  writer.writeString(offsets[17], object.salesmanId);
+  writer.writeString(offsets[18], object.salesmanName);
+  writer.writeString(offsets[19], object.source);
+  writer.writeString(offsets[20], object.status);
+  writer.writeString(offsets[21], object.storeId);
+  writer.writeByte(offsets[22], object.syncStatus.index);
+  writer.writeDouble(offsets[23], object.totalAmount);
+  writer.writeLong(offsets[24], object.totalQuantity);
+  writer.writeDateTime(offsets[25], object.updatedAt);
+  writer.writeString(offsets[26], object.vehicleNumber);
+  writer.writeLong(offsets[27], object.version);
 }
 
 DispatchEntity _dispatchEntityDeserialize(
@@ -311,28 +336,32 @@ DispatchEntity _dispatchEntityDeserialize(
   object.dealerId = reader.readStringOrNull(offsets[1]);
   object.dealerName = reader.readStringOrNull(offsets[2]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[3]);
-  object.dispatchId = reader.readString(offsets[4]);
-  object.dispatchRoute = reader.readString(offsets[5]);
-  object.id = reader.readString(offsets[6]);
-  object.isDeleted = reader.readBool(offsets[7]);
-  object.isOrderBasedDispatch = reader.readBool(offsets[8]);
-  object.itemsJson = reader.readString(offsets[9]);
-  object.orderId = reader.readStringOrNull(offsets[10]);
-  object.orderNo = reader.readStringOrNull(offsets[11]);
-  object.receivedAt = reader.readDateTimeOrNull(offsets[12]);
-  object.salesRoute = reader.readString(offsets[13]);
-  object.salesmanId = reader.readString(offsets[14]);
-  object.salesmanName = reader.readString(offsets[15]);
-  object.source = reader.readString(offsets[16]);
-  object.status = reader.readString(offsets[17]);
-  object.storeId = reader.readStringOrNull(offsets[18]);
+  object.deviceId = reader.readString(offsets[4]);
+  object.dispatchId = reader.readString(offsets[5]);
+  object.dispatchRoute = reader.readString(offsets[6]);
+  object.id = reader.readString(offsets[7]);
+  object.isDeleted = reader.readBool(offsets[8]);
+  object.isOrderBasedDispatch = reader.readBool(offsets[9]);
+  object.isSynced = reader.readBool(offsets[10]);
+  object.itemsJson = reader.readString(offsets[11]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[12]);
+  object.orderId = reader.readStringOrNull(offsets[13]);
+  object.orderNo = reader.readStringOrNull(offsets[14]);
+  object.receivedAt = reader.readDateTimeOrNull(offsets[15]);
+  object.salesRoute = reader.readString(offsets[16]);
+  object.salesmanId = reader.readString(offsets[17]);
+  object.salesmanName = reader.readString(offsets[18]);
+  object.source = reader.readString(offsets[19]);
+  object.status = reader.readString(offsets[20]);
+  object.storeId = reader.readStringOrNull(offsets[21]);
   object.syncStatus = _DispatchEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[19])] ??
+          reader.readByteOrNull(offsets[22])] ??
       SyncStatus.pending;
-  object.totalAmount = reader.readDouble(offsets[20]);
-  object.totalQuantity = reader.readLong(offsets[21]);
-  object.updatedAt = reader.readDateTime(offsets[22]);
-  object.vehicleNumber = reader.readString(offsets[23]);
+  object.totalAmount = reader.readDouble(offsets[23]);
+  object.totalQuantity = reader.readLong(offsets[24]);
+  object.updatedAt = reader.readDateTime(offsets[25]);
+  object.vehicleNumber = reader.readString(offsets[26]);
+  object.version = reader.readLong(offsets[27]);
   return object;
 }
 
@@ -358,41 +387,49 @@ P _dispatchEntityDeserializeProp<P>(
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
       return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 12:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 13:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 16:
       return (reader.readString(offset)) as P;
     case 17:
       return (reader.readString(offset)) as P;
     case 18:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 19:
+      return (reader.readString(offset)) as P;
+    case 20:
+      return (reader.readString(offset)) as P;
+    case 21:
+      return (reader.readStringOrNull(offset)) as P;
+    case 22:
       return (_DispatchEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 20:
-      return (reader.readDouble(offset)) as P;
-    case 21:
-      return (reader.readLong(offset)) as P;
-    case 22:
-      return (reader.readDateTime(offset)) as P;
     case 23:
+      return (reader.readDouble(offset)) as P;
+    case 24:
+      return (reader.readLong(offset)) as P;
+    case 25:
+      return (reader.readDateTime(offset)) as P;
+    case 26:
       return (reader.readString(offset)) as P;
+    case 27:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1276,6 +1313,142 @@ extension DispatchEntityQueryFilter
   }
 
   QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
       dispatchIdEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1703,6 +1876,16 @@ extension DispatchEntityQueryFilter
   }
 
   QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1890,6 +2073,80 @@ extension DispatchEntityQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'itemsJson',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -3479,6 +3736,62 @@ extension DispatchEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension DispatchEntityQueryObject
@@ -3539,6 +3852,19 @@ extension DispatchEntityQuerySortBy
       sortByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -3609,6 +3935,19 @@ extension DispatchEntityQuerySortBy
     });
   }
 
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy> sortByItemsJson() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'itemsJson', Sort.asc);
@@ -3619,6 +3958,20 @@ extension DispatchEntityQuerySortBy
       sortByItemsJsonDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'itemsJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3811,6 +4164,19 @@ extension DispatchEntityQuerySortBy
       return query.addSortBy(r'vehicleNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension DispatchEntityQuerySortThenBy
@@ -3865,6 +4231,19 @@ extension DispatchEntityQuerySortThenBy
       thenByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -3935,6 +4314,19 @@ extension DispatchEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -3958,6 +4350,20 @@ extension DispatchEntityQuerySortThenBy
       thenByItemsJsonDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'itemsJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -4150,6 +4556,19 @@ extension DispatchEntityQuerySortThenBy
       return query.addSortBy(r'vehicleNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension DispatchEntityQueryWhereDistinct
@@ -4179,6 +4598,13 @@ extension DispatchEntityQueryWhereDistinct
       distinctByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
     });
   }
 
@@ -4218,10 +4644,23 @@ extension DispatchEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DispatchEntity, DispatchEntity, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
   QueryBuilder<DispatchEntity, DispatchEntity, QDistinct> distinctByItemsJson(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'itemsJson', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -4323,6 +4762,12 @@ extension DispatchEntityQueryWhereDistinct
           caseSensitive: caseSensitive);
     });
   }
+
+  QueryBuilder<DispatchEntity, DispatchEntity, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension DispatchEntityQueryProperty
@@ -4358,6 +4803,12 @@ extension DispatchEntityQueryProperty
     });
   }
 
+  QueryBuilder<DispatchEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<DispatchEntity, String, QQueryOperations> dispatchIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'dispatchId');
@@ -4390,9 +4841,22 @@ extension DispatchEntityQueryProperty
     });
   }
 
+  QueryBuilder<DispatchEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
   QueryBuilder<DispatchEntity, String, QQueryOperations> itemsJsonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'itemsJson');
+    });
+  }
+
+  QueryBuilder<DispatchEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -4481,6 +4945,12 @@ extension DispatchEntityQueryProperty
       vehicleNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'vehicleNumber');
+    });
+  }
+
+  QueryBuilder<DispatchEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

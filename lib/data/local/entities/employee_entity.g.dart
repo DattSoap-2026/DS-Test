@@ -42,94 +42,114 @@ const EmployeeEntitySchema = CollectionSchema(
       name: r'department',
       type: IsarType.string,
     ),
-    r'employeeId': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 5,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'employeeId': PropertySchema(
+      id: 6,
       name: r'employeeId',
       type: IsarType.string,
     ),
     r'exitDate': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'exitDate',
       type: IsarType.dateTime,
     ),
     r'hourlyRate': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'hourlyRate',
       type: IsarType.double,
     ),
     r'id': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'id',
       type: IsarType.string,
     ),
     r'isActive': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'isActive',
       type: IsarType.bool,
     ),
     r'isDeleted': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 12,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
     r'joiningDate': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'joiningDate',
       type: IsarType.dateTime,
     ),
+    r'lastSynced': PropertySchema(
+      id: 14,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'linkedUserId': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'linkedUserId',
       type: IsarType.string,
     ),
     r'mobile': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'mobile',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'name',
       type: IsarType.string,
     ),
     r'overtimeMultiplier': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'overtimeMultiplier',
       type: IsarType.double,
     ),
     r'paymentMethod': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'paymentMethod',
       type: IsarType.string,
     ),
     r'roleType': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'roleType',
       type: IsarType.string,
     ),
     r'shiftStartHour': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'shiftStartHour',
       type: IsarType.long,
     ),
     r'shiftStartMinute': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'shiftStartMinute',
       type: IsarType.long,
     ),
     r'syncStatus': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _EmployeeEntitysyncStatusEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
+    r'version': PropertySchema(
+      id: 25,
+      name: r'version',
+      type: IsarType.long,
+    ),
     r'weeklyOffDay': PropertySchema(
-      id: 22,
+      id: 26,
       name: r'weeklyOffDay',
       type: IsarType.long,
     )
@@ -214,6 +234,7 @@ int _employeeEntityEstimateSize(
     }
   }
   bytesCount += 3 + object.department.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.employeeId.length * 3;
   bytesCount += 3 + object.id.length * 3;
   {
@@ -245,24 +266,28 @@ void _employeeEntitySerialize(
   writer.writeDateTime(offsets[2], object.createdAt);
   writer.writeDateTime(offsets[3], object.deletedAt);
   writer.writeString(offsets[4], object.department);
-  writer.writeString(offsets[5], object.employeeId);
-  writer.writeDateTime(offsets[6], object.exitDate);
-  writer.writeDouble(offsets[7], object.hourlyRate);
-  writer.writeString(offsets[8], object.id);
-  writer.writeBool(offsets[9], object.isActive);
-  writer.writeBool(offsets[10], object.isDeleted);
-  writer.writeDateTime(offsets[11], object.joiningDate);
-  writer.writeString(offsets[12], object.linkedUserId);
-  writer.writeString(offsets[13], object.mobile);
-  writer.writeString(offsets[14], object.name);
-  writer.writeDouble(offsets[15], object.overtimeMultiplier);
-  writer.writeString(offsets[16], object.paymentMethod);
-  writer.writeString(offsets[17], object.roleType);
-  writer.writeLong(offsets[18], object.shiftStartHour);
-  writer.writeLong(offsets[19], object.shiftStartMinute);
-  writer.writeByte(offsets[20], object.syncStatus.index);
-  writer.writeDateTime(offsets[21], object.updatedAt);
-  writer.writeLong(offsets[22], object.weeklyOffDay);
+  writer.writeString(offsets[5], object.deviceId);
+  writer.writeString(offsets[6], object.employeeId);
+  writer.writeDateTime(offsets[7], object.exitDate);
+  writer.writeDouble(offsets[8], object.hourlyRate);
+  writer.writeString(offsets[9], object.id);
+  writer.writeBool(offsets[10], object.isActive);
+  writer.writeBool(offsets[11], object.isDeleted);
+  writer.writeBool(offsets[12], object.isSynced);
+  writer.writeDateTime(offsets[13], object.joiningDate);
+  writer.writeDateTime(offsets[14], object.lastSynced);
+  writer.writeString(offsets[15], object.linkedUserId);
+  writer.writeString(offsets[16], object.mobile);
+  writer.writeString(offsets[17], object.name);
+  writer.writeDouble(offsets[18], object.overtimeMultiplier);
+  writer.writeString(offsets[19], object.paymentMethod);
+  writer.writeString(offsets[20], object.roleType);
+  writer.writeLong(offsets[21], object.shiftStartHour);
+  writer.writeLong(offsets[22], object.shiftStartMinute);
+  writer.writeByte(offsets[23], object.syncStatus.index);
+  writer.writeDateTime(offsets[24], object.updatedAt);
+  writer.writeLong(offsets[25], object.version);
+  writer.writeLong(offsets[26], object.weeklyOffDay);
 }
 
 EmployeeEntity _employeeEntityDeserialize(
@@ -277,26 +302,30 @@ EmployeeEntity _employeeEntityDeserialize(
   object.createdAt = reader.readDateTime(offsets[2]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[3]);
   object.department = reader.readString(offsets[4]);
-  object.employeeId = reader.readString(offsets[5]);
-  object.exitDate = reader.readDateTimeOrNull(offsets[6]);
-  object.hourlyRate = reader.readDoubleOrNull(offsets[7]);
-  object.id = reader.readString(offsets[8]);
-  object.isActive = reader.readBool(offsets[9]);
-  object.isDeleted = reader.readBool(offsets[10]);
-  object.joiningDate = reader.readDateTimeOrNull(offsets[11]);
-  object.linkedUserId = reader.readStringOrNull(offsets[12]);
-  object.mobile = reader.readString(offsets[13]);
-  object.name = reader.readString(offsets[14]);
-  object.overtimeMultiplier = reader.readDoubleOrNull(offsets[15]);
-  object.paymentMethod = reader.readStringOrNull(offsets[16]);
-  object.roleType = reader.readString(offsets[17]);
-  object.shiftStartHour = reader.readLongOrNull(offsets[18]);
-  object.shiftStartMinute = reader.readLongOrNull(offsets[19]);
+  object.deviceId = reader.readString(offsets[5]);
+  object.employeeId = reader.readString(offsets[6]);
+  object.exitDate = reader.readDateTimeOrNull(offsets[7]);
+  object.hourlyRate = reader.readDoubleOrNull(offsets[8]);
+  object.id = reader.readString(offsets[9]);
+  object.isActive = reader.readBool(offsets[10]);
+  object.isDeleted = reader.readBool(offsets[11]);
+  object.isSynced = reader.readBool(offsets[12]);
+  object.joiningDate = reader.readDateTimeOrNull(offsets[13]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[14]);
+  object.linkedUserId = reader.readStringOrNull(offsets[15]);
+  object.mobile = reader.readString(offsets[16]);
+  object.name = reader.readString(offsets[17]);
+  object.overtimeMultiplier = reader.readDoubleOrNull(offsets[18]);
+  object.paymentMethod = reader.readStringOrNull(offsets[19]);
+  object.roleType = reader.readString(offsets[20]);
+  object.shiftStartHour = reader.readLongOrNull(offsets[21]);
+  object.shiftStartMinute = reader.readLongOrNull(offsets[22]);
   object.syncStatus = _EmployeeEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[20])] ??
+          reader.readByteOrNull(offsets[23])] ??
       SyncStatus.pending;
-  object.updatedAt = reader.readDateTime(offsets[21]);
-  object.weeklyOffDay = reader.readLong(offsets[22]);
+  object.updatedAt = reader.readDateTime(offsets[24]);
+  object.version = reader.readLong(offsets[25]);
+  object.weeklyOffDay = reader.readLong(offsets[26]);
   return object;
 }
 
@@ -320,40 +349,48 @@ P _employeeEntityDeserializeProp<P>(
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 7:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 8:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 8:
+      return (reader.readDoubleOrNull(offset)) as P;
     case 9:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 10:
       return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 13:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 14:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 15:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 16:
       return (reader.readStringOrNull(offset)) as P;
+    case 16:
+      return (reader.readString(offset)) as P;
     case 17:
       return (reader.readString(offset)) as P;
     case 18:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 19:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 20:
+      return (reader.readString(offset)) as P;
+    case 21:
+      return (reader.readLongOrNull(offset)) as P;
+    case 22:
+      return (reader.readLongOrNull(offset)) as P;
+    case 23:
       return (_EmployeeEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 21:
+    case 24:
       return (reader.readDateTime(offset)) as P;
-    case 22:
+    case 25:
+      return (reader.readLong(offset)) as P;
+    case 26:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1279,6 +1316,142 @@ extension EmployeeEntityQueryFilter
   }
 
   QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
       employeeIdEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1728,6 +1901,16 @@ extension EmployeeEntityQueryFilter
   }
 
   QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1849,6 +2032,80 @@ extension EmployeeEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'joiningDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -2918,6 +3175,62 @@ extension EmployeeEntityQueryFilter
   }
 
   QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterFilterCondition>
       weeklyOffDayEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -3050,6 +3363,19 @@ extension EmployeeEntityQuerySortBy
     });
   }
 
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
       sortByEmployeeId() {
     return QueryBuilder.apply(this, (query) {
@@ -3129,6 +3455,19 @@ extension EmployeeEntityQuerySortBy
     });
   }
 
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
       sortByJoiningDate() {
     return QueryBuilder.apply(this, (query) {
@@ -3140,6 +3479,20 @@ extension EmployeeEntityQuerySortBy
       sortByJoiningDateDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'joiningDate', Sort.desc);
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3278,6 +3631,19 @@ extension EmployeeEntityQuerySortBy
     });
   }
 
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
       sortByWeeklyOffDay() {
     return QueryBuilder.apply(this, (query) {
@@ -3363,6 +3729,19 @@ extension EmployeeEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
       thenByEmployeeId() {
     return QueryBuilder.apply(this, (query) {
@@ -3442,6 +3821,19 @@ extension EmployeeEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -3466,6 +3858,20 @@ extension EmployeeEntityQuerySortThenBy
       thenByJoiningDateDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'joiningDate', Sort.desc);
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3604,6 +4010,19 @@ extension EmployeeEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QAfterSortBy>
       thenByWeeklyOffDay() {
     return QueryBuilder.apply(this, (query) {
@@ -3656,6 +4075,13 @@ extension EmployeeEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QDistinct> distinctByEmployeeId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3696,10 +4122,23 @@ extension EmployeeEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QDistinct>
       distinctByJoiningDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'joiningDate');
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -3774,6 +4213,12 @@ extension EmployeeEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<EmployeeEntity, EmployeeEntity, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
+
   QueryBuilder<EmployeeEntity, EmployeeEntity, QDistinct>
       distinctByWeeklyOffDay() {
     return QueryBuilder.apply(this, (query) {
@@ -3823,6 +4268,12 @@ extension EmployeeEntityQueryProperty
     });
   }
 
+  QueryBuilder<EmployeeEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<EmployeeEntity, String, QQueryOperations> employeeIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'employeeId');
@@ -3859,10 +4310,23 @@ extension EmployeeEntityQueryProperty
     });
   }
 
+  QueryBuilder<EmployeeEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
   QueryBuilder<EmployeeEntity, DateTime?, QQueryOperations>
       joiningDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'joiningDate');
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -3929,6 +4393,12 @@ extension EmployeeEntityQueryProperty
   QueryBuilder<EmployeeEntity, DateTime, QQueryOperations> updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<EmployeeEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 

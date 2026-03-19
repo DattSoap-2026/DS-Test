@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:isar/isar.dart';
-import '../base_entity.dart';
+
 import '../../../../models/types/cutting_types.dart';
+import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'cutting_batch_entity.g.dart';
 
@@ -13,13 +17,11 @@ class CuttingBatchEntity extends BaseEntity {
   late String batchGeneId;
 
   @Index()
-  late DateTime date; // Business date
+  late DateTime date;
 
   late String shift;
-
   late String departmentId;
   late String departmentName;
-
   late String operatorId;
   late String operatorName;
 
@@ -36,16 +38,13 @@ class CuttingBatchEntity extends BaseEntity {
   late double standardWeightGm;
   late double actualAvgWeightGm;
   late double tolerancePercent;
-
   late int unitsProduced;
   late double totalFinishedWeightKg;
   late bool weightValidationPassed;
   String? weightValidationMessage;
-
   late double cuttingWasteKg;
   late String wasteType;
   String? wasteRemark;
-
   late double inputWeightKg;
   late double outputWeightKg;
   late double wasteWeightKg;
@@ -59,23 +58,22 @@ class CuttingBatchEntity extends BaseEntity {
   late bool semiFinishedStockAdjusted;
   late bool finishedGoodsStockAdjusted;
   late bool wasteStockAdjusted;
-
   late String supervisorId;
   late String supervisorName;
 
   @ignore
-  List<Map<String, dynamic>> packagingConsumptions = [];
+  List<Map<String, dynamic>> packagingConsumptions = <Map<String, dynamic>>[];
 
   late DateTime createdAt;
   DateTime? completedAt;
   String? rejectionReason;
 
-  Map<String, dynamic> toFirebaseJson() {
-    return {
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
       'id': id,
       'batchNumber': batchNumber,
       'batchGeneId': batchGeneId,
-      'date': date.toIso8601String().split('T')[0],
+      'date': date.toIso8601String(),
       'shift': shift,
       'departmentId': departmentId,
       'departmentName': departmentName,
@@ -110,93 +108,107 @@ class CuttingBatchEntity extends BaseEntity {
       'wasteStockAdjusted': wasteStockAdjusted,
       'supervisorId': supervisorId,
       'supervisorName': supervisorName,
-      'packagingConsumptions': packagingConsumptions,
+      'packagingConsumptions': jsonEncode(packagingConsumptions),
       'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
       'rejectionReason': rejectionReason,
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
     };
   }
 
-  static CuttingBatchEntity fromFirebaseJson(Map<String, dynamic> json) {
-    final entity = CuttingBatchEntity()
-      ..id = json['id'] as String
-      ..batchNumber = json['batchNumber'] as String? ?? ''
-      ..batchGeneId = json['batchGeneId'] as String? ?? ''
-      ..date = json['date'] != null
-          ? DateTime.parse(json['date'] as String)
-          : DateTime.now()
-      ..shift = json['shift'] as String? ?? 'DAY'
-      ..departmentId = json['departmentId'] as String? ?? ''
-      ..departmentName = json['departmentName'] as String? ?? ''
-      ..operatorId = json['operatorId'] as String? ?? ''
-      ..operatorName = json['operatorName'] as String? ?? ''
-      ..semiFinishedProductId = json['semiFinishedProductId'] as String? ?? ''
-      ..semiFinishedProductName =
-          json['semiFinishedProductName'] as String? ?? ''
-      ..totalBatchWeightKg =
-          (json['totalBatchWeightKg'] as num?)?.toDouble() ?? 0.0
-      ..boxesCount = (json['boxesCount'] as num?)?.toInt() ?? 0
-      ..avgBoxWeightKg = (json['avgBoxWeightKg'] as num?)?.toDouble()
-      ..finishedGoodId = json['finishedGoodId'] as String? ?? ''
-      ..finishedGoodName = json['finishedGoodName'] as String? ?? ''
-      ..standardWeightGm = (json['standardWeightGm'] as num?)?.toDouble() ?? 0.0
-      ..actualAvgWeightGm =
-          (json['actualAvgWeightGm'] as num?)?.toDouble() ?? 0.0
-      ..tolerancePercent = (json['tolerancePercent'] as num?)?.toDouble() ?? 0.0
-      ..unitsProduced = (json['unitsProduced'] as num?)?.toInt() ?? 0
-      ..totalFinishedWeightKg =
-          (json['totalFinishedWeightKg'] as num?)?.toDouble() ?? 0.0
-      ..weightValidationPassed =
-          json['weightValidationPassed'] as bool? ?? false
-      ..weightValidationMessage = json['weightValidationMessage'] as String?
-      ..cuttingWasteKg = (json['cuttingWasteKg'] as num?)?.toDouble() ?? 0.0
-      ..wasteType = json['wasteType'] as String? ?? 'SCRAP'
-      ..wasteRemark = json['wasteRemark'] as String?
-      ..inputWeightKg = (json['inputWeightKg'] as num?)?.toDouble() ?? 0.0
-      ..outputWeightKg = (json['outputWeightKg'] as num?)?.toDouble() ?? 0.0
-      ..wasteWeightKg = (json['wasteWeightKg'] as num?)?.toDouble() ?? 0.0
-      ..weightDifferenceKg =
-          (json['weightDifferenceKg'] as num?)?.toDouble() ?? 0.0
-      ..weightDifferencePercent =
-          (json['weightDifferencePercent'] as num?)?.toDouble() ?? 0.0
-      ..weightBalanceValid = json['weightBalanceValid'] as bool? ?? false
-      ..stage = json['stage'] as String? ?? 'COMPLETED'
-      ..semiFinishedStockAdjusted =
-          json['semiFinishedStockAdjusted'] as bool? ?? false
-      ..finishedGoodsStockAdjusted =
-          json['finishedGoodsStockAdjusted'] as bool? ?? false
-      ..wasteStockAdjusted = json['wasteStockAdjusted'] as bool? ?? false
-      ..supervisorId = json['supervisorId'] as String? ?? ''
-      ..supervisorName = json['supervisorName'] as String? ?? ''
-      ..packagingConsumptions = (json['packagingConsumptions'] as List?)
-          ?.map((e) => Map<String, dynamic>.from(e as Map))
-          .toList() ?? []
-      ..createdAt = DateTime.parse(
-        json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
-      )
-      ..updatedAt = DateTime.parse(
-        json['updatedAt'] as String? ??
-            json['createdAt'] as String? ??
-            DateTime.now().toIso8601String(),
-      )
-      ..completedAt = json['completedAt'] != null
-          ? DateTime.parse(json['completedAt'] as String)
-          : null
-      ..rejectionReason = json['rejectionReason'] as String?;
+  Map<String, dynamic> toFirebaseJson() {
+    return <String, dynamic>{
+      ...toJson(),
+      'packagingConsumptions': packagingConsumptions,
+    };
+  }
 
-    return entity;
+  static CuttingBatchEntity fromJson(Map<String, dynamic> json) {
+    return CuttingBatchEntity()
+      ..id = parseString(json['id'])
+      ..batchNumber = parseString(json['batchNumber'])
+      ..batchGeneId = parseString(json['batchGeneId'])
+      ..date = parseDate(json['date'])
+      ..shift = parseString(json['shift'], fallback: 'DAY')
+      ..departmentId = parseString(json['departmentId'])
+      ..departmentName = parseString(json['departmentName'])
+      ..operatorId = parseString(json['operatorId'])
+      ..operatorName = parseString(json['operatorName'])
+      ..semiFinishedProductId = parseString(json['semiFinishedProductId'])
+      ..semiFinishedProductName = parseString(json['semiFinishedProductName'])
+      ..totalBatchWeightKg = parseDouble(json['totalBatchWeightKg'])
+      ..boxesCount = parseInt(json['boxesCount'])
+      ..avgBoxWeightKg = json['avgBoxWeightKg'] == null
+          ? null
+          : parseDouble(json['avgBoxWeightKg'])
+      ..finishedGoodId = parseString(json['finishedGoodId'])
+      ..finishedGoodName = parseString(json['finishedGoodName'])
+      ..standardWeightGm = parseDouble(json['standardWeightGm'])
+      ..actualAvgWeightGm = parseDouble(json['actualAvgWeightGm'])
+      ..tolerancePercent = parseDouble(json['tolerancePercent'])
+      ..unitsProduced = parseInt(json['unitsProduced'])
+      ..totalFinishedWeightKg = parseDouble(json['totalFinishedWeightKg'])
+      ..weightValidationPassed = parseBool(json['weightValidationPassed'])
+      ..weightValidationMessage = parseString(
+        json['weightValidationMessage'],
+        fallback: '',
+      )
+      ..cuttingWasteKg = parseDouble(json['cuttingWasteKg'])
+      ..wasteType = parseString(json['wasteType'], fallback: 'SCRAP')
+      ..wasteRemark = parseString(json['wasteRemark'], fallback: '')
+      ..inputWeightKg = parseDouble(json['inputWeightKg'])
+      ..outputWeightKg = parseDouble(json['outputWeightKg'])
+      ..wasteWeightKg = parseDouble(json['wasteWeightKg'])
+      ..weightDifferenceKg = parseDouble(json['weightDifferenceKg'])
+      ..weightDifferencePercent = parseDouble(json['weightDifferencePercent'])
+      ..weightBalanceValid = parseBool(json['weightBalanceValid'])
+      ..stage = parseString(json['stage'], fallback: 'COMPLETED')
+      ..semiFinishedStockAdjusted = parseBool(json['semiFinishedStockAdjusted'])
+      ..finishedGoodsStockAdjusted = parseBool(json['finishedGoodsStockAdjusted'])
+      ..wasteStockAdjusted = parseBool(json['wasteStockAdjusted'])
+      ..supervisorId = parseString(json['supervisorId'])
+      ..supervisorName = parseString(json['supervisorName'])
+      ..packagingConsumptions = parseMapList(json['packagingConsumptions'])
+      ..createdAt = parseDate(json['createdAt'])
+      ..completedAt = parseDateOrNull(json['completedAt'])
+      ..rejectionReason = parseString(json['rejectionReason'], fallback: '')
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
+  }
+
+  static CuttingBatchEntity fromFirebaseJson(Map<String, dynamic> json) {
+    return fromJson(<String, dynamic>{
+      ...json,
+      'packagingConsumptions': json['packagingConsumptions'] is String
+          ? json['packagingConsumptions']
+          : jsonEncode((json['packagingConsumptions'] as List?) ?? const <dynamic>[]),
+      'syncStatus': SyncStatus.synced.name,
+      'isSynced': true,
+      'lastSynced': DateTime.now().toIso8601String(),
+    });
   }
 
   CuttingBatch toDomain() {
-    // Note: We need to import the enum and converter if they are not accessible.
-    // Assuming they are in lib/models/types/cutting_types.dart which is usually imported.
     return CuttingBatch(
       id: id,
       batchNumber: batchNumber,
       batchGeneId: batchGeneId,
       date: date,
-      shift: ShiftType.day, // Simplified as per types.dart
+      shift: ShiftType.day,
       departmentId: departmentId,
       departmentName: departmentName,
       operatorId: operatorId,
@@ -224,8 +236,7 @@ class CuttingBatchEntity extends BaseEntity {
       weightDifferenceKg: weightDifferenceKg,
       weightDifferencePercent: weightDifferencePercent,
       weightBalanceValid: weightBalanceValid,
-      stage: CuttingStage
-          .completed, // Usually recorded as completed in this context
+      stage: CuttingStage.completed,
       semiFinishedStockAdjusted: semiFinishedStockAdjusted,
       finishedGoodsStockAdjusted: finishedGoodsStockAdjusted,
       wasteStockAdjusted: wasteStockAdjusted,

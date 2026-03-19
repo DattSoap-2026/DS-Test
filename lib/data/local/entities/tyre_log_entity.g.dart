@@ -27,57 +27,77 @@ const TyreLogEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'id': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 2,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'id': PropertySchema(
+      id: 3,
       name: r'id',
       type: IsarType.string,
     ),
     r'installationDate': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'installationDate',
       type: IsarType.dateTime,
     ),
     r'isDeleted': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 6,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
     r'items': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'items',
       type: IsarType.objectList,
       target: r'TyreLogItemEntity',
     ),
+    r'lastSynced': PropertySchema(
+      id: 8,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'reason': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'reason',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _TyreLogEntitysyncStatusEnumValueMap,
     ),
     r'totalCost': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'totalCost',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'vehicleId': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'vehicleId',
       type: IsarType.string,
     ),
     r'vehicleNumber': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'vehicleNumber',
       type: IsarType.string,
+    ),
+    r'version': PropertySchema(
+      id: 15,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _tyreLogEntityEstimateSize,
@@ -128,6 +148,7 @@ int _tyreLogEntityEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.createdAt.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.id.length * 3;
   {
     final list = object.items;
@@ -157,21 +178,25 @@ void _tyreLogEntitySerialize(
 ) {
   writer.writeString(offsets[0], object.createdAt);
   writer.writeDateTime(offsets[1], object.deletedAt);
-  writer.writeString(offsets[2], object.id);
-  writer.writeDateTime(offsets[3], object.installationDate);
-  writer.writeBool(offsets[4], object.isDeleted);
+  writer.writeString(offsets[2], object.deviceId);
+  writer.writeString(offsets[3], object.id);
+  writer.writeDateTime(offsets[4], object.installationDate);
+  writer.writeBool(offsets[5], object.isDeleted);
+  writer.writeBool(offsets[6], object.isSynced);
   writer.writeObjectList<TyreLogItemEntity>(
-    offsets[5],
+    offsets[7],
     allOffsets,
     TyreLogItemEntitySchema.serialize,
     object.items,
   );
-  writer.writeString(offsets[6], object.reason);
-  writer.writeByte(offsets[7], object.syncStatus.index);
-  writer.writeDouble(offsets[8], object.totalCost);
-  writer.writeDateTime(offsets[9], object.updatedAt);
-  writer.writeString(offsets[10], object.vehicleId);
-  writer.writeString(offsets[11], object.vehicleNumber);
+  writer.writeDateTime(offsets[8], object.lastSynced);
+  writer.writeString(offsets[9], object.reason);
+  writer.writeByte(offsets[10], object.syncStatus.index);
+  writer.writeDouble(offsets[11], object.totalCost);
+  writer.writeDateTime(offsets[12], object.updatedAt);
+  writer.writeString(offsets[13], object.vehicleId);
+  writer.writeString(offsets[14], object.vehicleNumber);
+  writer.writeLong(offsets[15], object.version);
 }
 
 TyreLogEntity _tyreLogEntityDeserialize(
@@ -183,23 +208,27 @@ TyreLogEntity _tyreLogEntityDeserialize(
   final object = TyreLogEntity();
   object.createdAt = reader.readString(offsets[0]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[1]);
-  object.id = reader.readString(offsets[2]);
-  object.installationDate = reader.readDateTime(offsets[3]);
-  object.isDeleted = reader.readBool(offsets[4]);
+  object.deviceId = reader.readString(offsets[2]);
+  object.id = reader.readString(offsets[3]);
+  object.installationDate = reader.readDateTime(offsets[4]);
+  object.isDeleted = reader.readBool(offsets[5]);
+  object.isSynced = reader.readBool(offsets[6]);
   object.items = reader.readObjectList<TyreLogItemEntity>(
-    offsets[5],
+    offsets[7],
     TyreLogItemEntitySchema.deserialize,
     allOffsets,
     TyreLogItemEntity(),
   );
-  object.reason = reader.readString(offsets[6]);
-  object.syncStatus =
-      _TyreLogEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[7])] ??
-          SyncStatus.pending;
-  object.totalCost = reader.readDouble(offsets[8]);
-  object.updatedAt = reader.readDateTime(offsets[9]);
-  object.vehicleId = reader.readString(offsets[10]);
-  object.vehicleNumber = reader.readString(offsets[11]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[8]);
+  object.reason = reader.readString(offsets[9]);
+  object.syncStatus = _TyreLogEntitysyncStatusValueEnumMap[
+          reader.readByteOrNull(offsets[10])] ??
+      SyncStatus.pending;
+  object.totalCost = reader.readDouble(offsets[11]);
+  object.updatedAt = reader.readDateTime(offsets[12]);
+  object.vehicleId = reader.readString(offsets[13]);
+  object.vehicleNumber = reader.readString(offsets[14]);
+  object.version = reader.readLong(offsets[15]);
   return object;
 }
 
@@ -217,30 +246,38 @@ P _tyreLogEntityDeserializeProp<P>(
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 5:
+      return (reader.readBool(offset)) as P;
+    case 6:
+      return (reader.readBool(offset)) as P;
+    case 7:
       return (reader.readObjectList<TyreLogItemEntity>(
         offset,
         TyreLogItemEntitySchema.deserialize,
         allOffsets,
         TyreLogItemEntity(),
       )) as P;
-    case 6:
+    case 8:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 9:
       return (reader.readString(offset)) as P;
-    case 7:
+    case 10:
       return (_TyreLogEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 8:
-      return (reader.readDouble(offset)) as P;
-    case 9:
-      return (reader.readDateTime(offset)) as P;
-    case 10:
-      return (reader.readString(offset)) as P;
     case 11:
+      return (reader.readDouble(offset)) as P;
+    case 12:
+      return (reader.readDateTime(offset)) as P;
+    case 13:
       return (reader.readString(offset)) as P;
+    case 14:
+      return (reader.readString(offset)) as P;
+    case 15:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -705,6 +742,142 @@ extension TyreLogEntityQueryFilter
     });
   }
 
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition> idEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -906,6 +1079,16 @@ extension TyreLogEntityQueryFilter
   }
 
   QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1065,6 +1248,80 @@ extension TyreLogEntityQueryFilter
         upper,
         includeUpper,
       );
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
@@ -1653,6 +1910,62 @@ extension TyreLogEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension TyreLogEntityQueryObject
@@ -1696,6 +2009,19 @@ extension TyreLogEntityQuerySortBy
     });
   }
 
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> sortById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1732,6 +2058,32 @@ extension TyreLogEntityQuerySortBy
       sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -1812,6 +2164,18 @@ extension TyreLogEntityQuerySortBy
       return query.addSortBy(r'vehicleNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension TyreLogEntityQuerySortThenBy
@@ -1839,6 +2203,19 @@ extension TyreLogEntityQuerySortThenBy
       thenByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -1881,6 +2258,19 @@ extension TyreLogEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -1890,6 +2280,19 @@ extension TyreLogEntityQuerySortThenBy
   QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -1970,6 +2373,18 @@ extension TyreLogEntityQuerySortThenBy
       return query.addSortBy(r'vehicleNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QAfterSortBy> thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension TyreLogEntityQueryWhereDistinct
@@ -1984,6 +2399,13 @@ extension TyreLogEntityQueryWhereDistinct
   QueryBuilder<TyreLogEntity, TyreLogEntity, QDistinct> distinctByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
     });
   }
 
@@ -2004,6 +2426,18 @@ extension TyreLogEntityQueryWhereDistinct
   QueryBuilder<TyreLogEntity, TyreLogEntity, QDistinct> distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QDistinct> distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -2046,6 +2480,12 @@ extension TyreLogEntityQueryWhereDistinct
           caseSensitive: caseSensitive);
     });
   }
+
+  QueryBuilder<TyreLogEntity, TyreLogEntity, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension TyreLogEntityQueryProperty
@@ -2068,6 +2508,12 @@ extension TyreLogEntityQueryProperty
     });
   }
 
+  QueryBuilder<TyreLogEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<TyreLogEntity, String, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
@@ -2087,10 +2533,23 @@ extension TyreLogEntityQueryProperty
     });
   }
 
+  QueryBuilder<TyreLogEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
   QueryBuilder<TyreLogEntity, List<TyreLogItemEntity>?, QQueryOperations>
       itemsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'items');
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -2129,6 +2588,12 @@ extension TyreLogEntityQueryProperty
       vehicleNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'vehicleNumber');
+    });
+  }
+
+  QueryBuilder<TyreLogEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

@@ -12,32 +12,39 @@ class SyncQueueService {
 
   static final SyncQueueService instance = SyncQueueService._internal();
 
-  static const int maxRetryLimit = 5;
+  static const int defaultMaxRetryLimit = 5;
 
   final IsarService _isarService = IsarService.instance;
 
-  /// Adds or replaces a queue entry for a document.
+  /// Adds a sync operation to the durable queue with deduplication.
   Future<void> addToQueue({
     required String collectionName,
     required String documentId,
     required String operation,
-    required Map<String, dynamic> payload,
+    required Object? payload,
   }) async {
     try {
+      final normalizedCollection = collectionName.trim();
+      final normalizedDocumentId = documentId.trim();
+      if (normalizedCollection.isEmpty || normalizedDocumentId.isEmpty) {
+        return;
+      }
+
       final existing = await _isarService.syncQueues
           .filter()
-          .queueKeyEqualTo('$collectionName::$documentId')
+          .queueKeyEqualTo('$normalizedCollection::$normalizedDocumentId')
           .findFirst();
 
       final queueItem = SyncQueue()
         ..id = existing?.id ?? Isar.autoIncrement
-        ..collectionName = collectionName
-        ..documentId = documentId
-        ..operation = operation
-        ..payload = jsonEncode(payload)
-        ..retryCount = existing?.retryCount ?? 0
+        ..collectionName = normalizedCollection
+        ..documentId = normalizedDocumentId
+        ..operation = operation.trim().isEmpty ? 'update' : operation.trim()
+        ..payload = _encodePayload(payload)
+        ..retryCount = 0
+        ..maxRetries = existing?.maxRetries ?? defaultMaxRetryLimit
         ..createdAt = existing?.createdAt ?? DateTime.now()
-        ..lastAttemptAt = existing?.lastAttemptAt
+        ..lastAttemptAt = null
         ..isFailed = false;
 
       await _isarService.isar.writeTxn(() async {
@@ -53,14 +60,17 @@ class SyncQueueService {
     }
   }
 
-  /// Returns all pending queue items that have not failed.
-  Future<List<SyncQueue>> getAllPending() async {
+  /// Returns queue entries that are still eligible for retry.
+  Future<List<SyncQueue>> getPendingQueue() async {
     try {
-      return _isarService.syncQueues
+      final items = await _isarService.syncQueues
           .filter()
           .isFailedEqualTo(false)
           .sortByCreatedAt()
           .findAll();
+      return items
+          .where((item) => item.retryCount < item.maxRetries)
+          .toList(growable: false);
     } catch (error, stackTrace) {
       SyncLogger.instance.e(
         'Failed to load pending sync queue items',
@@ -68,12 +78,22 @@ class SyncQueueService {
         stackTrace: stackTrace,
         time: DateTime.now(),
       );
-      return <SyncQueue>[];
+      return const <SyncQueue>[];
     }
   }
 
+  /// Returns the count of pending queue entries.
+  Future<int> getPendingCount({String? collectionName}) async {
+    final pending = await getPendingQueue();
+    if (collectionName == null || collectionName.trim().isEmpty) {
+      return pending.length;
+    }
+    final normalized = collectionName.trim();
+    return pending.where((item) => item.collectionName == normalized).length;
+  }
+
   /// Deletes a processed queue item.
-  Future<void> markAsProcessed(Id id) async {
+  Future<void> markProcessed(Id id) async {
     try {
       await _isarService.isar.writeTxn(() async {
         await _isarService.syncQueues.delete(id);
@@ -88,7 +108,7 @@ class SyncQueueService {
     }
   }
 
-  /// Increments retry count and marks permanent failures after the max limit.
+  /// Increments retry count and marks permanent failures after the limit.
   Future<void> incrementRetry(Id id) async {
     try {
       final current = await _isarService.syncQueues.get(id);
@@ -97,7 +117,7 @@ class SyncQueueService {
       }
 
       final updatedRetryCount = current.retryCount + 1;
-      final shouldFail = updatedRetryCount >= maxRetryLimit;
+      final shouldFail = updatedRetryCount >= current.maxRetries;
       final updated = current.copyWith(
         retryCount: updatedRetryCount,
         lastAttemptAt: DateTime.now(),
@@ -110,7 +130,7 @@ class SyncQueueService {
 
       if (shouldFail) {
         SyncLogger.instance.w(
-          'Sync queue item ${current.documentId} reached max retries and was marked failed.',
+          'Sync queue item ${current.collectionName}/${current.documentId} reached max retries.',
           time: DateTime.now(),
         );
       }
@@ -124,14 +144,42 @@ class SyncQueueService {
     }
   }
 
-  /// Deletes failed or stale processed queue items older than [retention].
-  Future<void> deleteOldProcessed({
-    Duration retention = const Duration(days: 30),
+  /// Forces a queue item into a failed terminal state.
+  Future<void> markFailed(Id id) async {
+    try {
+      final current = await _isarService.syncQueues.get(id);
+      if (current == null) {
+        return;
+      }
+
+      await _isarService.isar.writeTxn(() async {
+        await _isarService.syncQueues.put(
+          current.copyWith(
+            retryCount: current.maxRetries,
+            isFailed: true,
+            lastAttemptAt: DateTime.now(),
+          ),
+        );
+      });
+    } catch (error, stackTrace) {
+      SyncLogger.instance.e(
+        'Failed to mark queue item as failed',
+        error: error,
+        stackTrace: stackTrace,
+        time: DateTime.now(),
+      );
+    }
+  }
+
+  /// Deletes failed items older than [retention].
+  Future<void> clearOldFailed({
+    Duration retention = const Duration(days: 7),
   }) async {
     try {
       final cutoff = DateTime.now().subtract(retention);
       final stale = await _isarService.syncQueues
           .filter()
+          .isFailedEqualTo(true)
           .createdAtLessThan(cutoff)
           .findAll();
       if (stale.isEmpty) {
@@ -139,16 +187,39 @@ class SyncQueueService {
       }
       await _isarService.isar.writeTxn(() async {
         await _isarService.syncQueues.deleteAll(
-          stale.map((item) => item.id).toList(),
+          stale.map((item) => item.id).toList(growable: false),
         );
       });
     } catch (error, stackTrace) {
       SyncLogger.instance.e(
-        'Failed to clean processed sync queue items',
+        'Failed to clean old failed sync queue items',
         error: error,
         stackTrace: stackTrace,
         time: DateTime.now(),
       );
     }
+  }
+
+  /// Compatibility alias for the legacy inventory pilot code path.
+  Future<List<SyncQueue>> getAllPending() => getPendingQueue();
+
+  /// Compatibility alias for the legacy inventory pilot code path.
+  Future<void> markAsProcessed(Id id) => markProcessed(id);
+
+  /// Compatibility alias for the legacy inventory pilot code path.
+  Future<void> deleteOldProcessed({
+    Duration retention = const Duration(days: 30),
+  }) async {
+    await clearOldFailed(retention: retention);
+  }
+
+  String _encodePayload(Object? payload) {
+    if (payload == null) {
+      return jsonEncode(const <String, dynamic>{});
+    }
+    if (payload is String) {
+      return payload;
+    }
+    return jsonEncode(payload);
   }
 }

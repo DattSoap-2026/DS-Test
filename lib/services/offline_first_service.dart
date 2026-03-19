@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import '../core/network/connectivity_service.dart';
+import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
 import '../data/local/base_entity.dart';
 import '../data/local/entities/sync_queue_entity.dart';
 import 'base_service.dart';
@@ -249,27 +252,41 @@ abstract class OfflineFirstService extends BaseService {
     final collection =
         collectionName ?? localStorageKey.replaceAll('local_', '');
     final payload = Map<String, dynamic>.from(data);
-    final queueId = OutboxCodec.buildQueueId(collection, payload);
+    final operation = _normalizeQueueOperation(action);
+    final now = getCurrentTimestamp();
+    final existingId = payload['id']?.toString().trim() ?? '';
+    final documentId = existingId.isNotEmpty
+        ? existingId
+        : (operation == 'delete' ? '' : generateId());
 
     try {
-      await enqueue(<String, dynamic>{
-        'queueId': queueId,
-        'action': action,
-        'collection': collection,
-        'data': payload,
-      });
-
-      if (!syncImmediately) return;
-
-      final firestore = db;
-      if (firestore == null) {
+      if (documentId.isEmpty) {
         return;
       }
 
-      await performSync(action, collection, payload);
-      await dequeue(queueId);
+      payload['id'] = documentId;
+      payload['updatedAt'] ??= now;
+      if (operation == 'delete') {
+        payload['isDeleted'] = true;
+        payload['deletedAt'] ??= now;
+      } else {
+        payload['isDeleted'] ??= false;
+      }
+
+      await SyncQueueService.instance.addToQueue(
+        collectionName: collection,
+        documentId: documentId,
+        operation: operation,
+        payload: payload,
+      );
+
+      if (!syncImmediately) return;
+
+      if (ConnectivityService.instance.isOnline) {
+        await SyncService.instance.syncAllPending();
+      }
     } catch (e) {
-      await _recordQueueFailure(queueId, e);
+      handleError(e, 'syncToFirebase');
     }
   }
 
@@ -281,72 +298,40 @@ abstract class OfflineFirstService extends BaseService {
   }) async {
     final collection =
         collectionName ?? localStorageKey.replaceAll('local_', '');
+    final operation = _normalizeQueueOperation(action);
 
     try {
-      final entities = <SyncQueueEntity>[];
-      final now = DateTime.now();
       for (final item in itemsList) {
         final payload = Map<String, dynamic>.from(item);
-        final queueId = OutboxCodec.buildQueueId(collection, payload);
-        final existing = await dbService.syncQueue.getById(queueId);
-        final existingMeta = existing == null
-            ? null
-            : OutboxCodec.decode(
-                existing.dataJson,
-                fallbackQueuedAt: existing.createdAt,
-              ).meta;
-        entities.add(
-          SyncQueueEntity()
-            ..id = queueId
-            ..collection = collection
-            ..action = action
-            ..dataJson = OutboxCodec.encodeEnvelope(
-              payload: payload,
-              existingMeta: existingMeta,
-              now: now,
-              resetRetryState: true,
-            )
-            ..createdAt = existing?.createdAt ?? now
-            ..updatedAt = now
-            ..syncStatus = SyncStatus.pending,
+        final existingId = payload['id']?.toString().trim() ?? '';
+        final documentId = existingId.isNotEmpty
+            ? existingId
+            : (operation == 'delete' ? '' : generateId());
+        if (documentId.isEmpty) {
+          continue;
+        }
+
+        payload['id'] = documentId;
+        payload['updatedAt'] ??= getCurrentTimestamp();
+        if (operation == 'delete') {
+          payload['isDeleted'] = true;
+          payload['deletedAt'] ??= getCurrentTimestamp();
+        } else {
+          payload['isDeleted'] ??= false;
+        }
+
+        await SyncQueueService.instance.addToQueue(
+          collectionName: collection,
+          documentId: documentId,
+          operation: operation,
+          payload: payload,
         );
       }
-      if (entities.isNotEmpty) {
-        await dbService.db.writeTxn(() async {
-          await dbService.syncQueue.putAll(entities);
-        });
+      if (ConnectivityService.instance.isOnline) {
+        await SyncService.instance.syncAllPending();
       }
     } catch (e) {
       handleError(e, 'bulkSyncToFirebase');
-    }
-  }
-
-  Future<void> _recordQueueFailure(String queueId, Object error) async {
-    try {
-      final existing = await dbService.syncQueue.getById(queueId);
-      if (existing == null) return;
-      final decoded = OutboxCodec.decode(
-        existing.dataJson,
-        fallbackQueuedAt: existing.createdAt,
-      );
-      final updatedMeta = OutboxCodec.markFailure(decoded.meta, error);
-      final wrapped = OutboxCodec.encodeEnvelope(
-        payload: decoded.payload,
-        existingMeta: updatedMeta,
-        now: DateTime.now(),
-        resetRetryState: false,
-      );
-      existing
-        ..dataJson = wrapped
-        ..updatedAt = DateTime.now()
-        ..syncStatus = OutboxCodec.isPermanentFailure(updatedMeta)
-            ? SyncStatus.conflict
-            : SyncStatus.pending;
-      await dbService.db.writeTxn(() async {
-        await dbService.syncQueue.put(existing);
-      });
-    } catch (_) {
-      // Preserve queue item as-is.
     }
   }
 
@@ -513,5 +498,19 @@ abstract class OfflineFirstService extends BaseService {
     }
     data['lastUpdatedAt'] = now;
     return data;
+  }
+
+  String _normalizeQueueOperation(String action) {
+    switch (action.trim().toLowerCase()) {
+      case 'add':
+      case 'create':
+        return 'create';
+      case 'delete':
+        return 'delete';
+      case 'set':
+      case 'update':
+      default:
+        return 'update';
+    }
   }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'offline_first_service.dart';
 import 'database_service.dart';
+import '../data/repositories/fleet_repository.dart';
+import '../data/repositories/route_repository.dart';
 import '../modules/accounting/posting_service.dart';
 import 'mixins/safe_voucher_posting_mixin.dart';
 
@@ -495,12 +497,16 @@ class VehicleIssue {
 class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVoucherPostingMixin {
   final DatabaseService _dbService;
   late final PostingService _postingService;
+  late final FleetRepository _fleetRepository;
+  late final RouteRepository _routeRepository;
 
   @override
   PostingService? get postingService => _postingService;
 
   VehiclesService(super.firebase) : _dbService = DatabaseService() {
     _postingService = PostingService(firebaseServices);
+    _fleetRepository = FleetRepository(_dbService);
+    _routeRepository = RouteRepository(_dbService);
   }
 
   @override
@@ -602,12 +608,7 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
       ..updatedAt = DateTime.now()
       ..syncStatus = SyncStatus.pending
       ..isDeleted = false;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.vehicles.put(entity);
-    });
-
-    await syncToFirebase('add', payload, collectionName: vehiclesCollection);
+    await _fleetRepository.saveVehicle(entity);
   }
 
   Future<void> updateVehicle(String id, Map<String, dynamic> data) async {
@@ -629,12 +630,7 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
       ..updatedAt = DateTime.now()
       ..syncStatus = SyncStatus.pending
       ..isDeleted = existing?.isDeleted ?? false;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.vehicles.put(entity);
-    });
-
-    await syncToFirebase('update', payload, collectionName: vehiclesCollection);
+    await _fleetRepository.saveVehicle(entity);
   }
 
   Future<void> recomputeMaintenanceAggregate({String? vehicleId}) async {
@@ -675,23 +671,13 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
         ? totalCost / vehicle.totalDistance
         : 0.0;
     final now = DateTime.now();
-    final nowIso = now.toIso8601String();
+    vehicle
+      ..totalMaintenanceCost = maintenanceTotal
+      ..costPerKm = recalculatedCostPerKm
+      ..updatedAt = now
+      ..syncStatus = SyncStatus.pending;
 
-    await _dbService.db.writeTxn(() async {
-      vehicle
-        ..totalMaintenanceCost = maintenanceTotal
-        ..costPerKm = recalculatedCostPerKm
-        ..updatedAt = now
-        ..syncStatus = SyncStatus.pending;
-      await _dbService.vehicles.put(vehicle);
-    });
-
-    await syncToFirebase('update', {
-      'id': vehicleId,
-      'totalMaintenanceCost': maintenanceTotal,
-      'costPerKm': recalculatedCostPerKm,
-      'updatedAt': nowIso,
-    }, collectionName: vehiclesCollection);
+    await _fleetRepository.saveVehicle(vehicle);
   }
 
   // Maintenance
@@ -850,18 +836,7 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
       ..updatedAt = DateTime.now()
       ..syncStatus = SyncStatus.pending
       ..isDeleted = false;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.maintenanceLogs.put(entity);
-    });
-
-    await _recomputeMaintenanceAggregateForVehicle(entity.vehicleId);
-
-    await syncToFirebase(
-      'add',
-      payload,
-      collectionName: maintenanceLogsCollection,
-    );
+    await _fleetRepository.saveMaintenanceLog(entity);
 
     // Auto-post maintenance voucher to accounting
     await _postMaintenanceVoucher(
@@ -922,13 +897,7 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
     if (cost.isNaN) {
       throw ArgumentError('Invalid maintenance cost');
     }
-    await _dbService.db.writeTxn(() async {
-      await _dbService.maintenanceLogs.filter().idEqualTo(id).deleteAll();
-    });
-    await _recomputeMaintenanceAggregateForVehicle(vehicleId);
-    await syncToFirebase('delete', {
-      'id': id,
-    }, collectionName: maintenanceLogsCollection);
+    await _fleetRepository.deleteMaintenanceLog(id);
   }
 
   // Tyres
@@ -1059,31 +1028,7 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
 
       await _applyTyreStockMovementsInTxn(log, updatedTyreStockById);
     });
-
-    // Prepare JSON for Sync
-    final json = {
-      'id': entity.id,
-      'vehicleId': log.vehicleId,
-      'vehicleNumber': log.vehicleNumber,
-      'installationDate': log.installationDate,
-      'reason': log.reason,
-      'totalCost': log.totalCost,
-      'items': log.items
-          .map(
-            (i) => {
-              'tyrePosition': i.tyrePosition,
-              'newTyreType': i.newTyreType,
-              'tyreItemId': i.tyreItemId,
-              'tyreBrand': i.tyreBrand,
-              'tyreNumber': i.tyreNumber,
-              'cost': i.cost,
-              //...
-            },
-          )
-          .toList(),
-    };
-
-    await syncToFirebase('add', json, collectionName: tyreLogsCollection);
+    await _fleetRepository.saveTyreLog(entity);
 
     for (final stock in updatedTyreStockById.values) {
       await _syncTyreStockEntity(stock);
@@ -1160,30 +1105,7 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
   }
 
   Future<void> _syncTyreStockEntity(TyreStockEntity entity) async {
-    await syncToFirebase(
-      'set',
-      _tyreStockEntityToJson(entity),
-      collectionName: tyreStockCollection,
-    );
-  }
-
-  Map<String, dynamic> _tyreStockEntityToJson(TyreStockEntity entity) {
-    return {
-      'id': entity.id,
-      'brand': entity.brand,
-      'size': entity.size,
-      'serialNumber': entity.serialNumber,
-      'type': entity.type,
-      'status': entity.status,
-      'vehicleNumber': entity.vehicleNumber,
-      'position': entity.position,
-      'notes': entity.notes,
-      'cost': entity.cost,
-      'purchaseDate': entity.purchaseDate?.toIso8601String(),
-      'createdAt': entity.createdAt,
-      'updatedAt': entity.updatedAt.toIso8601String(),
-      'isDeleted': entity.isDeleted,
-    };
+    await _fleetRepository.saveTyreStock(entity);
   }
 
   TyreStockItem _mapTyreStockEntityToModel(TyreStockEntity entity) {
@@ -1256,23 +1178,17 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
       throw Exception('Invalid tyre status');
     }
 
-    final now = DateTime.now();
-    await _dbService.db.writeTxn(() async {
-      existing
-        ..status = cleanStatus
-        ..vehicleNumber = (vehicleNumber ?? '').trim().isEmpty
-            ? null
-            : vehicleNumber!.trim()
-        ..position = (position ?? '').trim().isEmpty ? null : position!.trim()
-        ..notes = notes == null
-            ? existing.notes
-            : _mergeTyreNotes(existing.notes, notes)
-        ..updatedAt = now
-        ..syncStatus = SyncStatus.pending;
-      await _dbService.tyreStocks.put(existing);
-    });
+    existing
+      ..status = cleanStatus
+      ..vehicleNumber = (vehicleNumber ?? '').trim().isEmpty
+          ? null
+          : vehicleNumber!.trim()
+      ..position = (position ?? '').trim().isEmpty ? null : position!.trim()
+      ..notes = notes == null
+          ? existing.notes
+          : _mergeTyreNotes(existing.notes, notes);
 
-    await _syncTyreStockEntity(existing);
+    await _fleetRepository.saveTyreStock(existing);
   }
 
   Future<int> importTyresFromPurchase({
@@ -1285,7 +1201,6 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
 
     final now = DateTime.now();
     final entities = <TyreStockEntity>[];
-    final payloads = <Map<String, dynamic>>[];
 
     for (final source in tyres) {
       final brand = (source['brand']?.toString().trim() ?? '');
@@ -1328,17 +1243,12 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
         ..isDeleted = false;
 
       entities.add(entity);
-      payloads.add(_tyreStockEntityToJson(entity));
     }
 
     if (entities.isEmpty) return 0;
 
-    await _dbService.db.writeTxn(() async {
-      await _dbService.tyreStocks.putAll(entities);
-    });
-
-    for (final payload in payloads) {
-      await syncToFirebase('set', payload, collectionName: tyreStockCollection);
+    for (final entity in entities) {
+      await _fleetRepository.saveTyreStock(entity);
     }
 
     return entities.length;
@@ -1393,7 +1303,6 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
 
     final now = DateTime.now();
     final entities = <TyreStockEntity>[];
-    final payloads = <Map<String, dynamic>>[];
     final seenTyreNumbers = <String>{};
 
     for (final line in lines) {
@@ -1451,16 +1360,11 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
           ..isDeleted = false;
 
         entities.add(entity);
-        payloads.add(_tyreStockEntityToJson(entity));
       }
     }
 
-    await _dbService.db.writeTxn(() async {
-      await _dbService.tyreStocks.putAll(entities);
-    });
-
-    for (final payload in payloads) {
-      await syncToFirebase('set', payload, collectionName: tyreStockCollection);
+    for (final entity in entities) {
+      await _fleetRepository.saveTyreStock(entity);
     }
 
     return entities.length;
@@ -1749,12 +1653,7 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
           : now.toIso8601String()
       ..updatedAt = now
       ..syncStatus = SyncStatus.pending;
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.routes.put(entity);
-    });
-
-    await syncToFirebase('add', payload, collectionName: routesCollection);
+    await _routeRepository.saveRoute(entity);
   }
 
   Future<void> updateRoute(String id, Map<String, dynamic> data) async {
@@ -1787,28 +1686,12 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
 
       entity.updatedAt = DateTime.now();
       entity.syncStatus = SyncStatus.pending;
-
-      await _dbService.db.writeTxn(() async {
-        await _dbService.routes.put(entity);
-      });
+      await _routeRepository.saveRoute(entity);
     }
-
-    await syncToFirebase('update', payload, collectionName: routesCollection);
   }
 
   Future<void> deleteRoute(String id) async {
-    final entity = await _dbService.routes.filter().idEqualTo(id).findFirst();
-    if (entity != null) {
-      entity.isDeleted = true;
-      entity.syncStatus = SyncStatus.pending;
-      await _dbService.db.writeTxn(() async {
-        await _dbService.routes.put(entity);
-      });
-    }
-
-    await syncToFirebase('delete', {
-      'id': id,
-    }, collectionName: routesCollection);
+    await _routeRepository.deleteRoute(id);
   }
 
   Map<String, dynamic> _normalizeRouteMap(Map<String, dynamic> data) {
@@ -1915,8 +1798,6 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
         .findFirst();
 
     if (entity != null) {
-      final previousVehicleId = entity.vehicleId;
-
       if (data.containsKey('vehicleId')) {
         final vehicleId = data['vehicleId']?.toString().trim() ?? '';
         if (vehicleId.isNotEmpty) {
@@ -1992,22 +1873,8 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
       entity
         ..syncStatus = SyncStatus.pending
         ..updatedAt = DateTime.now();
-
-      await _dbService.db.writeTxn(() async {
-        await _dbService.maintenanceLogs.put(entity);
-      });
-
-      await _recomputeMaintenanceAggregateForVehicle(entity.vehicleId);
-      if (previousVehicleId != entity.vehicleId) {
-        await _recomputeMaintenanceAggregateForVehicle(previousVehicleId);
-      }
+      await _fleetRepository.saveMaintenanceLog(entity);
     }
-
-    // 2. Queue Sync
-    await syncToFirebase('update', {
-      'id': id,
-      ...data,
-    }, collectionName: maintenanceLogsCollection);
   }
 
   // --- Convenience Alias for getVehicles ---
@@ -2215,26 +2082,7 @@ class VehiclesService extends OfflineFirstService with ChangeNotifier, SafeVouch
       ..images = issue.images
       ..createdAt = DateTime.now().toIso8601String()
       ..updatedAt = DateTime.now();
-
-    await _dbService.db.writeTxn(() async {
-      await _dbService.vehicleIssues.put(entity);
-    });
-
-    final json = {
-      'id': entity.id,
-      'vehicleId': entity.vehicleId,
-      'vehicleNumber': entity.vehicleNumber,
-      'reportedBy': entity.reportedBy,
-      'reportedDate': entity.reportedDate.toIso8601String(),
-      'description': entity.description,
-      'priority': entity.priority,
-      'status': entity.status,
-      'images': entity.images,
-      'createdAt': entity.createdAt,
-      'updatedAt': entity.updatedAt.toIso8601String(),
-    };
-
-    await syncToFirebase('add', json, collectionName: vehicleIssuesCollection);
+    await _fleetRepository.saveVehicleIssue(entity);
     notifyListeners();
   }
 }

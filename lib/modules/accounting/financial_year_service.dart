@@ -1,9 +1,37 @@
+import 'dart:convert';
+
+import 'package:isar/isar.dart';
+
+import '../../core/firebase/firebase_config.dart';
+import '../../core/network/connectivity_service.dart';
+import '../../core/sync/collection_registry.dart';
+import '../../core/sync/sync_queue_service.dart';
+import '../../core/sync/sync_service.dart';
+import '../../core/utils/device_id_service.dart';
+import '../../data/local/entities/config_cache_entity.dart';
+import '../../services/database_service.dart';
 import '../../services/offline_first_service.dart';
 
-const String financialYearsCollection = 'financial_years';
+const String financialYearsCollection = CollectionRegistry.financialYears;
 
 class FinancialYearService extends OfflineFirstService {
-  FinancialYearService(super.firebase);
+  FinancialYearService(
+    FirebaseServices firebase, {
+    DatabaseService? dbService,
+    SyncQueueService? syncQueueService,
+    SyncService? syncService,
+    ConnectivityService? connectivityService,
+    DeviceIdService? deviceIdService,
+  }) : _syncQueueService = syncQueueService ?? SyncQueueService.instance,
+       _syncService = syncService ?? SyncService.instance,
+       _connectivityService = connectivityService ?? ConnectivityService.instance,
+       _deviceIdService = deviceIdService ?? DeviceIdService.instance,
+       super(firebase, dbService);
+
+  final SyncQueueService _syncQueueService;
+  final SyncService _syncService;
+  final ConnectivityService _connectivityService;
+  final DeviceIdService _deviceIdService;
 
   @override
   String get localStorageKey => 'local_financial_years';
@@ -28,21 +56,19 @@ class FinancialYearService extends OfflineFirstService {
 
   Future<List<Map<String, dynamic>>> getFinancialYears() async {
     try {
-      var local = await loadFromLocal();
-      if (local.isEmpty) {
-        local = await bootstrapFromFirebase(
-          collectionName: financialYearsCollection,
-        );
-        if (local.isNotEmpty) {
-          await saveToLocal(local);
-        }
-      }
-
-      local.sort(
+      final cacheEntries = await dbService.configCache
+          .filter()
+          .collectionNameEqualTo(financialYearsCollection)
+          .findAll();
+      final years = cacheEntries
+          .map(_decodeCachePayload)
+          .where((payload) => payload.isNotEmpty)
+          .toList(growable: true);
+      years.sort(
         (a, b) =>
             (a['id'] ?? '').toString().compareTo((b['id'] ?? '').toString()),
       );
-      return local;
+      return years;
     } catch (e) {
       handleError(e, 'getFinancialYears');
       return [];
@@ -71,26 +97,18 @@ class FinancialYearService extends OfflineFirstService {
       if (createdBy != null && createdBy.isNotEmpty) 'createdBy': createdBy,
     };
 
-    final years = await getFinancialYears();
-    years.add(payload);
-    await saveToLocal(years);
-    await syncToFirebase(
-      'set',
-      payload,
-      collectionName: financialYearsCollection,
-      syncImmediately: false,
-    );
+    await _saveFinancialYearPayload(payload, operation: 'create');
     return payload;
   }
 
   Future<Map<String, dynamic>?> getFinancialYear(String financialYearId) async {
-    final years = await getFinancialYears();
-    for (final year in years) {
-      if ((year['id'] ?? '').toString() == financialYearId) {
-        return Map<String, dynamic>.from(year);
-      }
+    final configKey = _configKey(financialYearId);
+    final entry = await dbService.configCache.getByConfigKey(configKey);
+    if (entry == null) {
+      return null;
     }
-    return null;
+    final payload = _decodeCachePayload(entry);
+    return payload.isEmpty ? null : payload;
   }
 
   Future<bool> isDateLocked(DateTime date) async {
@@ -124,20 +142,62 @@ class FinancialYearService extends OfflineFirstService {
       if (isLocked) 'lockedAt': now,
     };
 
-    final years = await getFinancialYears();
-    final index = years.indexWhere((item) => item['id'] == financialYearId);
-    if (index >= 0) {
-      years[index] = {...years[index], ...updated};
-    } else {
-      years.add(updated);
+    await _saveFinancialYearPayload(updated, operation: 'update');
+  }
+
+  Future<void> _saveFinancialYearPayload(
+    Map<String, dynamic> payload, {
+    required String operation,
+  }) async {
+    final documentId = (payload['id'] ?? '').toString().trim();
+    if (documentId.isEmpty) {
+      throw ArgumentError('Financial year id is required');
     }
 
-    await saveToLocal(years);
-    await syncToFirebase(
-      'set',
-      updated,
+    final configKey = _configKey(documentId);
+    final existing = await dbService.configCache.getByConfigKey(configKey);
+    final now = DateTime.now();
+    final entity = ConfigCacheEntity()
+      ..isarId = existing?.isarId ?? 0
+      ..configKey = configKey
+      ..collectionName = financialYearsCollection
+      ..documentId = documentId
+      ..payloadJson = jsonEncode(payload)
+      ..version = existing == null ? 1 : existing.version + 1
+      ..lastModified = now
+      ..lastSynced = null
+      ..isSynced = false
+      ..deviceId = await _deviceIdService.getDeviceId();
+
+    await dbService.db.writeTxn(() async {
+      await dbService.configCache.put(entity);
+    });
+
+    await _syncQueueService.addToQueue(
       collectionName: financialYearsCollection,
-      syncImmediately: false,
+      documentId: documentId,
+      operation: existing == null ? operation : 'update',
+      payload: payload,
     );
+
+    if (_connectivityService.isOnline) {
+      await _syncService.syncAllPending();
+    }
+  }
+
+  String _configKey(String documentId) {
+    return '$financialYearsCollection/$documentId';
+  }
+
+  Map<String, dynamic> _decodeCachePayload(ConfigCacheEntity entry) {
+    try {
+      final decoded = jsonDecode(entry.payloadJson);
+      if (decoded is Map) {
+        return decoded.map((key, value) => MapEntry(key.toString(), value));
+      }
+    } catch (e) {
+      handleError(e, '_decodeCachePayload');
+    }
+    return <String, dynamic>{};
   }
 }

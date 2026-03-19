@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'diesel_log_entity.g.dart';
 
@@ -43,7 +44,7 @@ class DieselLogEntity extends BaseEntity {
   double? distance;
   String? notes;
 
-  Map<String, dynamic> toFirebaseJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'vehicleId': vehicleId,
@@ -55,38 +56,91 @@ class DieselLogEntity extends BaseEntity {
       'totalCost': totalCost,
       'odometerReading': odometerReading,
       'tankFull': tankFull,
+      'journeyFrom': journeyFrom,
+      'journeyTo': journeyTo,
       'cycleDistance': cycleDistance,
       'cycleFuelUsed': cycleFuelUsed,
       'cycleEfficiency': cycleEfficiency,
+      'penaltyAmount': penaltyAmount,
       'status': status,
+      'penaltyOverridden': penaltyOverridden,
+      'overrideReason': overrideReason,
+      'overriddenBy': overriddenBy,
+      'originalPenaltyAmount': originalPenaltyAmount,
+      'createdBy': createdBy,
       'createdAt': createdAt,
+      'distance': distance,
+      'notes': notes,
       'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
     };
   }
 
-  static DieselLogEntity fromFirebaseJson(Map<String, dynamic> json) {
+  Map<String, dynamic> toFirebaseJson() {
+    return toJson();
+  }
+
+  static DieselLogEntity fromJson(Map<String, dynamic> json) {
     return DieselLogEntity()
-      ..id = json['id'] as String
-      ..vehicleId = json['vehicleId'] as String
-      ..vehicleNumber = json['vehicleNumber'] as String
-      ..driverName = json['driverName'] as String?
-      ..fillDate = DateTime.parse(json['fillDate'] as String)
-      ..liters = (json['liters'] as num).toDouble()
-      ..rate = (json['rate'] as num).toDouble()
-      ..totalCost = (json['totalCost'] as num).toDouble()
-      ..odometerReading = (json['odometerReading'] as num).toDouble()
-      ..tankFull = json['tankFull'] as bool? ?? false
-      ..cycleDistance = (json['cycleDistance'] as num?)?.toDouble()
-      ..cycleFuelUsed = (json['cycleFuelUsed'] as num?)?.toDouble()
-      ..cycleEfficiency = (json['cycleEfficiency'] as num?)?.toDouble()
-      ..status = json['status'] as String?
-      ..createdAt =
-          json['createdAt'] as String? ?? DateTime.now().toIso8601String()
-      ..updatedAt = DateTime.tryParse(
-            (json['updatedAt'] ?? json['createdAt'] ?? '').toString(),
-          ) ??
-          DateTime.now()
+      ..id = parseString(json['id'])
+      ..vehicleId = parseString(json['vehicleId'])
+      ..vehicleNumber = parseString(json['vehicleNumber'])
+      ..driverName = json['driverName']?.toString()
+      ..fillDate = parseDate(json['fillDate'])
+      ..liters = parseDouble(json['liters'])
+      ..rate = parseDouble(json['rate'])
+      ..totalCost = parseDouble(json['totalCost'])
+      ..odometerReading = parseDouble(json['odometerReading'])
+      ..tankFull = parseBool(json['tankFull'])
+      ..journeyFrom = json['journeyFrom']?.toString()
+      ..journeyTo = json['journeyTo']?.toString()
+      ..cycleDistance = json['cycleDistance'] == null
+          ? null
+          : parseDouble(json['cycleDistance'])
+      ..cycleFuelUsed = json['cycleFuelUsed'] == null
+          ? null
+          : parseDouble(json['cycleFuelUsed'])
+      ..cycleEfficiency = json['cycleEfficiency'] == null
+          ? null
+          : parseDouble(json['cycleEfficiency'])
+      ..penaltyAmount = json['penaltyAmount'] == null
+          ? null
+          : parseDouble(json['penaltyAmount'])
+      ..status = json['status']?.toString()
+      ..penaltyOverridden = parseBool(json['penaltyOverridden'])
+      ..overrideReason = json['overrideReason']?.toString()
+      ..overriddenBy = json['overriddenBy']?.toString()
+      ..originalPenaltyAmount = json['originalPenaltyAmount'] == null
+          ? null
+          : parseDouble(json['originalPenaltyAmount'])
+      ..createdBy = json['createdBy']?.toString()
+      ..createdAt = parseString(
+        json['createdAt'],
+        fallback: DateTime.now().toIso8601String(),
+      )
+      ..distance = json['distance'] == null ? null : parseDouble(json['distance'])
+      ..notes = json['notes']?.toString()
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
+  }
+
+  static DieselLogEntity fromFirebaseJson(Map<String, dynamic> json) {
+    return DieselLogEntity.fromJson(json)
       ..syncStatus = SyncStatus.synced
+      ..isSynced = true
       ..isDeleted = false;
   }
 }

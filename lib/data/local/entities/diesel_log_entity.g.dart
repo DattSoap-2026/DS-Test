@@ -47,121 +47,141 @@ const DieselLogEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'distance': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 6,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'distance': PropertySchema(
+      id: 7,
       name: r'distance',
       type: IsarType.double,
     ),
     r'driverName': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'driverName',
       type: IsarType.string,
     ),
     r'fillDate': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'fillDate',
       type: IsarType.dateTime,
     ),
     r'id': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 12,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
     r'journeyFrom': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'journeyFrom',
       type: IsarType.string,
     ),
     r'journeyTo': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'journeyTo',
       type: IsarType.string,
     ),
+    r'lastSynced': PropertySchema(
+      id: 15,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'liters': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'liters',
       type: IsarType.double,
     ),
     r'notes': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'notes',
       type: IsarType.string,
     ),
     r'odometerReading': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'odometerReading',
       type: IsarType.double,
     ),
     r'originalPenaltyAmount': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'originalPenaltyAmount',
       type: IsarType.double,
     ),
     r'overriddenBy': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'overriddenBy',
       type: IsarType.string,
     ),
     r'overrideReason': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'overrideReason',
       type: IsarType.string,
     ),
     r'penaltyAmount': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'penaltyAmount',
       type: IsarType.double,
     ),
     r'penaltyOverridden': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'penaltyOverridden',
       type: IsarType.bool,
     ),
     r'rate': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'rate',
       type: IsarType.double,
     ),
     r'status': PropertySchema(
-      id: 22,
+      id: 25,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 23,
+      id: 26,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _DieselLogEntitysyncStatusEnumValueMap,
     ),
     r'tankFull': PropertySchema(
-      id: 24,
+      id: 27,
       name: r'tankFull',
       type: IsarType.bool,
     ),
     r'totalCost': PropertySchema(
-      id: 25,
+      id: 28,
       name: r'totalCost',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 26,
+      id: 29,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'vehicleId': PropertySchema(
-      id: 27,
+      id: 30,
       name: r'vehicleId',
       type: IsarType.string,
     ),
     r'vehicleNumber': PropertySchema(
-      id: 28,
+      id: 31,
       name: r'vehicleNumber',
       type: IsarType.string,
+    ),
+    r'version': PropertySchema(
+      id: 32,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _dieselLogEntityEstimateSize,
@@ -231,6 +251,7 @@ int _dieselLogEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.driverName;
     if (value != null) {
@@ -291,29 +312,33 @@ void _dieselLogEntitySerialize(
   writer.writeDouble(offsets[3], object.cycleEfficiency);
   writer.writeDouble(offsets[4], object.cycleFuelUsed);
   writer.writeDateTime(offsets[5], object.deletedAt);
-  writer.writeDouble(offsets[6], object.distance);
-  writer.writeString(offsets[7], object.driverName);
-  writer.writeDateTime(offsets[8], object.fillDate);
-  writer.writeString(offsets[9], object.id);
-  writer.writeBool(offsets[10], object.isDeleted);
-  writer.writeString(offsets[11], object.journeyFrom);
-  writer.writeString(offsets[12], object.journeyTo);
-  writer.writeDouble(offsets[13], object.liters);
-  writer.writeString(offsets[14], object.notes);
-  writer.writeDouble(offsets[15], object.odometerReading);
-  writer.writeDouble(offsets[16], object.originalPenaltyAmount);
-  writer.writeString(offsets[17], object.overriddenBy);
-  writer.writeString(offsets[18], object.overrideReason);
-  writer.writeDouble(offsets[19], object.penaltyAmount);
-  writer.writeBool(offsets[20], object.penaltyOverridden);
-  writer.writeDouble(offsets[21], object.rate);
-  writer.writeString(offsets[22], object.status);
-  writer.writeByte(offsets[23], object.syncStatus.index);
-  writer.writeBool(offsets[24], object.tankFull);
-  writer.writeDouble(offsets[25], object.totalCost);
-  writer.writeDateTime(offsets[26], object.updatedAt);
-  writer.writeString(offsets[27], object.vehicleId);
-  writer.writeString(offsets[28], object.vehicleNumber);
+  writer.writeString(offsets[6], object.deviceId);
+  writer.writeDouble(offsets[7], object.distance);
+  writer.writeString(offsets[8], object.driverName);
+  writer.writeDateTime(offsets[9], object.fillDate);
+  writer.writeString(offsets[10], object.id);
+  writer.writeBool(offsets[11], object.isDeleted);
+  writer.writeBool(offsets[12], object.isSynced);
+  writer.writeString(offsets[13], object.journeyFrom);
+  writer.writeString(offsets[14], object.journeyTo);
+  writer.writeDateTime(offsets[15], object.lastSynced);
+  writer.writeDouble(offsets[16], object.liters);
+  writer.writeString(offsets[17], object.notes);
+  writer.writeDouble(offsets[18], object.odometerReading);
+  writer.writeDouble(offsets[19], object.originalPenaltyAmount);
+  writer.writeString(offsets[20], object.overriddenBy);
+  writer.writeString(offsets[21], object.overrideReason);
+  writer.writeDouble(offsets[22], object.penaltyAmount);
+  writer.writeBool(offsets[23], object.penaltyOverridden);
+  writer.writeDouble(offsets[24], object.rate);
+  writer.writeString(offsets[25], object.status);
+  writer.writeByte(offsets[26], object.syncStatus.index);
+  writer.writeBool(offsets[27], object.tankFull);
+  writer.writeDouble(offsets[28], object.totalCost);
+  writer.writeDateTime(offsets[29], object.updatedAt);
+  writer.writeString(offsets[30], object.vehicleId);
+  writer.writeString(offsets[31], object.vehicleNumber);
+  writer.writeLong(offsets[32], object.version);
 }
 
 DieselLogEntity _dieselLogEntityDeserialize(
@@ -329,31 +354,35 @@ DieselLogEntity _dieselLogEntityDeserialize(
   object.cycleEfficiency = reader.readDoubleOrNull(offsets[3]);
   object.cycleFuelUsed = reader.readDoubleOrNull(offsets[4]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[5]);
-  object.distance = reader.readDoubleOrNull(offsets[6]);
-  object.driverName = reader.readStringOrNull(offsets[7]);
-  object.fillDate = reader.readDateTime(offsets[8]);
-  object.id = reader.readString(offsets[9]);
-  object.isDeleted = reader.readBool(offsets[10]);
-  object.journeyFrom = reader.readStringOrNull(offsets[11]);
-  object.journeyTo = reader.readStringOrNull(offsets[12]);
-  object.liters = reader.readDouble(offsets[13]);
-  object.notes = reader.readStringOrNull(offsets[14]);
-  object.odometerReading = reader.readDouble(offsets[15]);
-  object.originalPenaltyAmount = reader.readDoubleOrNull(offsets[16]);
-  object.overriddenBy = reader.readStringOrNull(offsets[17]);
-  object.overrideReason = reader.readStringOrNull(offsets[18]);
-  object.penaltyAmount = reader.readDoubleOrNull(offsets[19]);
-  object.penaltyOverridden = reader.readBool(offsets[20]);
-  object.rate = reader.readDouble(offsets[21]);
-  object.status = reader.readStringOrNull(offsets[22]);
+  object.deviceId = reader.readString(offsets[6]);
+  object.distance = reader.readDoubleOrNull(offsets[7]);
+  object.driverName = reader.readStringOrNull(offsets[8]);
+  object.fillDate = reader.readDateTime(offsets[9]);
+  object.id = reader.readString(offsets[10]);
+  object.isDeleted = reader.readBool(offsets[11]);
+  object.isSynced = reader.readBool(offsets[12]);
+  object.journeyFrom = reader.readStringOrNull(offsets[13]);
+  object.journeyTo = reader.readStringOrNull(offsets[14]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[15]);
+  object.liters = reader.readDouble(offsets[16]);
+  object.notes = reader.readStringOrNull(offsets[17]);
+  object.odometerReading = reader.readDouble(offsets[18]);
+  object.originalPenaltyAmount = reader.readDoubleOrNull(offsets[19]);
+  object.overriddenBy = reader.readStringOrNull(offsets[20]);
+  object.overrideReason = reader.readStringOrNull(offsets[21]);
+  object.penaltyAmount = reader.readDoubleOrNull(offsets[22]);
+  object.penaltyOverridden = reader.readBool(offsets[23]);
+  object.rate = reader.readDouble(offsets[24]);
+  object.status = reader.readStringOrNull(offsets[25]);
   object.syncStatus = _DieselLogEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[23])] ??
+          reader.readByteOrNull(offsets[26])] ??
       SyncStatus.pending;
-  object.tankFull = reader.readBool(offsets[24]);
-  object.totalCost = reader.readDouble(offsets[25]);
-  object.updatedAt = reader.readDateTime(offsets[26]);
-  object.vehicleId = reader.readString(offsets[27]);
-  object.vehicleNumber = reader.readString(offsets[28]);
+  object.tankFull = reader.readBool(offsets[27]);
+  object.totalCost = reader.readDouble(offsets[28]);
+  object.updatedAt = reader.readDateTime(offsets[29]);
+  object.vehicleId = reader.readString(offsets[30]);
+  object.vehicleNumber = reader.readString(offsets[31]);
+  object.version = reader.readLong(offsets[32]);
   return object;
 }
 
@@ -377,53 +406,61 @@ P _dieselLogEntityDeserializeProp<P>(
     case 5:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 6:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 7:
-      return (reader.readStringOrNull(offset)) as P;
-    case 8:
-      return (reader.readDateTime(offset)) as P;
-    case 9:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 8:
+      return (reader.readStringOrNull(offset)) as P;
+    case 9:
+      return (reader.readDateTime(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 13:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
       return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 16:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 17:
       return (reader.readStringOrNull(offset)) as P;
     case 18:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 19:
       return (reader.readDoubleOrNull(offset)) as P;
     case 20:
-      return (reader.readBool(offset)) as P;
-    case 21:
-      return (reader.readDouble(offset)) as P;
-    case 22:
       return (reader.readStringOrNull(offset)) as P;
+    case 21:
+      return (reader.readStringOrNull(offset)) as P;
+    case 22:
+      return (reader.readDoubleOrNull(offset)) as P;
     case 23:
+      return (reader.readBool(offset)) as P;
+    case 24:
+      return (reader.readDouble(offset)) as P;
+    case 25:
+      return (reader.readStringOrNull(offset)) as P;
+    case 26:
       return (_DieselLogEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 24:
-      return (reader.readBool(offset)) as P;
-    case 25:
-      return (reader.readDouble(offset)) as P;
-    case 26:
-      return (reader.readDateTime(offset)) as P;
     case 27:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 28:
+      return (reader.readDouble(offset)) as P;
+    case 29:
+      return (reader.readDateTime(offset)) as P;
+    case 30:
       return (reader.readString(offset)) as P;
+    case 31:
+      return (reader.readString(offset)) as P;
+    case 32:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1396,6 +1433,142 @@ extension DieselLogEntityQueryFilter
   }
 
   QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
       distanceIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1836,6 +2009,16 @@ extension DieselLogEntityQueryFilter
   }
 
   QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2195,6 +2378,80 @@ extension DieselLogEntityQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'journeyTo',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -3650,6 +3907,62 @@ extension DieselLogEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension DieselLogEntityQueryObject
@@ -3745,6 +4058,20 @@ extension DieselLogEntityQuerySortBy
   }
 
   QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
       sortByDistance() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'distance', Sort.asc);
@@ -3813,6 +4140,20 @@ extension DieselLogEntityQuerySortBy
   }
 
   QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
       sortByJourneyFrom() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'journeyFrom', Sort.asc);
@@ -3837,6 +4178,20 @@ extension DieselLogEntityQuerySortBy
       sortByJourneyToDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'journeyTo', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -4059,6 +4414,19 @@ extension DieselLogEntityQuerySortBy
       return query.addSortBy(r'vehicleNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension DieselLogEntityQuerySortThenBy
@@ -4148,6 +4516,20 @@ extension DieselLogEntityQuerySortThenBy
   }
 
   QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
       thenByDistance() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'distance', Sort.asc);
@@ -4215,6 +4597,20 @@ extension DieselLogEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -4253,6 +4649,20 @@ extension DieselLogEntityQuerySortThenBy
       thenByJourneyToDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'journeyTo', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -4475,6 +4885,19 @@ extension DieselLogEntityQuerySortThenBy
       return query.addSortBy(r'vehicleNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension DieselLogEntityQueryWhereDistinct
@@ -4521,6 +4944,13 @@ extension DieselLogEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<DieselLogEntity, DieselLogEntity, QDistinct>
       distinctByDistance() {
     return QueryBuilder.apply(this, (query) {
@@ -4557,6 +4987,13 @@ extension DieselLogEntityQueryWhereDistinct
   }
 
   QueryBuilder<DieselLogEntity, DieselLogEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QDistinct>
       distinctByJourneyFrom({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'journeyFrom', caseSensitive: caseSensitive);
@@ -4567,6 +5004,13 @@ extension DieselLogEntityQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'journeyTo', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -4681,6 +5125,13 @@ extension DieselLogEntityQueryWhereDistinct
           caseSensitive: caseSensitive);
     });
   }
+
+  QueryBuilder<DieselLogEntity, DieselLogEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension DieselLogEntityQueryProperty
@@ -4731,6 +5182,12 @@ extension DieselLogEntityQueryProperty
     });
   }
 
+  QueryBuilder<DieselLogEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<DieselLogEntity, double?, QQueryOperations> distanceProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'distance');
@@ -4762,6 +5219,12 @@ extension DieselLogEntityQueryProperty
     });
   }
 
+  QueryBuilder<DieselLogEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
   QueryBuilder<DieselLogEntity, String?, QQueryOperations>
       journeyFromProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -4772,6 +5235,13 @@ extension DieselLogEntityQueryProperty
   QueryBuilder<DieselLogEntity, String?, QQueryOperations> journeyToProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'journeyTo');
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -4877,6 +5347,12 @@ extension DieselLogEntityQueryProperty
       vehicleNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'vehicleNumber');
+    });
+  }
+
+  QueryBuilder<DieselLogEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

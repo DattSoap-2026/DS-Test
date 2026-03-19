@@ -38,71 +38,91 @@ const PayrollRecordEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'employeeId': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 4,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'employeeId': PropertySchema(
+      id: 5,
       name: r'employeeId',
       type: IsarType.string,
     ),
     r'generatedAt': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'generatedAt',
       type: IsarType.dateTime,
     ),
     r'id': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 9,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 10,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'month': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'month',
       type: IsarType.string,
     ),
     r'netSalary': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'netSalary',
       type: IsarType.double,
     ),
     r'paidAt': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'paidAt',
       type: IsarType.dateTime,
     ),
     r'paymentReference': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'paymentReference',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _PayrollRecordEntitysyncStatusEnumValueMap,
     ),
     r'totalHours': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'totalHours',
       type: IsarType.double,
     ),
     r'totalOvertimeHours': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'totalOvertimeHours',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 20,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _payrollRecordEntityEstimateSize,
@@ -178,6 +198,7 @@ int _payrollRecordEntityEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.employeeId.length * 3;
   bytesCount += 3 + object.id.length * 3;
   bytesCount += 3 + object.month.length * 3;
@@ -201,19 +222,23 @@ void _payrollRecordEntitySerialize(
   writer.writeDouble(offsets[1], object.bonuses);
   writer.writeDouble(offsets[2], object.deductions);
   writer.writeDateTime(offsets[3], object.deletedAt);
-  writer.writeString(offsets[4], object.employeeId);
-  writer.writeDateTime(offsets[5], object.generatedAt);
-  writer.writeString(offsets[6], object.id);
-  writer.writeBool(offsets[7], object.isDeleted);
-  writer.writeString(offsets[8], object.month);
-  writer.writeDouble(offsets[9], object.netSalary);
-  writer.writeDateTime(offsets[10], object.paidAt);
-  writer.writeString(offsets[11], object.paymentReference);
-  writer.writeString(offsets[12], object.status);
-  writer.writeByte(offsets[13], object.syncStatus.index);
-  writer.writeDouble(offsets[14], object.totalHours);
-  writer.writeDouble(offsets[15], object.totalOvertimeHours);
-  writer.writeDateTime(offsets[16], object.updatedAt);
+  writer.writeString(offsets[4], object.deviceId);
+  writer.writeString(offsets[5], object.employeeId);
+  writer.writeDateTime(offsets[6], object.generatedAt);
+  writer.writeString(offsets[7], object.id);
+  writer.writeBool(offsets[8], object.isDeleted);
+  writer.writeBool(offsets[9], object.isSynced);
+  writer.writeDateTime(offsets[10], object.lastSynced);
+  writer.writeString(offsets[11], object.month);
+  writer.writeDouble(offsets[12], object.netSalary);
+  writer.writeDateTime(offsets[13], object.paidAt);
+  writer.writeString(offsets[14], object.paymentReference);
+  writer.writeString(offsets[15], object.status);
+  writer.writeByte(offsets[16], object.syncStatus.index);
+  writer.writeDouble(offsets[17], object.totalHours);
+  writer.writeDouble(offsets[18], object.totalOvertimeHours);
+  writer.writeDateTime(offsets[19], object.updatedAt);
+  writer.writeLong(offsets[20], object.version);
 }
 
 PayrollRecordEntity _payrollRecordEntityDeserialize(
@@ -227,21 +252,25 @@ PayrollRecordEntity _payrollRecordEntityDeserialize(
   object.bonuses = reader.readDouble(offsets[1]);
   object.deductions = reader.readDouble(offsets[2]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[3]);
-  object.employeeId = reader.readString(offsets[4]);
-  object.generatedAt = reader.readDateTime(offsets[5]);
-  object.id = reader.readString(offsets[6]);
-  object.isDeleted = reader.readBool(offsets[7]);
-  object.month = reader.readString(offsets[8]);
-  object.netSalary = reader.readDouble(offsets[9]);
-  object.paidAt = reader.readDateTimeOrNull(offsets[10]);
-  object.paymentReference = reader.readStringOrNull(offsets[11]);
-  object.status = reader.readString(offsets[12]);
+  object.deviceId = reader.readString(offsets[4]);
+  object.employeeId = reader.readString(offsets[5]);
+  object.generatedAt = reader.readDateTime(offsets[6]);
+  object.id = reader.readString(offsets[7]);
+  object.isDeleted = reader.readBool(offsets[8]);
+  object.isSynced = reader.readBool(offsets[9]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[10]);
+  object.month = reader.readString(offsets[11]);
+  object.netSalary = reader.readDouble(offsets[12]);
+  object.paidAt = reader.readDateTimeOrNull(offsets[13]);
+  object.paymentReference = reader.readStringOrNull(offsets[14]);
+  object.status = reader.readString(offsets[15]);
   object.syncStatus = _PayrollRecordEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[13])] ??
+          reader.readByteOrNull(offsets[16])] ??
       SyncStatus.pending;
-  object.totalHours = reader.readDouble(offsets[14]);
-  object.totalOvertimeHours = reader.readDouble(offsets[15]);
-  object.updatedAt = reader.readDateTime(offsets[16]);
+  object.totalHours = reader.readDouble(offsets[17]);
+  object.totalOvertimeHours = reader.readDouble(offsets[18]);
+  object.updatedAt = reader.readDateTime(offsets[19]);
+  object.version = reader.readLong(offsets[20]);
   return object;
 }
 
@@ -263,31 +292,39 @@ P _payrollRecordEntityDeserializeProp<P>(
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
-    case 8:
       return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 10:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
-    case 12:
       return (reader.readString(offset)) as P;
+    case 12:
+      return (reader.readDouble(offset)) as P;
     case 13:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
+      return (reader.readString(offset)) as P;
+    case 16:
       return (_PayrollRecordEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 14:
+    case 17:
       return (reader.readDouble(offset)) as P;
-    case 15:
+    case 18:
       return (reader.readDouble(offset)) as P;
-    case 16:
+    case 19:
       return (reader.readDateTime(offset)) as P;
+    case 20:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -907,6 +944,142 @@ extension PayrollRecordEntityQueryFilter on QueryBuilder<PayrollRecordEntity,
   }
 
   QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
       employeeIdEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1245,6 +1418,16 @@ extension PayrollRecordEntityQueryFilter on QueryBuilder<PayrollRecordEntity,
   }
 
   QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1292,6 +1475,80 @@ extension PayrollRecordEntityQueryFilter on QueryBuilder<PayrollRecordEntity,
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -2109,6 +2366,62 @@ extension PayrollRecordEntityQueryFilter on QueryBuilder<PayrollRecordEntity,
       ));
     });
   }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension PayrollRecordEntityQueryObject on QueryBuilder<PayrollRecordEntity,
@@ -2176,6 +2489,20 @@ extension PayrollRecordEntityQuerySortBy
   }
 
   QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
       sortByEmployeeId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'employeeId', Sort.asc);
@@ -2228,6 +2555,34 @@ extension PayrollRecordEntityQuerySortBy
       sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2356,6 +2711,20 @@ extension PayrollRecordEntityQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension PayrollRecordEntityQuerySortThenBy
@@ -2417,6 +2786,20 @@ extension PayrollRecordEntityQuerySortThenBy
   }
 
   QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
       thenByEmployeeId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'employeeId', Sort.asc);
@@ -2473,6 +2856,20 @@ extension PayrollRecordEntityQuerySortThenBy
   }
 
   QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -2483,6 +2880,20 @@ extension PayrollRecordEntityQuerySortThenBy
       thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2611,6 +3022,20 @@ extension PayrollRecordEntityQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension PayrollRecordEntityQueryWhereDistinct
@@ -2644,6 +3069,13 @@ extension PayrollRecordEntityQueryWhereDistinct
   }
 
   QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QDistinct>
       distinctByEmployeeId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'employeeId', caseSensitive: caseSensitive);
@@ -2668,6 +3100,20 @@ extension PayrollRecordEntityQueryWhereDistinct
       distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -2734,6 +3180,13 @@ extension PayrollRecordEntityQueryWhereDistinct
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<PayrollRecordEntity, PayrollRecordEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension PayrollRecordEntityQueryProperty
@@ -2773,6 +3226,13 @@ extension PayrollRecordEntityQueryProperty
   }
 
   QueryBuilder<PayrollRecordEntity, String, QQueryOperations>
+      deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, String, QQueryOperations>
       employeeIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'employeeId');
@@ -2796,6 +3256,19 @@ extension PayrollRecordEntityQueryProperty
       isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -2857,6 +3330,12 @@ extension PayrollRecordEntityQueryProperty
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<PayrollRecordEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

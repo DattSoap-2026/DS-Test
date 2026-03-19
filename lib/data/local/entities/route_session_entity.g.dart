@@ -38,86 +38,106 @@ const RouteSessionEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'endTime': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 4,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'endTime': PropertySchema(
+      id: 5,
       name: r'endTime',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 8,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 9,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'plannedStops': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'plannedStops',
       type: IsarType.long,
     ),
     r'routeId': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'routeId',
       type: IsarType.string,
     ),
     r'routeName': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'routeName',
       type: IsarType.string,
     ),
     r'salesmanId': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'salesmanId',
       type: IsarType.string,
     ),
     r'salesmanName': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'salesmanName',
       type: IsarType.string,
     ),
     r'skippedStops': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'skippedStops',
       type: IsarType.long,
     ),
     r'startTime': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'startTime',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _RouteSessionEntitysyncStatusEnumValueMap,
     ),
     r'totalCollection': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'totalCollection',
       type: IsarType.double,
     ),
     r'totalDistance': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'totalDistance',
       type: IsarType.double,
     ),
     r'totalSales': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'totalSales',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 23,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _routeSessionEntityEstimateSize,
@@ -208,6 +228,7 @@ int _routeSessionEntityEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.createdAt.length * 3;
   bytesCount += 3 + object.date.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.endTime;
     if (value != null) {
@@ -234,22 +255,26 @@ void _routeSessionEntitySerialize(
   writer.writeString(offsets[1], object.createdAt);
   writer.writeString(offsets[2], object.date);
   writer.writeDateTime(offsets[3], object.deletedAt);
-  writer.writeString(offsets[4], object.endTime);
-  writer.writeString(offsets[5], object.id);
-  writer.writeBool(offsets[6], object.isDeleted);
-  writer.writeLong(offsets[7], object.plannedStops);
-  writer.writeString(offsets[8], object.routeId);
-  writer.writeString(offsets[9], object.routeName);
-  writer.writeString(offsets[10], object.salesmanId);
-  writer.writeString(offsets[11], object.salesmanName);
-  writer.writeLong(offsets[12], object.skippedStops);
-  writer.writeString(offsets[13], object.startTime);
-  writer.writeString(offsets[14], object.status);
-  writer.writeByte(offsets[15], object.syncStatus.index);
-  writer.writeDouble(offsets[16], object.totalCollection);
-  writer.writeDouble(offsets[17], object.totalDistance);
-  writer.writeDouble(offsets[18], object.totalSales);
-  writer.writeDateTime(offsets[19], object.updatedAt);
+  writer.writeString(offsets[4], object.deviceId);
+  writer.writeString(offsets[5], object.endTime);
+  writer.writeString(offsets[6], object.id);
+  writer.writeBool(offsets[7], object.isDeleted);
+  writer.writeBool(offsets[8], object.isSynced);
+  writer.writeDateTime(offsets[9], object.lastSynced);
+  writer.writeLong(offsets[10], object.plannedStops);
+  writer.writeString(offsets[11], object.routeId);
+  writer.writeString(offsets[12], object.routeName);
+  writer.writeString(offsets[13], object.salesmanId);
+  writer.writeString(offsets[14], object.salesmanName);
+  writer.writeLong(offsets[15], object.skippedStops);
+  writer.writeString(offsets[16], object.startTime);
+  writer.writeString(offsets[17], object.status);
+  writer.writeByte(offsets[18], object.syncStatus.index);
+  writer.writeDouble(offsets[19], object.totalCollection);
+  writer.writeDouble(offsets[20], object.totalDistance);
+  writer.writeDouble(offsets[21], object.totalSales);
+  writer.writeDateTime(offsets[22], object.updatedAt);
+  writer.writeLong(offsets[23], object.version);
 }
 
 RouteSessionEntity _routeSessionEntityDeserialize(
@@ -263,24 +288,28 @@ RouteSessionEntity _routeSessionEntityDeserialize(
   object.createdAt = reader.readString(offsets[1]);
   object.date = reader.readString(offsets[2]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[3]);
-  object.endTime = reader.readStringOrNull(offsets[4]);
-  object.id = reader.readString(offsets[5]);
-  object.isDeleted = reader.readBool(offsets[6]);
-  object.plannedStops = reader.readLong(offsets[7]);
-  object.routeId = reader.readString(offsets[8]);
-  object.routeName = reader.readString(offsets[9]);
-  object.salesmanId = reader.readString(offsets[10]);
-  object.salesmanName = reader.readString(offsets[11]);
-  object.skippedStops = reader.readLong(offsets[12]);
-  object.startTime = reader.readString(offsets[13]);
-  object.status = reader.readString(offsets[14]);
+  object.deviceId = reader.readString(offsets[4]);
+  object.endTime = reader.readStringOrNull(offsets[5]);
+  object.id = reader.readString(offsets[6]);
+  object.isDeleted = reader.readBool(offsets[7]);
+  object.isSynced = reader.readBool(offsets[8]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[9]);
+  object.plannedStops = reader.readLong(offsets[10]);
+  object.routeId = reader.readString(offsets[11]);
+  object.routeName = reader.readString(offsets[12]);
+  object.salesmanId = reader.readString(offsets[13]);
+  object.salesmanName = reader.readString(offsets[14]);
+  object.skippedStops = reader.readLong(offsets[15]);
+  object.startTime = reader.readString(offsets[16]);
+  object.status = reader.readString(offsets[17]);
   object.syncStatus = _RouteSessionEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[15])] ??
+          reader.readByteOrNull(offsets[18])] ??
       SyncStatus.pending;
-  object.totalCollection = reader.readDouble(offsets[16]);
-  object.totalDistance = reader.readDouble(offsets[17]);
-  object.totalSales = reader.readDouble(offsets[18]);
-  object.updatedAt = reader.readDateTime(offsets[19]);
+  object.totalCollection = reader.readDouble(offsets[19]);
+  object.totalDistance = reader.readDouble(offsets[20]);
+  object.totalSales = reader.readDouble(offsets[21]);
+  object.updatedAt = reader.readDateTime(offsets[22]);
+  object.version = reader.readLong(offsets[23]);
   return object;
 }
 
@@ -300,39 +329,47 @@ P _routeSessionEntityDeserializeProp<P>(
     case 3:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 10:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 11:
       return (reader.readString(offset)) as P;
     case 12:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 13:
       return (reader.readString(offset)) as P;
     case 14:
       return (reader.readString(offset)) as P;
     case 15:
+      return (reader.readLong(offset)) as P;
+    case 16:
+      return (reader.readString(offset)) as P;
+    case 17:
+      return (reader.readString(offset)) as P;
+    case 18:
       return (_RouteSessionEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 16:
-      return (reader.readDouble(offset)) as P;
-    case 17:
-      return (reader.readDouble(offset)) as P;
-    case 18:
-      return (reader.readDouble(offset)) as P;
     case 19:
+      return (reader.readDouble(offset)) as P;
+    case 20:
+      return (reader.readDouble(offset)) as P;
+    case 21:
+      return (reader.readDouble(offset)) as P;
+    case 22:
       return (reader.readDateTime(offset)) as P;
+    case 23:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1127,6 +1164,142 @@ extension RouteSessionEntityQueryFilter
   }
 
   QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
       endTimeIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1427,6 +1600,16 @@ extension RouteSessionEntityQueryFilter
   }
 
   QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1474,6 +1657,80 @@ extension RouteSessionEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -2719,6 +2976,62 @@ extension RouteSessionEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension RouteSessionEntityQueryObject
@@ -2786,6 +3099,20 @@ extension RouteSessionEntityQuerySortBy
   }
 
   QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
       sortByEndTime() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'endTime', Sort.asc);
@@ -2824,6 +3151,34 @@ extension RouteSessionEntityQuerySortBy
       sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3008,6 +3363,20 @@ extension RouteSessionEntityQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension RouteSessionEntityQuerySortThenBy
@@ -3069,6 +3438,20 @@ extension RouteSessionEntityQuerySortThenBy
   }
 
   QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
       thenByEndTime() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'endTime', Sort.asc);
@@ -3111,6 +3494,20 @@ extension RouteSessionEntityQuerySortThenBy
   }
 
   QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -3121,6 +3518,20 @@ extension RouteSessionEntityQuerySortThenBy
       thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3305,6 +3716,20 @@ extension RouteSessionEntityQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension RouteSessionEntityQueryWhereDistinct
@@ -3338,6 +3763,13 @@ extension RouteSessionEntityQueryWhereDistinct
   }
 
   QueryBuilder<RouteSessionEntity, RouteSessionEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QDistinct>
       distinctByEndTime({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'endTime', caseSensitive: caseSensitive);
@@ -3355,6 +3787,20 @@ extension RouteSessionEntityQueryWhereDistinct
       distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -3448,6 +3894,13 @@ extension RouteSessionEntityQueryWhereDistinct
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<RouteSessionEntity, RouteSessionEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension RouteSessionEntityQueryProperty
@@ -3485,6 +3938,13 @@ extension RouteSessionEntityQueryProperty
     });
   }
 
+  QueryBuilder<RouteSessionEntity, String, QQueryOperations>
+      deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<RouteSessionEntity, String?, QQueryOperations>
       endTimeProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -3501,6 +3961,19 @@ extension RouteSessionEntityQueryProperty
   QueryBuilder<RouteSessionEntity, bool, QQueryOperations> isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -3590,6 +4063,12 @@ extension RouteSessionEntityQueryProperty
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<RouteSessionEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

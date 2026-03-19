@@ -177,14 +177,19 @@ void main() {
         await firebaseServices.initialize();
 
         // 2. Initialize Database
-        final databaseService = DatabaseService();
-        await databaseService.init();
         await IsarService.instance.initialize();
+        final databaseService = DatabaseService.instance;
+
+        // 3. Device and sync services
         await DeviceIdService.instance.initialize();
         await SyncService.instance.initialize();
-        await ConnectivityService.instance.initialize();
+
+        // 4. Connectivity listener
+        await ConnectivityService.instance.startListening();
+
+        // 5. Initial background sync
         if (ConnectivityService.instance.isOnline) {
-          await SyncService.instance.syncAllPending();
+          unawaited(SyncService.instance.syncAllPending());
         }
         final fieldEncryptionService = FieldEncryptionService.instance;
         await fieldEncryptionService.initialize();
@@ -203,11 +208,17 @@ void main() {
         final userRepo = UserRepository(databaseService);
         final salesRepo = SalesRepository(databaseService);
         final returnsRepo = ReturnsRepository(databaseService);
-        final bhattiRepo = BhattiRepository(databaseService, firebaseServices);
+        final bhattiRepo = BhattiRepository(
+          databaseService,
+          firebaseServices: firebaseServices,
+        );
 
         final customerRepo = CustomerRepository(databaseService);
         final dealerRepo = DealerRepository(databaseService);
-        final tankRepo = TankRepository(databaseService, firebaseServices);
+        final tankRepo = TankRepository(
+          databaseService,
+          firebaseServices: firebaseServices,
+        );
         final gpsService = GpsService(firebaseServices);
         final dutyService = DutyService(
           firebaseServices,
@@ -248,8 +259,8 @@ void main() {
 
         final productionRepo = ProductionRepository(
           databaseService,
-          firebaseServices,
-          inventoryService,
+          firebaseServices: firebaseServices,
+          inventoryService: inventoryService,
         );
         final dispatchService = DispatchService(
           firebaseServices,

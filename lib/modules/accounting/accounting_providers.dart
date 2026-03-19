@@ -1,15 +1,61 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
-import '../../../core/firebase/firebase_config.dart';
-import 'voucher_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/firebase/firebase_config.dart';
+import '../../core/providers/core_providers.dart';
+import '../../core/sync/collection_registry.dart';
+import '../../data/local/entities/account_entity.dart';
+import '../../data/local/entities/voucher_entity.dart';
+import '../../providers/service_providers.dart';
 import 'accounts_repository.dart';
+import 'voucher_repository.dart';
 
 final voucherRepositoryProvider = Provider<VoucherRepository>((ref) {
-  return VoucherRepository(firebaseServices);
+  return VoucherRepository(
+    firebaseServices,
+    dbService: ref.read(databaseServiceProvider),
+    syncQueueService: ref.read(syncQueueServiceProvider),
+    syncService: ref.read(syncServiceProvider),
+    connectivityService: ref.read(connectivityServiceProvider),
+    deviceIdService: ref.read(deviceIdProvider),
+  );
 });
 
 final accountsRepositoryProvider = Provider<AccountsRepository>((ref) {
-  return AccountsRepository(firebaseServices);
+  return AccountsRepository(
+    firebaseServices,
+    dbService: ref.read(databaseServiceProvider),
+    syncQueueService: ref.read(syncQueueServiceProvider),
+    syncService: ref.read(syncServiceProvider),
+    connectivityService: ref.read(connectivityServiceProvider),
+    deviceIdService: ref.read(deviceIdProvider),
+  );
+});
+
+final allAccountsProvider = StreamProvider<List<AccountEntity>>((ref) {
+  return ref.watch(accountsRepositoryProvider).watchAllAccounts();
+});
+
+final allVouchersProvider = StreamProvider<List<VoucherEntity>>((ref) {
+  return ref.watch(voucherRepositoryProvider).watchAllVouchers();
+});
+
+final vouchersByTypeProvider =
+    FutureProvider.family<List<VoucherEntity>, String>((ref, type) {
+      return ref.watch(voucherRepositoryProvider).getVouchersByType(type);
+    });
+
+final pendingAccountingSyncCountProvider = FutureProvider<int>((ref) async {
+  final queueService = ref.read(syncQueueServiceProvider);
+  var total = 0;
+  for (final collection in <String>[
+    CollectionRegistry.accounts,
+    CollectionRegistry.vouchers,
+    CollectionRegistry.voucherEntries,
+  ]) {
+    total += await queueService.getPendingCount(collectionName: collection);
+  }
+  return total;
 });
 
 class AccountingDashboardData {
@@ -49,16 +95,12 @@ final accountingDashboardDataProvider = FutureProvider<AccountingDashboardData>(
     final voucherRepo = ref.watch(voucherRepositoryProvider);
     final accountsRepo = ref.watch(accountsRepositoryProvider);
 
-    // On Windows, skip ensureDefaultAccounts to prevent concurrent Firestore
-    // C++ SDK operations that crash the native process. SyncManager handles
-    // the initial data pull; default accounts are created post-sync.
     final isWindows =
         !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
     if (!isWindows) {
       await accountsRepo.ensureDefaultAccounts();
     }
 
-    // Fetch metrics efficiently
     final metrics = await voucherRepo.getDashboardMetrics();
     final accounts = await accountsRepo.getAccounts();
 

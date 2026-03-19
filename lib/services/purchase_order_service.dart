@@ -764,21 +764,6 @@ class PurchaseOrderService extends OfflineFirstService {
     final compensationId =
         'comp_po_${po.id}_${DateTime.now().microsecondsSinceEpoch}';
     await deleteFromLocal(po.id);
-    await syncToFirebase(
-      'set',
-      {
-        'id': compensationId,
-        'module': 'purchase_orders',
-        'transactionRefId': po.id,
-        'transactionType': 'purchase',
-        'status': 'compensated',
-        'reason': reason,
-        'compensatedAt': getCurrentTimestamp(),
-        'performedBy': userId,
-      },
-      collectionName: accountingCompensationLogCollection,
-      syncImmediately: false,
-    );
     await createAuditLog(
       collectionName: accountingCompensationLogCollection,
       docId: compensationId,
@@ -853,12 +838,6 @@ class PurchaseOrderService extends OfflineFirstService {
         'reversedItems': appliedBulkItems,
         'operations': rollbackPlan.operations,
       };
-      await syncToFirebase(
-        'set',
-        payload,
-        collectionName: accountingCompensationLogCollection,
-        syncImmediately: false,
-      );
       await createAuditLog(
         collectionName: accountingCompensationLogCollection,
         docId: compensationId,

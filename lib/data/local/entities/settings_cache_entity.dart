@@ -9,6 +9,12 @@ class SettingsCacheEntity {
   late String key;
 
   late String payloadJson;
+  bool isSynced = false;
+  bool isDeleted = false;
+  DateTime lastModified = DateTime.now();
+  DateTime? lastSynced;
+  int version = 1;
+  String deviceId = '';
 
   Id get isarId => fastHash(key);
 }

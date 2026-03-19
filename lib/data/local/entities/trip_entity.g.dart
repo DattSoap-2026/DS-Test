@@ -32,66 +32,86 @@ const TripEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'driverName': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 3,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'driverName': PropertySchema(
+      id: 4,
       name: r'driverName',
       type: IsarType.string,
     ),
     r'driverPhone': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'driverPhone',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 8,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 9,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'notes': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'notes',
       type: IsarType.string,
     ),
     r'salesIds': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'salesIds',
       type: IsarType.stringList,
     ),
     r'startedAt': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'startedAt',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _TripEntitysyncStatusEnumValueMap,
     ),
     r'tripId': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'tripId',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'vehicleNumber': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'vehicleNumber',
       type: IsarType.string,
+    ),
+    r'version': PropertySchema(
+      id: 18,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _tripEntityEstimateSize,
@@ -161,6 +181,7 @@ int _tripEntityEstimateSize(
     }
   }
   bytesCount += 3 + object.createdAt.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.driverName.length * 3;
   {
     final value = object.driverPhone;
@@ -208,18 +229,22 @@ void _tripEntitySerialize(
   writer.writeString(offsets[0], object.completedAt);
   writer.writeString(offsets[1], object.createdAt);
   writer.writeDateTime(offsets[2], object.deletedAt);
-  writer.writeString(offsets[3], object.driverName);
-  writer.writeString(offsets[4], object.driverPhone);
-  writer.writeString(offsets[5], object.id);
-  writer.writeBool(offsets[6], object.isDeleted);
-  writer.writeString(offsets[7], object.notes);
-  writer.writeStringList(offsets[8], object.salesIds);
-  writer.writeString(offsets[9], object.startedAt);
-  writer.writeString(offsets[10], object.status);
-  writer.writeByte(offsets[11], object.syncStatus.index);
-  writer.writeString(offsets[12], object.tripId);
-  writer.writeDateTime(offsets[13], object.updatedAt);
-  writer.writeString(offsets[14], object.vehicleNumber);
+  writer.writeString(offsets[3], object.deviceId);
+  writer.writeString(offsets[4], object.driverName);
+  writer.writeString(offsets[5], object.driverPhone);
+  writer.writeString(offsets[6], object.id);
+  writer.writeBool(offsets[7], object.isDeleted);
+  writer.writeBool(offsets[8], object.isSynced);
+  writer.writeDateTime(offsets[9], object.lastSynced);
+  writer.writeString(offsets[10], object.notes);
+  writer.writeStringList(offsets[11], object.salesIds);
+  writer.writeString(offsets[12], object.startedAt);
+  writer.writeString(offsets[13], object.status);
+  writer.writeByte(offsets[14], object.syncStatus.index);
+  writer.writeString(offsets[15], object.tripId);
+  writer.writeDateTime(offsets[16], object.updatedAt);
+  writer.writeString(offsets[17], object.vehicleNumber);
+  writer.writeLong(offsets[18], object.version);
 }
 
 TripEntity _tripEntityDeserialize(
@@ -232,20 +257,24 @@ TripEntity _tripEntityDeserialize(
   object.completedAt = reader.readStringOrNull(offsets[0]);
   object.createdAt = reader.readString(offsets[1]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[2]);
-  object.driverName = reader.readString(offsets[3]);
-  object.driverPhone = reader.readStringOrNull(offsets[4]);
-  object.id = reader.readString(offsets[5]);
-  object.isDeleted = reader.readBool(offsets[6]);
-  object.notes = reader.readStringOrNull(offsets[7]);
-  object.salesIds = reader.readStringList(offsets[8]);
-  object.startedAt = reader.readStringOrNull(offsets[9]);
-  object.status = reader.readString(offsets[10]);
+  object.deviceId = reader.readString(offsets[3]);
+  object.driverName = reader.readString(offsets[4]);
+  object.driverPhone = reader.readStringOrNull(offsets[5]);
+  object.id = reader.readString(offsets[6]);
+  object.isDeleted = reader.readBool(offsets[7]);
+  object.isSynced = reader.readBool(offsets[8]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[9]);
+  object.notes = reader.readStringOrNull(offsets[10]);
+  object.salesIds = reader.readStringList(offsets[11]);
+  object.startedAt = reader.readStringOrNull(offsets[12]);
+  object.status = reader.readString(offsets[13]);
   object.syncStatus =
-      _TripEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[11])] ??
+      _TripEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[14])] ??
           SyncStatus.pending;
-  object.tripId = reader.readString(offsets[12]);
-  object.updatedAt = reader.readDateTime(offsets[13]);
-  object.vehicleNumber = reader.readString(offsets[14]);
+  object.tripId = reader.readString(offsets[15]);
+  object.updatedAt = reader.readDateTime(offsets[16]);
+  object.vehicleNumber = reader.readString(offsets[17]);
+  object.version = reader.readLong(offsets[18]);
   return object;
 }
 
@@ -265,29 +294,37 @@ P _tripEntityDeserializeProp<P>(
     case 3:
       return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
-    case 7:
-      return (reader.readStringOrNull(offset)) as P;
-    case 8:
-      return (reader.readStringList(offset)) as P;
-    case 9:
-      return (reader.readStringOrNull(offset)) as P;
-    case 10:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readBool(offset)) as P;
+    case 8:
+      return (reader.readBool(offset)) as P;
+    case 9:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 10:
+      return (reader.readStringOrNull(offset)) as P;
     case 11:
+      return (reader.readStringList(offset)) as P;
+    case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
+      return (reader.readString(offset)) as P;
+    case 14:
       return (_TripEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 12:
+    case 15:
       return (reader.readString(offset)) as P;
-    case 13:
+    case 16:
       return (reader.readDateTime(offset)) as P;
-    case 14:
+    case 17:
       return (reader.readString(offset)) as P;
+    case 18:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -945,6 +982,140 @@ extension TripEntityQueryFilter
     });
   }
 
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> deviceIdContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> deviceIdMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> driverNameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1374,6 +1545,16 @@ extension TripEntityQueryFilter
     });
   }
 
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> isSyncedEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> isarIdEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -1419,6 +1600,79 @@ extension TripEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> lastSyncedEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -2474,6 +2728,60 @@ extension TripEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> versionEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterFilterCondition> versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension TripEntityQueryObject
@@ -2517,6 +2825,18 @@ extension TripEntityQuerySortBy
   QueryBuilder<TripEntity, TripEntity, QAfterSortBy> sortByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -2565,6 +2885,30 @@ extension TripEntityQuerySortBy
   QueryBuilder<TripEntity, TripEntity, QAfterSortBy> sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2651,6 +2995,18 @@ extension TripEntityQuerySortBy
       return query.addSortBy(r'vehicleNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension TripEntityQuerySortThenBy
@@ -2688,6 +3044,18 @@ extension TripEntityQuerySortThenBy
   QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -2739,6 +3107,18 @@ extension TripEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -2748,6 +3128,18 @@ extension TripEntityQuerySortThenBy
   QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2834,6 +3226,18 @@ extension TripEntityQuerySortThenBy
       return query.addSortBy(r'vehicleNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QAfterSortBy> thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension TripEntityQueryWhereDistinct
@@ -2855,6 +3259,13 @@ extension TripEntityQueryWhereDistinct
   QueryBuilder<TripEntity, TripEntity, QDistinct> distinctByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
     });
   }
 
@@ -2882,6 +3293,18 @@ extension TripEntityQueryWhereDistinct
   QueryBuilder<TripEntity, TripEntity, QDistinct> distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<TripEntity, TripEntity, QDistinct> distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -2938,6 +3361,12 @@ extension TripEntityQueryWhereDistinct
           caseSensitive: caseSensitive);
     });
   }
+
+  QueryBuilder<TripEntity, TripEntity, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension TripEntityQueryProperty
@@ -2966,6 +3395,12 @@ extension TripEntityQueryProperty
     });
   }
 
+  QueryBuilder<TripEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<TripEntity, String, QQueryOperations> driverNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'driverName');
@@ -2987,6 +3422,18 @@ extension TripEntityQueryProperty
   QueryBuilder<TripEntity, bool, QQueryOperations> isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<TripEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<TripEntity, DateTime?, QQueryOperations> lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -3035,6 +3482,12 @@ extension TripEntityQueryProperty
   QueryBuilder<TripEntity, String, QQueryOperations> vehicleNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'vehicleNumber');
+    });
+  }
+
+  QueryBuilder<TripEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

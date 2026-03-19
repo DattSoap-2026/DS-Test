@@ -280,11 +280,14 @@ class _LiveScenarioRunner {
       _dbService,
       inventoryMovementEngine,
     );
-    final bhattiRepo = BhattiRepository(_dbService, _firebase);
+    final bhattiRepo = BhattiRepository(
+      _dbService,
+      firebaseServices: _firebase,
+    );
     final productionRepo = ProductionRepository(
       _dbService,
-      _firebase,
-      inventoryService,
+      firebaseServices: _firebase,
+      inventoryService: inventoryService,
     );
     final usersService = UsersService(_firebase, _dbService);
     final productsService = ProductsService(_firebase, _dbService);

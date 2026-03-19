@@ -20,6 +20,7 @@ import '../data/local/entities/tank_transaction_entity.dart';
 import '../data/local/entities/tank_lot_entity.dart';
 import '../data/local/entities/department_stock_entity.dart';
 import '../data/local/entities/department_master_entity.dart';
+import '../data/local/entities/department_entity.dart';
 import '../data/local/entities/inventory_command_entity.dart';
 import '../data/local/entities/wastage_log_entity.dart';
 import '../data/local/entities/bhatti_batch_entity.dart';
@@ -38,6 +39,7 @@ import '../data/local/entities/sync_metric_entity.dart';
 import '../data/local/entities/conflict_entity.dart';
 import '../data/local/entities/vehicle_entity.dart';
 import '../data/local/entities/diesel_log_entity.dart';
+import '../data/local/entities/fuel_purchase_entity.dart';
 import '../data/local/entities/sales_target_entity.dart';
 import '../data/local/entities/scheme_entity.dart';
 import '../data/local/entities/payroll_record_entity.dart';
@@ -62,17 +64,19 @@ import '../data/local/entities/category_entity.dart';
 import '../data/local/entities/product_type_entity.dart';
 import '../data/local/entities/sync_queue_entity.dart';
 import '../data/local/entities/settings_cache_entity.dart';
+import '../data/local/entities/config_cache_entity.dart';
 import '../data/local/entities/custom_role_entity.dart';
 import '../data/local/entities/inventory_location_entity.dart';
 import '../data/local/entities/stock_balance_entity.dart';
+import '../data/local/entities/chat_message.dart';
+import '../data/local/entities/supplier_entity.dart';
+import '../data/local/entities/purchase_order_entity.dart';
+import '../data/local/entities/warehouse_entity.dart';
 import '../models/ai_brain_models.dart';
 import '../data/local/entities/dispatch_entity.dart';
 import '../data/local/entities/stock_movement_entity.dart';
 import '../data/local/entities/route_order_entity.dart'; // Added
 import '../data/local/entities/task_entity.dart';
-import '../features/inventory/models/product.dart' as inventory_product;
-import '../features/inventory/models/stock_movement.dart'
-    as inventory_stock_movement;
 import '../features/inventory/models/sync_queue.dart' as inventory_sync_queue;
 
 class DatabaseService {
@@ -148,6 +152,7 @@ class DatabaseService {
       TankLotEntitySchema,
       DepartmentStockEntitySchema,
       DepartmentMasterEntitySchema,
+      DepartmentEntitySchema,
       InventoryCommandEntitySchema,
       InventoryLocationEntitySchema,
       StockBalanceEntitySchema,
@@ -172,6 +177,7 @@ class DatabaseService {
       ConflictEntitySchema,
       VehicleEntitySchema,
       DieselLogEntitySchema,
+      FuelPurchaseEntitySchema,
       SalesTargetEntitySchema,
       SchemeEntitySchema,
       PayrollRecordEntitySchema,
@@ -195,14 +201,17 @@ class DatabaseService {
       ProductTypeEntitySchema,
       SyncQueueEntitySchema,
       SettingsCacheEntitySchema,
+      ConfigCacheEntitySchema,
       CustomRoleEntitySchema,
+      ChatMessageSchema,
+      SupplierEntitySchema,
+      PurchaseOrderEntitySchema,
+      WarehouseEntitySchema,
       // AI Brain
       AIChatMessageSchema,
       AILearningItemSchema,
       AIInsightCacheSchema,
       AIBrainSettingsSchema,
-      inventory_product.ProductSchema,
-      inventory_stock_movement.StockMovementSchema,
       inventory_sync_queue.SyncQueueSchema,
     ];
 
@@ -227,6 +236,7 @@ class DatabaseService {
         TankLotEntitySchema,
         DepartmentStockEntitySchema,
         DepartmentMasterEntitySchema,
+        DepartmentEntitySchema,
         InventoryCommandEntitySchema,
         InventoryLocationEntitySchema,
         StockBalanceEntitySchema,
@@ -251,6 +261,7 @@ class DatabaseService {
         ConflictEntitySchema,
         VehicleEntitySchema,
         DieselLogEntitySchema,
+        FuelPurchaseEntitySchema,
         SalesTargetEntitySchema,
         SchemeEntitySchema,
         PayrollRecordEntitySchema,
@@ -274,14 +285,17 @@ class DatabaseService {
         ProductTypeEntitySchema,
         SyncQueueEntitySchema,
         SettingsCacheEntitySchema,
+        ConfigCacheEntitySchema,
         CustomRoleEntitySchema,
+        ChatMessageSchema,
+        SupplierEntitySchema,
+        PurchaseOrderEntitySchema,
+        WarehouseEntitySchema,
         // AI Brain
         AIChatMessageSchema,
         AILearningItemSchema,
         AIInsightCacheSchema,
         AIBrainSettingsSchema,
-        inventory_product.ProductSchema,
-        inventory_stock_movement.StockMovementSchema,
         inventory_sync_queue.SyncQueueSchema,
     ],
     directory: path,
@@ -309,215 +323,142 @@ class DatabaseService {
     final legacy = await _openLegacyIsar(path);
     final encrypted = await _openEncryptedIsar(path, key);
 
+    Future<void> copyAll<T>(
+      IsarCollection<T> source,
+      IsarCollection<T> target,
+    ) async {
+      final items = await source.where().findAll();
+      if (items.isNotEmpty) {
+        await target.putAll(items);
+      }
+    }
+
     await encrypted.writeTxn(() async {
-      final users = await legacy.userEntitys.where().findAll();
-      if (users.isNotEmpty) await encrypted.userEntitys.putAll(users);
-      final trips = await legacy.tripEntitys.where().findAll();
-      if (trips.isNotEmpty) await encrypted.tripEntitys.putAll(trips);
-      final products = await legacy.productEntitys.where().findAll();
-      if (products.isNotEmpty) await encrypted.productEntitys.putAll(products);
-      final sales = await legacy.saleEntitys.where().findAll();
-      if (sales.isNotEmpty) await encrypted.saleEntitys.putAll(sales);
-      final payments = await legacy.paymentEntitys.where().findAll();
-      if (payments.isNotEmpty) {
-        await encrypted.paymentEntitys.putAll(payments);
-      }
-      final returns = await legacy.returnEntitys.where().findAll();
-      if (returns.isNotEmpty) await encrypted.returnEntitys.putAll(returns);
-      final bhattiEntries = await legacy.bhattiDailyEntryEntitys
-          .where()
-          .findAll();
-      if (bhattiEntries.isNotEmpty) {
-        await encrypted.bhattiDailyEntryEntitys.putAll(bhattiEntries);
-      }
-      final productionEntries = await legacy.productionDailyEntryEntitys
-          .where()
-          .findAll();
-      if (productionEntries.isNotEmpty) {
-        await encrypted.productionDailyEntryEntitys.putAll(productionEntries);
-      }
-      final customers = await legacy.customerEntitys.where().findAll();
-      if (customers.isNotEmpty) {
-        await encrypted.customerEntitys.putAll(customers);
-      }
-      final dealers = await legacy.dealerEntitys.where().findAll();
-      if (dealers.isNotEmpty) {
-        await encrypted.dealerEntitys.putAll(dealers);
-      }
-      final tanks = await legacy.tankEntitys.where().findAll();
-      if (tanks.isNotEmpty) await encrypted.tankEntitys.putAll(tanks);
-      final tankTransactions = await legacy.tankTransactionEntitys
-          .where()
-          .findAll();
-      if (tankTransactions.isNotEmpty) {
-        await encrypted.tankTransactionEntitys.putAll(tankTransactions);
-      }
-      final tankLots = await legacy.tankLotEntitys.where().findAll();
-      if (tankLots.isNotEmpty) {
-        await encrypted.tankLotEntitys.putAll(tankLots);
-      }
-      final departmentStocks = await legacy.departmentStockEntitys
-          .where()
-          .findAll();
-      if (departmentStocks.isNotEmpty) {
-        await encrypted.departmentStockEntitys.putAll(departmentStocks);
-      }
-      final wastageLogs = await legacy.wastageLogEntitys.where().findAll();
-      if (wastageLogs.isNotEmpty) {
-        await encrypted.wastageLogEntitys.putAll(wastageLogs);
-      }
-      final dispatches = await legacy.dispatchEntitys.where().findAll();
-      if (dispatches.isNotEmpty) {
-        await encrypted.dispatchEntitys.putAll(dispatches);
-      }
-      final stockMovements = await legacy.stockMovementEntitys
-          .where()
-          .findAll();
-      if (stockMovements.isNotEmpty) {
-        await encrypted.stockMovementEntitys.putAll(stockMovements);
-      }
-      final routeOrders = await legacy.routeOrderEntitys.where().findAll();
-      if (routeOrders.isNotEmpty) {
-        await encrypted.routeOrderEntitys.putAll(routeOrders);
-      }
-      final tasks = await legacy.taskEntitys.where().findAll();
-      if (tasks.isNotEmpty) {
-        await encrypted.taskEntitys.putAll(tasks);
-      }
-      final bhattiBatches = await legacy.bhattiBatchEntitys.where().findAll();
-      if (bhattiBatches.isNotEmpty) {
-        await encrypted.bhattiBatchEntitys.putAll(bhattiBatches);
-      }
-      final cuttingBatches = await legacy.cuttingBatchEntitys.where().findAll();
-      if (cuttingBatches.isNotEmpty) {
-        await encrypted.cuttingBatchEntitys.putAll(cuttingBatches);
-      }
-      final productionTargets = await legacy.productionTargetEntitys
-          .where()
-          .findAll();
-      if (productionTargets.isNotEmpty) {
-        await encrypted.productionTargetEntitys.putAll(productionTargets);
-      }
-      final detailedProductionLogs = await legacy.detailedProductionLogEntitys
-          .where()
-          .findAll();
-      if (detailedProductionLogs.isNotEmpty) {
-        await encrypted.detailedProductionLogEntitys.putAll(
-          detailedProductionLogs,
-        );
-      }
-      final dutySessions = await legacy.dutySessionEntitys.where().findAll();
-      if (dutySessions.isNotEmpty) {
-        await encrypted.dutySessionEntitys.putAll(dutySessions);
-      }
-      final employees = await legacy.employeeEntitys.where().findAll();
-      if (employees.isNotEmpty) {
-        await encrypted.employeeEntitys.putAll(employees);
-      }
-      final alerts = await legacy.alertEntitys.where().findAll();
-      if (alerts.isNotEmpty) await encrypted.alertEntitys.putAll(alerts);
-      final auditLogs = await legacy.auditLogEntitys.where().findAll();
-      if (auditLogs.isNotEmpty) {
-        await encrypted.auditLogEntitys.putAll(auditLogs);
-      }
-      final routeSessions = await legacy.routeSessionEntitys.where().findAll();
-      if (routeSessions.isNotEmpty) {
-        await encrypted.routeSessionEntitys.putAll(routeSessions);
-      }
-      final customerVisits = await legacy.customerVisitEntitys
-          .where()
-          .findAll();
-      if (customerVisits.isNotEmpty) {
-        await encrypted.customerVisitEntitys.putAll(customerVisits);
-      }
-      final openingStocks = await legacy.openingStockEntitys.where().findAll();
-      if (openingStocks.isNotEmpty) {
-        await encrypted.openingStockEntitys.putAll(openingStocks);
-      }
-      final stockLedgers = await legacy.stockLedgerEntitys.where().findAll();
-      if (stockLedgers.isNotEmpty) {
-        await encrypted.stockLedgerEntitys.putAll(stockLedgers);
-      }
-      final syncMetrics = await legacy.syncMetricEntitys.where().findAll();
-      if (syncMetrics.isNotEmpty) {
-        await encrypted.syncMetricEntitys.putAll(syncMetrics);
-      }
-      final conflicts = await legacy.conflictEntitys.where().findAll();
-      if (conflicts.isNotEmpty) {
-        await encrypted.conflictEntitys.putAll(conflicts);
-      }
-      final vehicles = await legacy.vehicleEntitys.where().findAll();
-      if (vehicles.isNotEmpty) await encrypted.vehicleEntitys.putAll(vehicles);
-      final dieselLogs = await legacy.dieselLogEntitys.where().findAll();
-      if (dieselLogs.isNotEmpty) {
-        await encrypted.dieselLogEntitys.putAll(dieselLogs);
-      }
-      final salesTargets = await legacy.salesTargetEntitys.where().findAll();
-      if (salesTargets.isNotEmpty) {
-        await encrypted.salesTargetEntitys.putAll(salesTargets);
-      }
-      final schemes = await legacy.schemeEntitys.where().findAll();
-      if (schemes.isNotEmpty) await encrypted.schemeEntitys.putAll(schemes);
-      final payrolls = await legacy.payrollRecordEntitys.where().findAll();
-      if (payrolls.isNotEmpty) {
-        await encrypted.payrollRecordEntitys.putAll(payrolls);
-      }
-      final leaveRequests = await legacy.leaveRequestEntitys.where().findAll();
-      if (leaveRequests.isNotEmpty) {
-        await encrypted.leaveRequestEntitys.putAll(leaveRequests);
-      }
-      final attendances = await legacy.attendanceEntitys.where().findAll();
-      if (attendances.isNotEmpty) {
-        await encrypted.attendanceEntitys.putAll(attendances);
-      }
-      final advances = await legacy.advanceEntitys.where().findAll();
-      if (advances.isNotEmpty) await encrypted.advanceEntitys.putAll(advances);
-      final reviews = await legacy.performanceReviewEntitys.where().findAll();
-      if (reviews.isNotEmpty) {
-        await encrypted.performanceReviewEntitys.putAll(reviews);
-      }
-      final documents = await legacy.employeeDocumentEntitys.where().findAll();
-      if (documents.isNotEmpty) {
-        await encrypted.employeeDocumentEntitys.putAll(documents);
-      }
-      final maintenanceLogs = await legacy.maintenanceLogEntitys
-          .where()
-          .findAll();
-      if (maintenanceLogs.isNotEmpty) {
-        await encrypted.maintenanceLogEntitys.putAll(maintenanceLogs);
-      }
-      final tyreLogs = await legacy.tyreLogEntitys.where().findAll();
-      if (tyreLogs.isNotEmpty) {
-        await encrypted.tyreLogEntitys.putAll(tyreLogs);
-      }
-      final routes = await legacy.routeEntitys.where().findAll();
-      if (routes.isNotEmpty) await encrypted.routeEntitys.putAll(routes);
-      final tyreStocks = await legacy.tyreStockEntitys.where().findAll();
-      if (tyreStocks.isNotEmpty) {
-        await encrypted.tyreStockEntitys.putAll(tyreStocks);
-      }
-      final units = await legacy.unitEntitys.where().findAll();
-      if (units.isNotEmpty) await encrypted.unitEntitys.putAll(units);
-      final categories = await legacy.categoryEntitys.where().findAll();
-      if (categories.isNotEmpty) {
-        await encrypted.categoryEntitys.putAll(categories);
-      }
-      final productTypes = await legacy.productTypeEntitys.where().findAll();
-      if (productTypes.isNotEmpty) {
-        await encrypted.productTypeEntitys.putAll(productTypes);
-      }
-      final syncQueue = await legacy.syncQueueEntitys.where().findAll();
-      if (syncQueue.isNotEmpty) {
-        await encrypted.syncQueueEntitys.putAll(syncQueue);
-      }
-      final settingsCache = await legacy.settingsCacheEntitys.where().findAll();
-      if (settingsCache.isNotEmpty) {
-        await encrypted.settingsCacheEntitys.putAll(settingsCache);
-      }
-      final customRoles = await legacy.customRoleEntitys.where().findAll();
-      if (customRoles.isNotEmpty) {
-        await encrypted.customRoleEntitys.putAll(customRoles);
-      }
+      await copyAll(legacy.userEntitys, encrypted.userEntitys);
+      await copyAll(legacy.tripEntitys, encrypted.tripEntitys);
+      await copyAll(legacy.productEntitys, encrypted.productEntitys);
+      await copyAll(legacy.saleEntitys, encrypted.saleEntitys);
+      await copyAll(legacy.paymentEntitys, encrypted.paymentEntitys);
+      await copyAll(legacy.returnEntitys, encrypted.returnEntitys);
+      await copyAll(
+        legacy.bhattiDailyEntryEntitys,
+        encrypted.bhattiDailyEntryEntitys,
+      );
+      await copyAll(
+        legacy.productionDailyEntryEntitys,
+        encrypted.productionDailyEntryEntitys,
+      );
+      await copyAll(legacy.customerEntitys, encrypted.customerEntitys);
+      await copyAll(legacy.dealerEntitys, encrypted.dealerEntitys);
+      await copyAll(legacy.tankEntitys, encrypted.tankEntitys);
+      await copyAll(
+        legacy.tankTransactionEntitys,
+        encrypted.tankTransactionEntitys,
+      );
+      await copyAll(legacy.tankLotEntitys, encrypted.tankLotEntitys);
+      await copyAll(
+        legacy.departmentStockEntitys,
+        encrypted.departmentStockEntitys,
+      );
+      await copyAll(
+        legacy.departmentMasterEntitys,
+        encrypted.departmentMasterEntitys,
+      );
+      await copyAll(legacy.departmentEntitys, encrypted.departmentEntitys);
+      await copyAll(
+        legacy.inventoryCommandEntitys,
+        encrypted.inventoryCommandEntitys,
+      );
+      await copyAll(
+        legacy.inventoryLocationEntitys,
+        encrypted.inventoryLocationEntitys,
+      );
+      await copyAll(legacy.stockBalanceEntitys, encrypted.stockBalanceEntitys);
+      await copyAll(legacy.wastageLogEntitys, encrypted.wastageLogEntitys);
+      await copyAll(legacy.bhattiBatchEntitys, encrypted.bhattiBatchEntitys);
+      await copyAll(legacy.cuttingBatchEntitys, encrypted.cuttingBatchEntitys);
+      await copyAll(
+        legacy.productionTargetEntitys,
+        encrypted.productionTargetEntitys,
+      );
+      await copyAll(
+        legacy.detailedProductionLogEntitys,
+        encrypted.detailedProductionLogEntitys,
+      );
+      await copyAll(legacy.dispatchEntitys, encrypted.dispatchEntitys);
+      await copyAll(
+        legacy.stockMovementEntitys,
+        encrypted.stockMovementEntitys,
+      );
+      await copyAll(legacy.routeOrderEntitys, encrypted.routeOrderEntitys);
+      await copyAll(legacy.taskEntitys, encrypted.taskEntitys);
+      await copyAll(legacy.dutySessionEntitys, encrypted.dutySessionEntitys);
+      await copyAll(legacy.employeeEntitys, encrypted.employeeEntitys);
+      await copyAll(legacy.alertEntitys, encrypted.alertEntitys);
+      await copyAll(legacy.auditLogEntitys, encrypted.auditLogEntitys);
+      await copyAll(legacy.routeSessionEntitys, encrypted.routeSessionEntitys);
+      await copyAll(
+        legacy.customerVisitEntitys,
+        encrypted.customerVisitEntitys,
+      );
+      await copyAll(legacy.openingStockEntitys, encrypted.openingStockEntitys);
+      await copyAll(legacy.stockLedgerEntitys, encrypted.stockLedgerEntitys);
+      await copyAll(legacy.syncMetricEntitys, encrypted.syncMetricEntitys);
+      await copyAll(legacy.conflictEntitys, encrypted.conflictEntitys);
+      await copyAll(legacy.vehicleEntitys, encrypted.vehicleEntitys);
+      await copyAll(legacy.dieselLogEntitys, encrypted.dieselLogEntitys);
+      await copyAll(legacy.fuelPurchaseEntitys, encrypted.fuelPurchaseEntitys);
+      await copyAll(legacy.salesTargetEntitys, encrypted.salesTargetEntitys);
+      await copyAll(legacy.schemeEntitys, encrypted.schemeEntitys);
+      await copyAll(
+        legacy.payrollRecordEntitys,
+        encrypted.payrollRecordEntitys,
+      );
+      await copyAll(legacy.leaveRequestEntitys, encrypted.leaveRequestEntitys);
+      await copyAll(legacy.attendanceEntitys, encrypted.attendanceEntitys);
+      await copyAll(legacy.advanceEntitys, encrypted.advanceEntitys);
+      await copyAll(legacy.performanceReviewEntitys, encrypted.performanceReviewEntitys);
+      await copyAll(legacy.holidayEntitys, encrypted.holidayEntitys);
+      await copyAll(
+        legacy.employeeDocumentEntitys,
+        encrypted.employeeDocumentEntitys,
+      );
+      await copyAll(
+        legacy.maintenanceLogEntitys,
+        encrypted.maintenanceLogEntitys,
+      );
+      await copyAll(legacy.tyreLogEntitys, encrypted.tyreLogEntitys);
+      await copyAll(legacy.vehicleIssueEntitys, encrypted.vehicleIssueEntitys);
+      await copyAll(legacy.accountEntitys, encrypted.accountEntitys);
+      await copyAll(legacy.voucherEntitys, encrypted.voucherEntitys);
+      await copyAll(
+        legacy.voucherEntryEntitys,
+        encrypted.voucherEntryEntitys,
+      );
+      await copyAll(legacy.routeEntitys, encrypted.routeEntitys);
+      await copyAll(legacy.tyreStockEntitys, encrypted.tyreStockEntitys);
+      await copyAll(legacy.unitEntitys, encrypted.unitEntitys);
+      await copyAll(legacy.categoryEntitys, encrypted.categoryEntitys);
+      await copyAll(legacy.productTypeEntitys, encrypted.productTypeEntitys);
+      await copyAll(legacy.syncQueueEntitys, encrypted.syncQueueEntitys);
+      await copyAll(
+        legacy.settingsCacheEntitys,
+        encrypted.settingsCacheEntitys,
+      );
+      await copyAll(legacy.configCacheEntitys, encrypted.configCacheEntitys);
+      await copyAll(legacy.customRoleEntitys, encrypted.customRoleEntitys);
+      await copyAll(legacy.chatMessages, encrypted.chatMessages);
+      await copyAll(legacy.supplierEntitys, encrypted.supplierEntitys);
+      await copyAll(
+        legacy.purchaseOrderEntitys,
+        encrypted.purchaseOrderEntitys,
+      );
+      await copyAll(legacy.warehouseEntitys, encrypted.warehouseEntitys);
+      await copyAll(legacy.aIChatMessages, encrypted.aIChatMessages);
+      await copyAll(legacy.aILearningItems, encrypted.aILearningItems);
+      await copyAll(legacy.aIInsightCaches, encrypted.aIInsightCaches);
+      await copyAll(legacy.aIBrainSettings, encrypted.aIBrainSettings);
+      await copyAll(legacy.syncQueues, encrypted.syncQueues);
     });
 
     await legacy.close();
@@ -574,6 +515,7 @@ class DatabaseService {
       _isar.departmentStockEntitys;
   IsarCollection<DepartmentMasterEntity> get departmentMasters =>
       _isar.departmentMasterEntitys;
+  IsarCollection<DepartmentEntity> get departments => _isar.departmentEntitys;
   IsarCollection<InventoryCommandEntity> get inventoryCommands =>
       _isar.inventoryCommandEntitys;
   IsarCollection<InventoryLocationEntity> get inventoryLocations =>
@@ -604,6 +546,8 @@ class DatabaseService {
 
   IsarCollection<VehicleEntity> get vehicles => _isar.vehicleEntitys;
   IsarCollection<DieselLogEntity> get dieselLogs => _isar.dieselLogEntitys;
+  IsarCollection<FuelPurchaseEntity> get fuelPurchases =>
+      _isar.fuelPurchaseEntitys;
   IsarCollection<SalesTargetEntity> get salesTargets =>
       _isar.salesTargetEntitys;
   IsarCollection<SchemeEntity> get schemes => _isar.schemeEntitys;
@@ -641,17 +585,18 @@ class DatabaseService {
   IsarCollection<SyncQueueEntity> get syncQueue => _isar.syncQueueEntitys;
   IsarCollection<SettingsCacheEntity> get settingsCache =>
       _isar.settingsCacheEntitys;
+  IsarCollection<ConfigCacheEntity> get configCache => _isar.configCacheEntitys;
   IsarCollection<CustomRoleEntity> get customRoles => _isar.customRoleEntitys;
+  IsarCollection<ChatMessage> get chatMessages => _isar.chatMessages;
+  IsarCollection<SupplierEntity> get suppliers => _isar.supplierEntitys;
+  IsarCollection<PurchaseOrderEntity> get purchaseOrders =>
+      _isar.purchaseOrderEntitys;
+  IsarCollection<WarehouseEntity> get warehouses => _isar.warehouseEntitys;
   IsarCollection<DispatchEntity> get dispatches => _isar.dispatchEntitys;
   IsarCollection<StockMovementEntity> get stockMovements =>
       _isar.stockMovementEntitys;
   IsarCollection<RouteOrderEntity> get routeOrders => _isar.routeOrderEntitys;
   IsarCollection<TaskEntity> get tasks => _isar.taskEntitys;
-  IsarCollection<inventory_product.Product> get inventorySyncProducts =>
-      _isar.products;
-  IsarCollection<inventory_stock_movement.StockMovement>
-      get inventorySyncStockMovements =>
-      _isar.stockMovements;
   IsarCollection<inventory_sync_queue.SyncQueue> get inventorySyncQueues =>
       _isar.syncQueues;
 }

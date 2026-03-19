@@ -1,17 +1,22 @@
 import 'dart:convert';
 
 import 'package:isar/isar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
-import '../../services/offline_first_service.dart';
-import '../../utils/app_logger.dart';
+import '../../core/firebase/firebase_config.dart';
+import '../../core/network/connectivity_service.dart';
+import '../../core/sync/collection_registry.dart';
+import '../../core/sync/sync_queue_service.dart';
+import '../../core/sync/sync_service.dart';
+import '../../core/utils/device_id_service.dart';
+import '../../data/local/base_entity.dart';
 import '../../data/local/entities/voucher_entity.dart';
 import '../../data/local/entities/voucher_entry_entity.dart';
-import '../../data/local/base_entity.dart';
+import '../../services/database_service.dart';
+import '../../services/offline_first_service.dart';
+import '../../utils/app_logger.dart';
 
-const String vouchersCollection = 'vouchers';
-const String voucherEntriesCollection = 'voucher_entries';
+const String vouchersCollection = CollectionRegistry.vouchers;
+const String voucherEntriesCollection = CollectionRegistry.voucherEntries;
 
 class StrictBusinessWrite {
   final String collection;
@@ -28,8 +33,23 @@ class StrictBusinessWrite {
 }
 
 class VoucherRepository extends OfflineFirstService {
-  VoucherRepository(super.firebase, [super.dbService]);
-  static const String _fallbackEntriesKey = '_entries';
+  VoucherRepository(
+    FirebaseServices firebase, {
+    DatabaseService? dbService,
+    SyncQueueService? syncQueueService,
+    SyncService? syncService,
+    ConnectivityService? connectivityService,
+    DeviceIdService? deviceIdService,
+  }) : _syncQueueService = syncQueueService ?? SyncQueueService.instance,
+       _syncService = syncService ?? SyncService.instance,
+       _connectivityService = connectivityService ?? ConnectivityService.instance,
+       _deviceIdService = deviceIdService ?? DeviceIdService.instance,
+       super(firebase, dbService);
+
+  final SyncQueueService _syncQueueService;
+  final SyncService _syncService;
+  final ConnectivityService _connectivityService;
+  final DeviceIdService _deviceIdService;
 
   @override
   String get localStorageKey => 'local_vouchers';
@@ -93,7 +113,9 @@ class VoucherRepository extends OfflineFirstService {
   }
 
   Map<String, dynamic> _extractAccountingDimensions(Map<String, dynamic> map) {
-    final nested = _decodeRawDimensions(map['accountingDimensions']);
+    final nested = _decodeRawDimensions(
+      map['accountingDimensions'] ?? map['accountingDimensionsJson'],
+    );
 
     final route = _firstNonEmpty([map['route'], nested['route']]);
     final district = _firstNonEmpty([map['district'], nested['district']]);
@@ -187,232 +209,48 @@ class VoucherRepository extends OfflineFirstService {
     entity.dimensionVersion = _toIntOrNull(dimensionVersion) ?? 1;
   }
 
-  // --- Mappers ---
-
-  VoucherEntity _mapToVoucherEntity(Map<String, dynamic> map) {
-    final entity = VoucherEntity()
-      ..id = map['id']?.toString() ?? ''
-      ..transactionRefId = map['transactionRefId']?.toString() ?? ''
-      ..date =
-          DateTime.tryParse(map['date']?.toString() ?? '') ?? DateTime.now()
-      ..type = map['transactionType']?.toString() ?? 'Journal'
-      ..amount = _toDouble(map['amount'] ?? map['totalDebit'])
-      ..narration = map['narration']?.toString() ?? ''
-      ..partyName = map['partyName']?.toString()
-      ..linkedId = map['linkedId']?.toString()
-      ..syncStatus = (map['isSynced'] == true)
-          ? SyncStatus.synced
-          : SyncStatus.pending
-      ..voucherNumber = map['voucherNumber']?.toString()
-      ..updatedAt =
-          DateTime.tryParse(map['updatedAt']?.toString() ?? '') ??
-          DateTime.now();
-
-    final dimensions = _extractAccountingDimensions(map);
-    _applyDimensionsToVoucherEntity(
-      entity,
-      dimensions,
-      dimensionVersion: map['dimensionVersion'],
+  Map<String, dynamic> _voucherEntityToMap(VoucherEntity entity) {
+    final data = Map<String, dynamic>.from(entity.toJson());
+    final dimensions = _decodeAccountingDimensionsJson(
+      entity.accountingDimensionsJson,
     );
-    return entity;
-  }
-
-  VoucherEntryEntity _mapToEntryEntity(Map<String, dynamic> map) {
-    final entity = VoucherEntryEntity()
-      ..id = map['id']?.toString() ?? ''
-      ..voucherId = map['voucherId']?.toString() ?? ''
-      ..accountCode = (map['accountCode'] ?? map['ledgerId'])?.toString() ?? ''
-      ..debit = _toDouble(map['debit'])
-      ..credit = _toDouble(map['credit'])
-      ..narration = map['narration']?.toString()
-      ..date = DateTime.tryParse(map['date']?.toString() ?? '')
-      ..updatedAt =
-          DateTime.tryParse(map['updatedAt']?.toString() ?? '') ??
-          DateTime.now();
-
-    final dimensions = _extractAccountingDimensions(map);
-    _applyDimensionsToEntryEntity(
-      entity,
-      dimensions,
-      dimensionVersion: map['dimensionVersion'],
-    );
-    return entity;
-  }
-
-  Map<String, dynamic> _voucherEntityToMap(VoucherEntity e) {
-    final decoded = _decodeAccountingDimensionsJson(e.accountingDimensionsJson);
-    final dimensions = _extractAccountingDimensions({
-      'route': e.route,
-      'district': e.district,
-      'division': e.division,
-      'salesmanId': e.salesmanId,
-      'salesmanName': e.salesmanName,
-      'saleDate': e.saleDate,
-      'dealerId': e.dealerId,
-      'dealerName': e.dealerName,
-      'accountingDimensions': decoded,
-    });
-
-    return {
-      'id': e.id,
-      'transactionRefId': e.transactionRefId,
-      'date': e.date.toIso8601String(),
-      'transactionType': e.type,
-      'amount': e.amount,
-      'narration': e.narration,
-      'partyName': e.partyName,
-      'linkedId': e.linkedId,
-      'isSynced': e.syncStatus == SyncStatus.synced,
-      'voucherNumber': e.voucherNumber,
-      ...dimensions,
-      if (dimensions.isNotEmpty) 'accountingDimensions': dimensions,
-      'dimensionVersion': e.dimensionVersion ?? 1,
-      'updatedAt': e.updatedAt.toIso8601String(),
-    };
-  }
-
-  Map<String, dynamic> _entryEntityToMap(VoucherEntryEntity e) {
-    final decoded = _decodeAccountingDimensionsJson(e.accountingDimensionsJson);
-    final dimensions = _extractAccountingDimensions({
-      'route': e.route,
-      'district': e.district,
-      'division': e.division,
-      'salesmanId': e.salesmanId,
-      'salesmanName': e.salesmanName,
-      'saleDate': e.saleDate,
-      'dealerId': e.dealerId,
-      'dealerName': e.dealerName,
-      'accountingDimensions': decoded,
-    });
-
-    return {
-      'id': e.id,
-      'voucherId': e.voucherId,
-      'accountCode': e.accountCode,
-      'debit': e.debit,
-      'credit': e.credit,
-      'narration': e.narration ?? '',
-      ...dimensions,
-      if (dimensions.isNotEmpty) 'accountingDimensions': dimensions,
-      'dimensionVersion': e.dimensionVersion ?? 1,
-      'date': e.date?.toIso8601String(),
-      'updatedAt': e.updatedAt.toIso8601String(),
-    };
-  }
-
-  bool _isIsarReady() {
-    try {
-      dbService.db;
-      return true;
-    } catch (_) {
-      return false;
+    if (dimensions.isNotEmpty) {
+      data['accountingDimensions'] = dimensions;
     }
+    data['transactionType'] = entity.type;
+    data['voucherType'] = entity.voucherType ?? entity.type;
+    return data;
   }
 
-  DateTime _parseIsoDate(dynamic raw) {
-    return DateTime.tryParse(raw?.toString() ?? '') ??
-        DateTime.fromMillisecondsSinceEpoch(0);
-  }
-
-  Map<String, dynamic> _stripFallbackVoucher(Map<String, dynamic> voucher) {
-    final copy = Map<String, dynamic>.from(voucher);
-    copy.remove(_fallbackEntriesKey);
-    return copy;
-  }
-
-  List<Map<String, dynamic>> _fallbackEntriesFromVoucher(
-    Map<String, dynamic> voucher,
-  ) {
-    final raw = voucher[_fallbackEntriesKey];
-    if (raw is! List) return const <Map<String, dynamic>>[];
-
-    final result = <Map<String, dynamic>>[];
-    for (final item in raw) {
-      if (item is Map) {
-        result.add(
-          item.map((key, value) => MapEntry(key.toString(), value)),
-        );
-      }
-    }
-    return result;
-  }
-
-  Future<List<Map<String, dynamic>>> _loadFallbackVouchers() async {
-    final local = await loadFromLocal();
-    return local
-        .map((item) => Map<String, dynamic>.from(item))
-        .toList(growable: true);
-  }
-
-  Future<void> _saveFallbackVouchers(List<Map<String, dynamic>> vouchers) async {
-    await saveToLocal(
-      vouchers
-          .map((item) => Map<String, dynamic>.from(item))
-          .toList(growable: false),
+  Map<String, dynamic> _entryEntityToMap(VoucherEntryEntity entity) {
+    final data = Map<String, dynamic>.from(entity.toJson());
+    final dimensions = _decodeAccountingDimensionsJson(
+      entity.accountingDimensionsJson,
     );
+    if (dimensions.isNotEmpty) {
+      data['accountingDimensions'] = dimensions;
+    }
+    data['ledgerId'] = entity.accountCode;
+    data['postingDate'] = entity.date?.toIso8601String();
+    return data;
   }
-
-  // --- Methods ---
 
   Future<List<Map<String, dynamic>>> getVouchers({
     int offset = 0,
     int limit = 50,
   }) async {
     try {
-      if (!_isIsarReady()) {
-        final vouchers = await _loadFallbackVouchers();
-        vouchers.sort(
-          (a, b) => _parseIsoDate(
-            b['date'],
-          ).compareTo(_parseIsoDate(a['date'])),
-        );
-
-        final normalizedOffset = offset < 0 ? 0 : offset;
-        final normalizedLimit = limit <= 0 ? vouchers.length : limit;
-        return vouchers
-            .skip(normalizedOffset)
-            .take(normalizedLimit)
-            .map(_stripFallbackVoucher)
-            .toList(growable: false);
-      }
-
-      // Use index for sorting
-      final vouchers = await dbService.vouchers
-          .where()
-          .sortByDateDesc()
-          .offset(offset)
-          .limit(limit)
-          .findAll();
-
-      // Bootstrap logic for Windows if empty
-      final isWindows =
-          !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
-      if (vouchers.isEmpty && offset == 0 && !isWindows) {
-        final remote = await bootstrapFromFirebase(
-          collectionName: vouchersCollection,
-        );
-        if (remote.isNotEmpty) {
-          final newEntities = remote
-              .map((e) => _mapToVoucherEntity(e))
-              .toList();
-          await dbService.db.writeTxn(() async {
-            await dbService.vouchers.putAll(newEntities);
-          });
-          return (await dbService.vouchers
-                  .where()
-                  .sortByDateDesc()
-                  .offset(offset)
-                  .limit(limit)
-                  .findAll())
-              .map((e) => _voucherEntityToMap(e))
-              .toList();
-        }
-      }
-
-      return vouchers.map((e) => _voucherEntityToMap(e)).toList();
-    } catch (e) {
-      handleError(e, 'getVouchers');
-      return [];
+      final vouchers = await getAllVouchers();
+      final safeOffset = offset < 0 ? 0 : offset;
+      final safeLimit = limit <= 0 ? vouchers.length : limit;
+      return vouchers
+          .skip(safeOffset)
+          .take(safeLimit)
+          .map(_voucherEntityToMap)
+          .toList(growable: false);
+    } catch (error) {
+      handleError(error, 'getVouchers');
+      return const <Map<String, dynamic>>[];
     }
   }
 
@@ -423,136 +261,268 @@ class VoucherRepository extends OfflineFirstService {
     int limit = 100,
   }) async {
     try {
-      if (!_isIsarReady()) {
-        var entries = (await _loadFallbackVouchers())
-            .expand(_fallbackEntriesFromVoucher)
-            .toList(growable: true);
-
-        if (fromDate != null) {
-          entries = entries
-              .where(
-                (entry) => !_parseIsoDate(
-                      entry['date'] ?? entry['postingDate'],
-                    ).isBefore(fromDate),
-              )
-              .toList(growable: true);
-        }
-        if (toDate != null) {
-          entries = entries
-              .where(
-                (entry) => !_parseIsoDate(
-                      entry['date'] ?? entry['postingDate'],
-                    ).isAfter(toDate),
-              )
-              .toList(growable: true);
-        }
-
-        entries.sort(
-          (a, b) => _parseIsoDate(
-            b['date'] ?? b['postingDate'],
-          ).compareTo(_parseIsoDate(a['date'] ?? a['postingDate'])),
-        );
-
-        final normalizedOffset = offset < 0 ? 0 : offset;
-        final normalizedLimit = limit <= 0 ? entries.length : limit;
-        return entries
-            .skip(normalizedOffset)
-            .take(normalizedLimit)
-            .map((entry) => Map<String, dynamic>.from(entry))
-            .toList(growable: false);
-      }
-
-      List<VoucherEntryEntity> entries = [];
-
-      // Use efficient separate queries to avoid type issues with QueryBuilder
+      var query = dbService.voucherEntries.filter().isDeletedEqualTo(false);
       if (fromDate != null && toDate != null) {
-        entries = await dbService.voucherEntries
-            .filter()
-            .dateBetween(
-              fromDate,
-              toDate,
-              includeLower: true,
-              includeUpper: true,
-            )
-            .offset(offset)
-            .limit(limit)
-            .findAll();
-      } else if (fromDate != null) {
-        entries = await dbService.voucherEntries
-            .filter()
-            .dateGreaterThan(fromDate, include: true)
-            .offset(offset)
-            .limit(limit)
-            .findAll();
-      } else if (toDate != null) {
-        entries = await dbService.voucherEntries
-            .filter()
-            .dateLessThan(toDate, include: true)
-            .offset(offset)
-            .limit(limit)
-            .findAll();
-      } else {
-        entries = await dbService.voucherEntries
-            .where()
-            .offset(offset)
-            .limit(limit)
-            .findAll();
-      }
-
-      // Windows bootstrap logic for entries
-      final isWindows =
-          !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
-      if (entries.isEmpty && offset == 0 && !isWindows) {
-        final remote = await bootstrapFromFirebase(
-          collectionName: voucherEntriesCollection,
+        query = query.and().dateBetween(
+          fromDate,
+          toDate,
+          includeLower: true,
+          includeUpper: true,
         );
-        if (remote.isNotEmpty) {
-          final newEntities = remote.map((e) => _mapToEntryEntity(e)).toList();
-          await dbService.db.writeTxn(() async {
-            await dbService.voucherEntries.putAll(newEntities);
-          });
-          // Re-fetch logic
-          if (fromDate != null && toDate != null) {
-            entries = await dbService.voucherEntries
-                .filter()
-                .dateBetween(
-                  fromDate,
-                  toDate,
-                  includeLower: true,
-                  includeUpper: true,
-                )
-                .offset(offset)
-                .limit(limit)
-                .findAll();
-          } else if (fromDate != null) {
-            entries = await dbService.voucherEntries
-                .filter()
-                .dateGreaterThan(fromDate, include: true)
-                .offset(offset)
-                .limit(limit)
-                .findAll();
-          } else if (toDate != null) {
-            entries = await dbService.voucherEntries
-                .filter()
-                .dateLessThan(toDate, include: true)
-                .offset(offset)
-                .limit(limit)
-                .findAll();
-          } else {
-            entries = await dbService.voucherEntries
-                .where()
-                .offset(offset)
-                .limit(limit)
-                .findAll();
-          }
-        }
+      } else if (fromDate != null) {
+        query = query.and().dateGreaterThan(fromDate, include: true);
+      } else if (toDate != null) {
+        query = query.and().dateLessThan(toDate, include: true);
       }
 
-      return entries.map((e) => _entryEntityToMap(e)).toList();
-    } catch (e) {
-      handleError(e, 'getVoucherEntries');
-      return [];
+      final entries = await query
+          .sortByDateDesc()
+          .offset(offset < 0 ? 0 : offset)
+          .limit(limit <= 0 ? 100000 : limit)
+          .findAll();
+      return entries.map(_entryEntityToMap).toList(growable: false);
+    } catch (error) {
+      handleError(error, 'getVoucherEntries');
+      return const <Map<String, dynamic>>[];
     }
+  }
+
+  Future<void> saveVoucher(VoucherEntity voucher) async {
+    await _persistVoucherWithEntries(voucher, const <VoucherEntryEntity>[]);
+  }
+
+  Future<void> saveVoucherEntries(List<VoucherEntryEntity> entries) async {
+    if (entries.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final deviceId = await _deviceIdService.getDeviceId();
+    final preparedEntries = <VoucherEntryEntity>[];
+    final operations = <Map<String, String>>[];
+
+    for (final entry in entries) {
+      final existing = await dbService.voucherEntries.getById(entry.id.trim());
+      final prepared = _prepareEntryForSave(
+        entry,
+        now: now,
+        deviceId: deviceId,
+        existing: existing,
+      );
+      preparedEntries.add(prepared);
+      operations.add({
+        'documentId': prepared.id,
+        'operation': existing == null ? 'create' : 'update',
+      });
+    }
+
+    await dbService.db.writeTxn(() async {
+      await dbService.voucherEntries.putAll(preparedEntries);
+    });
+
+    for (var i = 0; i < preparedEntries.length; i++) {
+      await _syncQueueService.addToQueue(
+        collectionName: voucherEntriesCollection,
+        documentId: operations[i]['documentId']!,
+        operation: operations[i]['operation']!,
+        payload: preparedEntries[i].toJson(),
+      );
+    }
+
+    await _syncIfOnline();
+  }
+
+  Future<void> saveVoucherWithEntries(
+    VoucherEntity voucher,
+    List<VoucherEntryEntity> entries,
+  ) async {
+    await _persistVoucherWithEntries(voucher, entries);
+  }
+
+  Future<VoucherEntity?> getVoucherById(String id) {
+    return dbService.vouchers
+        .filter()
+        .idEqualTo(id)
+        .and()
+        .isDeletedEqualTo(false)
+        .findFirst();
+  }
+
+  Future<List<VoucherEntity>> getAllVouchers() {
+    return dbService.vouchers
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByDateDesc()
+        .findAll();
+  }
+
+  Future<List<VoucherEntity>> getVouchersByType(String type) {
+    return dbService.vouchers
+        .filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .typeEqualTo(type)
+        .sortByDateDesc()
+        .findAll();
+  }
+
+  Future<List<VoucherEntity>> getVouchersByDate(DateTime from, DateTime to) {
+    return dbService.vouchers
+        .filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .dateBetween(from, to, includeLower: true, includeUpper: true)
+        .sortByDateDesc()
+        .findAll();
+  }
+
+  Future<List<VoucherEntity>> getVouchersBySalesman(String salesmanId) {
+    return dbService.vouchers
+        .filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .salesmanIdEqualTo(salesmanId)
+        .sortByDateDesc()
+        .findAll();
+  }
+
+  Future<List<VoucherEntryEntity>> getEntriesByVoucher(String voucherId) {
+    return dbService.voucherEntries
+        .filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .voucherIdEqualTo(voucherId)
+        .sortByDateDesc()
+        .findAll();
+  }
+
+  Stream<List<VoucherEntity>> watchAllVouchers() {
+    return dbService.vouchers
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByDateDesc()
+        .watch(fireImmediately: true);
+  }
+
+  Stream<List<VoucherEntryEntity>> watchEntriesByVoucher(String voucherId) {
+    return dbService.voucherEntries
+        .filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .voucherIdEqualTo(voucherId)
+        .sortByDateDesc()
+        .watch(fireImmediately: true);
+  }
+
+  Future<void> cancelVoucher(String id, String reason) async {
+    final voucher = await getVoucherById(id);
+    if (voucher == null) {
+      return;
+    }
+
+    final now = DateTime.now();
+    voucher
+      ..status = 'cancelled'
+      ..cancelReason = reason.trim()
+      ..cancelledAt = now;
+
+    await _persistVoucherWithEntries(voucher, const <VoucherEntryEntity>[]);
+  }
+
+  Future<void> deleteVoucher(String id) async {
+    final voucher = await getVoucherById(id);
+    if (voucher == null) {
+      return;
+    }
+
+    final entries = await getEntriesByVoucher(id);
+    final now = DateTime.now();
+    final deviceId = await _deviceIdService.getDeviceId();
+
+    voucher
+      ..isDeleted = true
+      ..deletedAt = now
+      ..updatedAt = now
+      ..syncStatus = SyncStatus.pending
+      ..isSynced = false
+      ..lastSynced = null
+      ..version += 1
+      ..deviceId = deviceId;
+
+    final deletedEntries = <VoucherEntryEntity>[];
+    for (final entry in entries) {
+      entry
+        ..isDeleted = true
+        ..deletedAt = now
+        ..updatedAt = now
+        ..syncStatus = SyncStatus.pending
+        ..isSynced = false
+        ..lastSynced = null
+        ..version += 1
+        ..deviceId = deviceId;
+      deletedEntries.add(entry);
+    }
+
+    await dbService.db.writeTxn(() async {
+      await dbService.vouchers.put(voucher);
+      if (deletedEntries.isNotEmpty) {
+        await dbService.voucherEntries.putAll(deletedEntries);
+      }
+    });
+
+    await _syncQueueService.addToQueue(
+      collectionName: vouchersCollection,
+      documentId: voucher.id,
+      operation: 'delete',
+      payload: voucher.toJson(),
+    );
+
+    for (final entry in deletedEntries) {
+      await _syncQueueService.addToQueue(
+        collectionName: voucherEntriesCollection,
+        documentId: entry.id,
+        operation: 'delete',
+        payload: entry.toJson(),
+      );
+    }
+
+    await _syncIfOnline();
+  }
+
+  Future<void> deleteVoucherEntry(String id) async {
+    final entry = await dbService.voucherEntries
+        .filter()
+        .idEqualTo(id)
+        .and()
+        .isDeletedEqualTo(false)
+        .findFirst();
+    if (entry == null) {
+      return;
+    }
+
+    final now = DateTime.now();
+    entry
+      ..isDeleted = true
+      ..deletedAt = now
+      ..updatedAt = now
+      ..syncStatus = SyncStatus.pending
+      ..isSynced = false
+      ..lastSynced = null
+      ..version += 1
+      ..deviceId = await _deviceIdService.getDeviceId();
+
+    await dbService.db.writeTxn(() async {
+      await dbService.voucherEntries.put(entry);
+    });
+
+    await _syncQueueService.addToQueue(
+      collectionName: voucherEntriesCollection,
+      documentId: entry.id,
+      operation: 'delete',
+      payload: entry.toJson(),
+    );
+
+    await _syncIfOnline();
   }
 
   Future<String> createVoucherBundle({
@@ -575,36 +545,46 @@ class VoucherRepository extends OfflineFirstService {
       );
     }
 
-    final voucherId = transactionRefId;
-
-    // Check for duplicates
     final existing = await _findExistingVoucher(
       transactionRefId: transactionRefId,
       transactionType: transactionType,
       strictMode: strictMode,
     );
-
     if (existing != null) {
       AppLogger.warning(
         'Duplicate voucher skipped: $transactionType/$transactionRefId',
         tag: 'Accounting',
       );
-      return existing['id'];
+      return existing['id']?.toString() ?? transactionRefId;
     }
 
-    final now = getCurrentTimestamp();
-    final postingDate = (voucher['date'] ?? now).toString();
+    final now = DateTime.now();
+    final postingDate =
+        DateTime.tryParse((voucher['date'] ?? now.toIso8601String()).toString()) ??
+        now;
+    final voucherId = transactionRefId;
+    final normalizedVoucherType = (voucher['voucherType'] ?? transactionType)
+        .toString()
+        .trim()
+        .toLowerCase();
 
-    final normalizedEntries = <Map<String, dynamic>>[];
     final entryEntities = <VoucherEntryEntity>[];
-
     double totalDebit = 0;
     double totalCredit = 0;
 
     for (final raw in entries) {
       final debit = _toDouble(raw['debit']);
       final credit = _toDouble(raw['credit']);
-      if (debit <= 0 && credit <= 0) continue;
+      if (debit <= 0 && credit <= 0) {
+        continue;
+      }
+
+      final accountCode = (raw['ledgerId'] ?? raw['accountCode'])
+          .toString()
+          .trim();
+      if (accountCode.isEmpty) {
+        throw ArgumentError('Voucher entry accountCode is required');
+      }
 
       totalDebit += debit;
       totalCredit += credit;
@@ -617,122 +597,98 @@ class VoucherRepository extends OfflineFirstService {
       final entryEntity = VoucherEntryEntity()
         ..id = (raw['id'] ?? '${voucherId}_${entryEntities.length + 1}')
             .toString()
+            .trim()
         ..voucherId = voucherId
-        ..accountCode = (raw['ledgerId'] ?? raw['accountCode']).toString()
+        ..accountCode = accountCode
         ..debit = debit
         ..credit = credit
-        ..narration = (raw['narration'] ?? '').toString()
-        ..date = DateTime.tryParse(postingDate)
-        ..updatedAt = DateTime.tryParse(now) ?? DateTime.now();
+        ..narration = (raw['narration'] ?? '').toString().trim()
+        ..date = postingDate
+        ..voucherType = normalizedVoucherType
+        ..transactionType = transactionType
+        ..transactionRefId = transactionRefId
+        ..createdAt =
+            DateTime.tryParse(
+              (raw['createdAt'] ?? now.toIso8601String()).toString(),
+            ) ??
+            now;
       _applyDimensionsToEntryEntity(
         entryEntity,
         entryDimensions,
         dimensionVersion: entryDimensionVersion,
       );
-
       entryEntities.add(entryEntity);
-
-      normalizedEntries.add({
-        ...raw,
-        'id': entryEntity.id,
-        'voucherId': voucherId,
-        'voucherType': voucher['voucherType'] ?? transactionType,
-        'transactionRefId': transactionRefId,
-        'transactionType': transactionType,
-        'ledgerId': entryEntity.accountCode,
-        'date': postingDate,
-        'postingDate': postingDate,
-        'debit': debit,
-        'credit': credit,
-        ...entryDimensions,
-        if (entryDimensions.isNotEmpty) 'accountingDimensions': entryDimensions,
-        'dimensionVersion': entryDimensionVersion,
-        'updatedAt': now,
-        'createdAt': raw['createdAt'] ?? now,
-      });
     }
 
     if (entryEntities.isEmpty) {
       throw ArgumentError('At least one debit/credit entry is required');
     }
 
-    final difference = (totalDebit - totalCredit).abs();
-    if (difference > 0.01) {
+    if ((totalDebit - totalCredit).abs() > 0.01) {
       throw StateError(
         'Voucher is not balanced. Debit=$totalDebit Credit=$totalCredit',
       );
     }
 
-    final voucherEntity = _mapToVoucherEntity({
-      ...voucher,
-      'id': voucherId,
-      'transactionRefId': transactionRefId,
-      'transactionType': transactionType,
-      'date': postingDate,
-      'amount': totalDebit,
-      'updatedAt': now,
-      'isSynced': strictMode,
-    });
-
-    final voucherData = <String, dynamic>{
-      ...voucher,
-      'id': voucherId,
-      'transactionRefId': transactionRefId,
-      'transactionType': transactionType,
-      'date': postingDate,
-      'totalDebit': totalDebit,
-      'totalCredit': totalCredit,
-      'isBalanced': true,
-      'entryCount': entryEntities.length,
-      'updatedAt': now,
-      'createdAt': voucher['createdAt'] ?? now,
-      'isSynced': strictMode,
-    };
-
-    if (_isIsarReady()) {
-      // Atomic Write to Isar
-      await dbService.db.writeTxn(() async {
-        await dbService.vouchers.put(voucherEntity);
-        await dbService.voucherEntries.putAll(entryEntities);
-      });
-    } else {
-      final local = await _loadFallbackVouchers();
-      local.removeWhere((item) => item['id']?.toString() == voucherId);
-      local.add({
-        ...voucherData,
-        'amount': totalDebit,
-        _fallbackEntriesKey: normalizedEntries
-            .map((entry) => Map<String, dynamic>.from(entry))
-            .toList(growable: false),
-      });
-      await _saveFallbackVouchers(local);
-    }
-
-    if (strictMode) {
-      await _commitStrictBatch(
-        voucherId: voucherId,
-        voucherData: voucherData,
-        entries: normalizedEntries,
-        strictBusinessWrite: strictBusinessWrite,
-      );
-      return voucherId;
-    }
-
-    // Sync Queue
-    await syncToFirebase(
-      'set',
-      voucherData,
-      collectionName: vouchersCollection,
-      syncImmediately: false,
+    final voucherDimensions = _extractAccountingDimensions(voucher);
+    final voucherEntity = VoucherEntity()
+      ..id = voucherId
+      ..transactionRefId = transactionRefId
+      ..date = postingDate
+      ..type = transactionType
+      ..narration = (voucher['narration'] ?? '').toString().trim()
+      ..amount = totalDebit
+      ..linkedId = voucher['linkedId']?.toString()
+      ..partyName = voucher['partyName']?.toString()
+      ..voucherNumber = voucher['voucherNumber']?.toString()
+      ..status = (voucher['status'] ?? 'active').toString().trim()
+      ..cancelReason = voucher['cancelReason']?.toString()
+      ..cancelledAt = voucher['cancelledAt'] == null
+          ? null
+          : DateTime.tryParse(voucher['cancelledAt'].toString())
+      ..voucherType = normalizedVoucherType
+      ..sourceModule = voucher['sourceModule']?.toString()
+      ..sourceId = voucher['sourceId']?.toString()
+      ..sourceNumber = voucher['sourceNumber']?.toString()
+      ..financialYearId = voucher['financialYearId']?.toString()
+      ..partyId = voucher['partyId']?.toString()
+      ..createdBy = voucher['createdBy']?.toString()
+      ..createdByName = voucher['createdByName']?.toString()
+      ..createdAt =
+          DateTime.tryParse(
+            (voucher['createdAt'] ?? now.toIso8601String()).toString(),
+          ) ??
+          now
+      ..reversalOfVoucherId = voucher['reversalOfVoucherId']?.toString()
+      ..reversalReason = voucher['reversalReason']?.toString()
+      ..totalDebit = totalDebit
+      ..totalCredit = totalCredit
+      ..isBalanced = true
+      ..entryCount = entryEntities.length;
+    _applyDimensionsToVoucherEntity(
+      voucherEntity,
+      voucherDimensions,
+      dimensionVersion: voucher['dimensionVersion'],
     );
-    for (final entry in normalizedEntries) {
-      await syncToFirebase(
-        'set',
-        entry,
-        collectionName: voucherEntriesCollection,
-        syncImmediately: false,
+
+    await _persistVoucherWithEntries(
+      voucherEntity,
+      entryEntities,
+      syncAfterSave: false,
+    );
+
+    if (strictBusinessWrite != null &&
+        strictBusinessWrite.collection.trim().isNotEmpty &&
+        strictBusinessWrite.docId.trim().isNotEmpty) {
+      await _syncQueueService.addToQueue(
+        collectionName: strictBusinessWrite.collection.trim(),
+        documentId: strictBusinessWrite.docId.trim(),
+        operation: 'update',
+        payload: strictBusinessWrite.data,
       );
     }
+
+    await _syncIfOnline();
     return voucherId;
   }
 
@@ -756,9 +712,6 @@ class VoucherRepository extends OfflineFirstService {
     }
 
     final effectiveDate = reversalDate ?? DateTime.now();
-    final postingDate = effectiveDate.toIso8601String();
-    final now = getCurrentTimestamp();
-
     final originalVoucher = await _loadVoucherById(
       targetVoucherId,
       includeRemote: strictMode,
@@ -819,16 +772,16 @@ class VoucherRepository extends OfflineFirstService {
         'transactionRefId': reversalId,
         'transactionType': 'reversal',
         'voucherType': reversalVoucherType,
-        'date': postingDate,
-        'postingDate': postingDate,
+        'date': effectiveDate.toIso8601String(),
+        'postingDate': effectiveDate.toIso8601String(),
         'debit': credit,
         'credit': debit,
         'narration': reversalEntryNarration,
         ...entryDimensions,
         if (entryDimensions.isNotEmpty) 'accountingDimensions': entryDimensions,
         'dimensionVersion': entryDimensionVersion,
-        'updatedAt': now,
-        'createdAt': now,
+        'updatedAt': effectiveDate.toIso8601String(),
+        'createdAt': effectiveDate.toIso8601String(),
       });
     }
 
@@ -859,7 +812,7 @@ class VoucherRepository extends OfflineFirstService {
         'reversalReason': reasonText,
         if (resolvedFinancialYearId.isNotEmpty)
           'financialYearId': resolvedFinancialYearId,
-        'date': postingDate,
+        'date': effectiveDate.toIso8601String(),
         'partyId': originalVoucher['partyId'],
         'partyName': originalVoucher['partyName'],
         'narration': reversalNarration,
@@ -870,52 +823,12 @@ class VoucherRepository extends OfflineFirstService {
         'createdBy': postedByUserId,
         if (postedByName != null && postedByName.trim().isNotEmpty)
           'createdByName': postedByName.trim(),
-        'createdAt': now,
-        'updatedAt': now,
+        'createdAt': effectiveDate.toIso8601String(),
+        'updatedAt': effectiveDate.toIso8601String(),
       },
       entries: reversedEntries,
       strictMode: strictMode,
     );
-  }
-
-  Future<void> _commitStrictBatch({
-    required String voucherId,
-    required Map<String, dynamic> voucherData,
-    required List<Map<String, dynamic>> entries,
-    StrictBusinessWrite? strictBusinessWrite,
-  }) async {
-    final firestore = db;
-    if (firestore == null) {
-      throw StateError(
-        'Strict accounting mode requires online Firestore connection',
-      );
-    }
-
-    final batch = firestore.batch();
-
-    if (strictBusinessWrite != null) {
-      final businessRef = firestore
-          .collection(strictBusinessWrite.collection)
-          .doc(strictBusinessWrite.docId);
-      batch.set(
-        businessRef,
-        strictBusinessWrite.data,
-        SetOptions(merge: strictBusinessWrite.merge),
-      );
-    }
-
-    final voucherRef = firestore.collection(vouchersCollection).doc(voucherId);
-    batch.set(voucherRef, voucherData, SetOptions(merge: true));
-
-    for (final entry in entries) {
-      final entryId = entry['id'].toString();
-      final entryRef = firestore
-          .collection(voucherEntriesCollection)
-          .doc(entryId);
-      batch.set(entryRef, entry, SetOptions(merge: true));
-    }
-
-    await batch.commit();
   }
 
   Future<Map<String, dynamic>?> _findExistingVoucher({
@@ -923,185 +836,54 @@ class VoucherRepository extends OfflineFirstService {
     required String transactionType,
     required bool strictMode,
   }) async {
-    if (_isIsarReady()) {
-      // Check Isar first
-      final existing = await dbService.vouchers
-          .filter()
-          .transactionRefIdEqualTo(transactionRefId)
-          .findFirst();
-
-      if (existing != null) {
-        final vType = _normalizeType(existing.type);
-        final txTypeNormalized = _normalizeType(transactionType);
-        if (vType == txTypeNormalized) {
-          return _voucherEntityToMap(existing);
-        }
-        if (existing.id == transactionRefId) {
-          throw StateError(
-            'Voucher ID collision for transactionRefId=$transactionRefId with conflicting transactionType.',
-          );
-        }
-      }
-    } else {
-      final local = await _loadFallbackVouchers();
-      Map<String, dynamic>? existingLocal;
-      for (final voucher in local) {
-        final refId = voucher['transactionRefId']?.toString().trim() ?? '';
-        if (refId == transactionRefId) {
-          existingLocal = voucher;
-          break;
-        }
-      }
-
-      if (existingLocal != null) {
-        final localType = _normalizeType(
-          existingLocal['transactionType'] ?? existingLocal['type'],
-        );
-        final txTypeNormalized = _normalizeType(transactionType);
-        if (localType == txTypeNormalized) {
-          return _stripFallbackVoucher(existingLocal);
-        }
-        if (existingLocal['id']?.toString() == transactionRefId) {
-          throw StateError(
-            'Voucher ID collision for transactionRefId=$transactionRefId with conflicting transactionType.',
-          );
-        }
-      }
-    }
-
-    if (!strictMode) {
+    final existing = await dbService.vouchers
+        .filter()
+        .transactionRefIdEqualTo(transactionRefId)
+        .and()
+        .isDeletedEqualTo(false)
+        .findFirst();
+    if (existing == null) {
       return null;
     }
 
-    final firestore = db;
-    if (firestore == null) return null;
+    final localType = _normalizeType(existing.type);
+    final normalizedType = _normalizeType(transactionType);
+    if (localType == normalizedType) {
+      return _voucherEntityToMap(existing);
+    }
 
-    final snapshot = await firestore
-        .collection(vouchersCollection)
-        .doc(transactionRefId)
-        .get();
-    if (!snapshot.exists) return null;
-
-    final remote = snapshot.data() ?? <String, dynamic>{};
-    final txTypeNormalized = _normalizeType(transactionType);
-    final remoteType = _normalizeType(remote['transactionType']);
-    if (remoteType.isNotEmpty && remoteType != txTypeNormalized) {
+    if (existing.id == transactionRefId) {
       throw StateError(
-        'Remote voucher collision for transactionRefId=$transactionRefId with conflicting transactionType.',
+        'Voucher ID collision for transactionRefId=$transactionRefId with conflicting transactionType.',
       );
     }
-    final resolved = <String, dynamic>{...remote, 'id': snapshot.id};
-
-    if (_isIsarReady()) {
-      // Cache to Isar logic can be inline
-      final entity = _mapToVoucherEntity(resolved);
-      await dbService.db.writeTxn(() async {
-        await dbService.vouchers.put(entity);
-      });
-    } else {
-      final local = await _loadFallbackVouchers();
-      local.removeWhere((item) => item['id']?.toString() == snapshot.id);
-      local.add(resolved);
-      await _saveFallbackVouchers(local);
-    }
-
-    return resolved;
+    return null;
   }
 
   Future<Map<String, dynamic>?> _loadVoucherById(
     String voucherId, {
     required bool includeRemote,
   }) async {
-    final targetId = voucherId.trim();
-    if (targetId.isEmpty) return null;
-
-    if (_isIsarReady()) {
-      final entity = await dbService.vouchers.filter().idEqualTo(targetId).findFirst();
-      if (entity != null) {
-        return _voucherEntityToMap(entity);
-      }
-    } else {
-      final local = await _loadFallbackVouchers();
-      for (final item in local) {
-        if (item['id']?.toString() == targetId) {
-          return _stripFallbackVoucher(item);
-        }
-      }
-    }
-
-    if (!includeRemote) return null;
-
-    final firestore = db;
-    if (firestore == null) return null;
-    final snapshot = await firestore.collection(vouchersCollection).doc(targetId).get();
-    if (!snapshot.exists) return null;
-    final resolved = <String, dynamic>{
-      ...(snapshot.data() ?? const <String, dynamic>{}),
-      'id': snapshot.id,
-    };
-    if (_isIsarReady()) {
-      await dbService.db.writeTxn(() async {
-        await dbService.vouchers.put(_mapToVoucherEntity(resolved));
-      });
-    }
-    return resolved;
+    final entity = await dbService.vouchers
+        .filter()
+        .idEqualTo(voucherId)
+        .and()
+        .isDeletedEqualTo(false)
+        .findFirst();
+    return entity == null ? null : _voucherEntityToMap(entity);
   }
 
   Future<List<Map<String, dynamic>>> _loadEntriesByVoucherId(
     String voucherId, {
     required bool includeRemote,
   }) async {
-    final targetId = voucherId.trim();
-    if (targetId.isEmpty) return const <Map<String, dynamic>>[];
-
-    if (_isIsarReady()) {
-      final entities = await dbService.voucherEntries
-          .filter()
-          .voucherIdEqualTo(targetId)
-          .findAll();
-      if (entities.isNotEmpty) {
-        return entities.map(_entryEntityToMap).toList(growable: false);
-      }
-    } else {
-      final localEntries = (await _loadFallbackVouchers())
-          .expand(_fallbackEntriesFromVoucher)
-          .where((entry) => entry['voucherId']?.toString() == targetId)
-          .map((entry) => Map<String, dynamic>.from(entry))
-          .toList(growable: false);
-      if (localEntries.isNotEmpty) {
-        return localEntries;
-      }
-    }
-
-    if (!includeRemote) return const <Map<String, dynamic>>[];
-
-    final firestore = db;
-    if (firestore == null) return const <Map<String, dynamic>>[];
-    final snapshot = await firestore
-        .collection(voucherEntriesCollection)
-        .where('voucherId', isEqualTo: targetId)
-        .get();
-    if (snapshot.docs.isEmpty) {
-      return const <Map<String, dynamic>>[];
-    }
-
-    final remoteEntries = snapshot.docs
-        .map(
-          (doc) => <String, dynamic>{
-            ...(doc.data()),
-            'id': doc.id,
-          },
-        )
-        .toList(growable: false);
-
-    if (_isIsarReady()) {
-      final entities = remoteEntries.map(_mapToEntryEntity).toList(growable: false);
-      await dbService.db.writeTxn(() async {
-        await dbService.voucherEntries.putAll(entities);
-      });
-    }
-
-    return remoteEntries;
+    final entities = await dbService.voucherEntries
+        .filter()
+        .voucherIdEqualTo(voucherId)
+        .and()
+        .isDeletedEqualTo(false)
+        .findAll();
+    return entities.map(_entryEntityToMap).toList(growable: false);
   }
 
   String _normalizeType(dynamic value) {
@@ -1129,88 +911,84 @@ class VoucherRepository extends OfflineFirstService {
     bool includeRemote = true,
   }) async {
     final target = voucherNumber.trim();
-    if (target.isEmpty) return false;
-
-    // Isar check (Assuming voucherNumber is indexed now)
+    if (target.isEmpty) {
+      return false;
+    }
     final existing = await dbService.vouchers
         .filter()
         .voucherNumberEqualTo(target)
+        .and()
+        .isDeletedEqualTo(false)
         .findFirst();
-    if (existing != null) return true;
-
-    if (!includeRemote) return false;
-    final firestore = db;
-    if (firestore == null) return false;
-    final snapshot = await firestore
-        .collection(vouchersCollection)
-        .where('voucherNumber', isEqualTo: target)
-        .limit(1)
-        .get();
-    return snapshot.docs.isNotEmpty;
+    return existing != null;
   }
 
   Future<Map<String, double>> getDashboardMetrics() async {
     try {
-      // Cash
       final cashEntries = await dbService.voucherEntries
           .filter()
+          .isDeletedEqualTo(false)
+          .and()
           .accountCodeEqualTo('CASH_IN_HAND')
           .findAll();
       final cashBalance = cashEntries.fold<double>(
         0,
-        (total, e) => total + (e.debit - e.credit),
+        (total, entry) => total + (entry.debit - entry.credit),
       );
 
-      // Bank (Starts with BANK)
       final bankEntries = await dbService.voucherEntries
           .filter()
+          .isDeletedEqualTo(false)
+          .and()
           .accountCodeStartsWith('BANK')
           .findAll();
       final bankBalance = bankEntries.fold<double>(
         0,
-        (total, e) => total + (e.debit - e.credit),
+        (total, entry) => total + (entry.debit - entry.credit),
       );
 
-      // Debtors
       final debtorEntries = await dbService.voucherEntries
           .filter()
+          .isDeletedEqualTo(false)
+          .and()
           .accountCodeEqualTo('SUNDRY_DEBTORS')
           .findAll();
       final receivables = debtorEntries.fold<double>(
         0,
-        (total, e) => total + (e.debit - e.credit),
+        (total, entry) => total + (entry.debit - entry.credit),
       );
 
-      // Creditors
       final creditorEntries = await dbService.voucherEntries
           .filter()
+          .isDeletedEqualTo(false)
+          .and()
           .accountCodeEqualTo('SUNDRY_CREDITORS')
           .findAll();
       final payables = creditorEntries.fold<double>(
         0,
-        (total, e) =>
-            total +
-            (e.credit - e.debit), // Credit balance is positive for liability
+        (total, entry) => total + (entry.credit - entry.debit),
       );
 
-      // Output GST
       final outputGstEntries = await dbService.voucherEntries
           .filter()
+          .isDeletedEqualTo(false)
+          .and()
           .accountCodeStartsWith('OUTPUT_')
           .findAll();
       final outputGst = outputGstEntries.fold<double>(
         0,
-        (total, e) => total + (e.credit - e.debit),
+        (total, entry) => total + (entry.credit - entry.debit),
       );
 
-      // Input GST
       final inputGstEntries = await dbService.voucherEntries
           .filter()
+          .isDeletedEqualTo(false)
+          .and()
           .accountCodeStartsWith('INPUT_')
           .findAll();
       final inputGst = inputGstEntries.fold<double>(
         0,
-        (total, e) => total + (e.debit - e.credit),
+        (total, entry) => total + (entry.debit - entry.credit),
       );
 
       return {
@@ -1221,8 +999,8 @@ class VoucherRepository extends OfflineFirstService {
         'outputGst': outputGst,
         'inputGst': inputGst,
       };
-    } catch (e) {
-      handleError(e, 'getDashboardMetrics');
+    } catch (error) {
+      handleError(error, 'getDashboardMetrics');
       return {
         'cash': 0,
         'bank': 0,
@@ -1242,15 +1020,17 @@ class VoucherRepository extends OfflineFirstService {
     try {
       final entries = await dbService.voucherEntries
           .filter()
+          .isDeletedEqualTo(false)
+          .and()
           .accountCodeEqualTo(accountCode)
           .sortByDateDesc()
-          .offset(offset)
-          .limit(limit)
+          .offset(offset < 0 ? 0 : offset)
+          .limit(limit <= 0 ? 100000 : limit)
           .findAll();
-      return entries.map((e) => _entryEntityToMap(e)).toList();
-    } catch (e) {
-      handleError(e, 'getLedgerEntries');
-      return [];
+      return entries.map(_entryEntityToMap).toList(growable: false);
+    } catch (error) {
+      handleError(error, 'getLedgerEntries');
+      return const <Map<String, dynamic>>[];
     }
   }
 
@@ -1258,15 +1038,171 @@ class VoucherRepository extends OfflineFirstService {
     try {
       final entries = await dbService.voucherEntries
           .filter()
+          .isDeletedEqualTo(false)
+          .and()
           .accountCodeEqualTo(accountCode)
           .findAll();
       return entries.fold<double>(
         0,
-        (total, e) => total + (e.debit - e.credit),
+        (total, entry) => total + (entry.debit - entry.credit),
       );
-    } catch (e) {
-      handleError(e, 'getAccountBalance');
+    } catch (error) {
+      handleError(error, 'getAccountBalance');
       return 0.0;
+    }
+  }
+
+  Future<void> _persistVoucherWithEntries(
+    VoucherEntity voucher,
+    List<VoucherEntryEntity> entries, {
+    bool syncAfterSave = true,
+  }) async {
+    final now = DateTime.now();
+    final deviceId = await _deviceIdService.getDeviceId();
+    final existingVoucher = await dbService.vouchers.getById(voucher.id.trim());
+    final preparedVoucher = _prepareVoucherForSave(
+      voucher,
+      now: now,
+      deviceId: deviceId,
+      existing: existingVoucher,
+    );
+
+    final preparedEntries = <VoucherEntryEntity>[];
+    final entryOperations = <Map<String, String>>[];
+    for (final entry in entries) {
+      final existingEntry = await dbService.voucherEntries.getById(entry.id.trim());
+      final preparedEntry = _prepareEntryForSave(
+        entry,
+        now: now,
+        deviceId: deviceId,
+        existing: existingEntry,
+      );
+      preparedEntries.add(preparedEntry);
+      entryOperations.add({
+        'documentId': preparedEntry.id,
+        'operation': existingEntry == null ? 'create' : 'update',
+      });
+    }
+
+    await dbService.db.writeTxn(() async {
+      await dbService.vouchers.put(preparedVoucher);
+      if (preparedEntries.isNotEmpty) {
+        await dbService.voucherEntries.putAll(preparedEntries);
+      }
+    });
+
+    await _syncQueueService.addToQueue(
+      collectionName: vouchersCollection,
+      documentId: preparedVoucher.id,
+      operation: existingVoucher == null ? 'create' : 'update',
+      payload: preparedVoucher.toJson(),
+    );
+
+    for (var i = 0; i < preparedEntries.length; i++) {
+      await _syncQueueService.addToQueue(
+        collectionName: voucherEntriesCollection,
+        documentId: entryOperations[i]['documentId']!,
+        operation: entryOperations[i]['operation']!,
+        payload: preparedEntries[i].toJson(),
+      );
+    }
+
+    if (syncAfterSave) {
+      await _syncIfOnline();
+    }
+  }
+
+  VoucherEntity _prepareVoucherForSave(
+    VoucherEntity voucher, {
+    required DateTime now,
+    required String deviceId,
+    required VoucherEntity? existing,
+  }) {
+    final normalizedId = voucher.id.trim();
+    if (normalizedId.isEmpty) {
+      throw ArgumentError('Voucher id is required');
+    }
+
+    final normalizedType = _normalizeType(voucher.type);
+    if (normalizedType.isEmpty) {
+      throw ArgumentError('Voucher type is required');
+    }
+
+    voucher
+      ..id = normalizedId
+      ..transactionRefId = voucher.transactionRefId.trim().isEmpty
+          ? normalizedId
+          : voucher.transactionRefId.trim()
+      ..type = normalizedType
+      ..narration = voucher.narration.trim()
+      ..voucherType = (voucher.voucherType ?? normalizedType).trim().isEmpty
+          ? normalizedType
+          : voucher.voucherType!.trim().toLowerCase()
+      ..status = voucher.status.trim().isEmpty ? 'active' : voucher.status.trim()
+      ..updatedAt = now
+      ..syncStatus = SyncStatus.pending
+      ..isSynced = false
+      ..lastSynced = null
+      ..version = existing == null ? 1 : existing.version + 1
+      ..deviceId = deviceId;
+
+    voucher.createdAt ??= existing?.createdAt ?? now;
+    if (!voucher.isDeleted) {
+      voucher.deletedAt = existing?.deletedAt;
+    }
+    return voucher;
+  }
+
+  VoucherEntryEntity _prepareEntryForSave(
+    VoucherEntryEntity entry, {
+    required DateTime now,
+    required String deviceId,
+    required VoucherEntryEntity? existing,
+  }) {
+    final normalizedId = entry.id.trim();
+    if (normalizedId.isEmpty) {
+      throw ArgumentError('Voucher entry id is required');
+    }
+    final voucherId = entry.voucherId.trim();
+    if (voucherId.isEmpty) {
+      throw ArgumentError('Voucher entry voucherId is required');
+    }
+    final accountCode = entry.accountCode.trim();
+    if (accountCode.isEmpty) {
+      throw ArgumentError('Voucher entry accountCode is required');
+    }
+
+    entry
+      ..id = normalizedId
+      ..voucherId = voucherId
+      ..accountCode = accountCode
+      ..voucherType = (entry.voucherType ?? '').trim().isEmpty
+          ? null
+          : entry.voucherType!.trim().toLowerCase()
+      ..transactionType = (entry.transactionType ?? '').trim().isEmpty
+          ? null
+          : entry.transactionType!.trim().toLowerCase()
+      ..transactionRefId = (entry.transactionRefId ?? '').trim().isEmpty
+          ? null
+          : entry.transactionRefId!.trim()
+      ..updatedAt = now
+      ..syncStatus = SyncStatus.pending
+      ..isSynced = false
+      ..lastSynced = null
+      ..version = existing == null ? 1 : existing.version + 1
+      ..deviceId = deviceId;
+
+    entry.date ??= now;
+    entry.createdAt ??= existing?.createdAt ?? now;
+    if (!entry.isDeleted) {
+      entry.deletedAt = existing?.deletedAt;
+    }
+    return entry;
+  }
+
+  Future<void> _syncIfOnline() async {
+    if (_connectivityService.isOnline) {
+      await _syncService.syncAllPending();
     }
   }
 }

@@ -17,7 +17,11 @@ abstract class BaseEntity {
   @enumerated
   SyncStatus syncStatus = SyncStatus.synced;
 
+  bool isSynced = false;
   bool isDeleted = false;
+  DateTime? lastSynced;
+  int version = 1;
+  String deviceId = '';
 }
 
 /// FNV-1a 64-bit hash algorithm optimized for Dart strings

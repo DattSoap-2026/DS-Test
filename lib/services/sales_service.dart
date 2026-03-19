@@ -3401,12 +3401,6 @@ class SalesService extends OfflineFirstService {
         'performedBy': salesmanId,
         'operations': rollbackPlan.operations,
       };
-      await syncToFirebase(
-        'set',
-        payload,
-        collectionName: accountingCompensationLogCollection,
-        syncImmediately: false,
-      );
       await createAuditLog(
         collectionName: accountingCompensationLogCollection,
         docId: compensationId,

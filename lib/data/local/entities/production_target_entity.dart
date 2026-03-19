@@ -1,5 +1,7 @@
 import 'package:isar/isar.dart';
+
 import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'production_target_entity.g.dart';
 
@@ -11,21 +13,15 @@ class ProductionTargetEntity extends BaseEntity {
   late String productName;
 
   @Index()
-  late String targetDate; // YYYY-MM-DD
+  late String targetDate;
 
   late int targetQuantity;
-
   late int achievedQuantity;
-
-  late String status; // active, completed, etc.
-
+  late String status;
   late DateTime createdAt;
 
-  // Convert to Domain
-  // Note: Domain model not imported here to avoid circular dep, handle in Service
-
-  Map<String, dynamic> toFirebaseJson() {
-    return {
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
       'id': id,
       'productId': productId,
       'productName': productName,
@@ -35,23 +31,45 @@ class ProductionTargetEntity extends BaseEntity {
       'status': status,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
     };
   }
 
-  static ProductionTargetEntity fromFirebaseJson(Map<String, dynamic> json) {
+  Map<String, dynamic> toFirebaseJson() => toJson();
+
+  static ProductionTargetEntity fromJson(Map<String, dynamic> json) {
     return ProductionTargetEntity()
-      ..id = json['id'] as String
-      ..productId = json['productId'] as String
-      ..productName = json['productName'] as String
-      ..targetDate = json['targetDate'] as String
-      ..targetQuantity = (json['targetQuantity'] as num).toInt()
-      ..achievedQuantity = (json['achievedQuantity'] as num).toInt()
-      ..status = json['status'] as String? ?? 'active'
-      ..createdAt = DateTime.parse(json['createdAt'] as String)
-      ..updatedAt = DateTime.parse(
-        json['updatedAt'] as String? ?? json['createdAt'] as String,
-      )
-      ..syncStatus = SyncStatus.synced
-      ..isDeleted = false;
+      ..id = parseString(json['id'])
+      ..productId = parseString(json['productId'])
+      ..productName = parseString(json['productName'])
+      ..targetDate = parseString(json['targetDate'])
+      ..targetQuantity = parseInt(json['targetQuantity'])
+      ..achievedQuantity = parseInt(json['achievedQuantity'])
+      ..status = parseString(json['status'], fallback: 'active')
+      ..createdAt = parseDate(json['createdAt'])
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
+  }
+
+  static ProductionTargetEntity fromFirebaseJson(Map<String, dynamic> json) {
+    return fromJson(<String, dynamic>{
+      ...json,
+      'syncStatus': SyncStatus.synced.name,
+      'isSynced': true,
+      'lastSynced': DateTime.now().toIso8601String(),
+    });
   }
 }

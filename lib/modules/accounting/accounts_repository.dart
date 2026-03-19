@@ -1,15 +1,37 @@
-import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 
+import '../../core/firebase/firebase_config.dart';
+import '../../core/network/connectivity_service.dart';
+import '../../core/sync/collection_registry.dart';
+import '../../core/sync/sync_queue_service.dart';
+import '../../core/sync/sync_service.dart';
+import '../../core/utils/device_id_service.dart';
+import '../../data/local/base_entity.dart';
+import '../../data/local/entities/account_entity.dart';
+import '../../services/database_service.dart';
 import '../../services/offline_first_service.dart';
 import '../../utils/app_logger.dart';
-import '../../data/local/entities/account_entity.dart';
-import '../../data/local/base_entity.dart';
 
-const String accountsCollection = 'accounts';
+const String accountsCollection = CollectionRegistry.accounts;
 
 class AccountsRepository extends OfflineFirstService {
-  AccountsRepository(super.firebase, [super.dbService]);
+  AccountsRepository(
+    FirebaseServices firebase, {
+    DatabaseService? dbService,
+    SyncQueueService? syncQueueService,
+    SyncService? syncService,
+    ConnectivityService? connectivityService,
+    DeviceIdService? deviceIdService,
+  }) : _syncQueueService = syncQueueService ?? SyncQueueService.instance,
+       _syncService = syncService ?? SyncService.instance,
+       _connectivityService = connectivityService ?? ConnectivityService.instance,
+       _deviceIdService = deviceIdService ?? DeviceIdService.instance,
+       super(firebase, dbService);
+
+  final SyncQueueService _syncQueueService;
+  final SyncService _syncService;
+  final ConnectivityService _connectivityService;
+  final DeviceIdService _deviceIdService;
 
   @override
   String get localStorageKey => 'local_accounts';
@@ -127,16 +149,16 @@ class AccountsRepository extends OfflineFirstService {
   Future<void> ensureDefaultAccounts() async {
     try {
       final count = await dbService.accounts.count();
-      if (count > 0) return;
+      if (count > 0) {
+        return;
+      }
 
-      final entities = _defaultChart.map((e) => _mapToEntity(e)).toList();
-
-      await dbService.db.writeTxn(() async {
-        await dbService.accounts.putAll(entities);
-      });
+      for (final entry in _defaultChart) {
+        await upsertAccount(entry);
+      }
       AppLogger.info('Initialized default accounts chart', tag: 'Accounting');
-    } catch (e) {
-      handleError(e, 'ensureDefaultAccounts');
+    } catch (error) {
+      handleError(error, 'ensureDefaultAccounts');
     }
   }
 
@@ -144,64 +166,110 @@ class AccountsRepository extends OfflineFirstService {
     bool includeInactive = false,
   }) async {
     try {
-      List<AccountEntity> entities;
-      if (includeInactive) {
-        entities = await dbService.accounts.where().findAll();
-      } else {
-        entities = await dbService.accounts
-            .filter()
-            .isActiveEqualTo(true)
-            .findAll();
-      }
-
-      // On Windows, bootstrap if empty (consistency with legacy logic)
-      final isWindows =
-          !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
-      if (entities.isEmpty && !isWindows) {
-        final remote = await bootstrapFromFirebase(
-          collectionName: accountsCollection,
-        );
-        // Bootstrap returns List<Map>, we need to save them
-        if (remote.isNotEmpty) {
-          final newEntities = remote.map((e) => _mapToEntity(e)).toList();
-          await dbService.db.writeTxn(() async {
-            await dbService.accounts.putAll(newEntities);
-          });
-          entities = newEntities;
-        }
-      }
-
-      final filtered = entities.map((e) => _entityToMap(e)).toList();
-
-      filtered.sort(
-        (a, b) => (a['name'] ?? '').toString().compareTo(
-          (b['name'] ?? '').toString(),
-        ),
-      );
-      return filtered;
-    } catch (e) {
-      handleError(e, 'getAccounts');
-      return [];
+      final entities = includeInactive
+          ? await dbService.accounts
+                .filter()
+                .isDeletedEqualTo(false)
+                .sortByName()
+                .findAll()
+          : await dbService.accounts
+                .filter()
+                .isDeletedEqualTo(false)
+                .and()
+                .isActiveEqualTo(true)
+                .sortByName()
+                .findAll();
+      return entities.map(_entityToMap).toList(growable: false);
+    } catch (error) {
+      handleError(error, 'getAccounts');
+      return const <Map<String, dynamic>>[];
     }
+  }
+
+  Future<AccountEntity?> getAccountById(String id) {
+    return dbService.accounts.filter().idEqualTo(id).and().isDeletedEqualTo(false).findFirst();
   }
 
   Future<Map<String, dynamic>?> getAccountByCode(String accountCode) async {
     final target = accountCode.trim().toUpperCase();
-    if (target.isEmpty) return null;
-
+    if (target.isEmpty) {
+      return null;
+    }
     try {
       final entity = await dbService.accounts
           .filter()
           .codeEqualTo(target)
+          .and()
+          .isDeletedEqualTo(false)
           .findFirst();
-      if (entity != null) {
-        return _entityToMap(entity);
-      }
-      return null;
-    } catch (e) {
-      handleError(e, 'getAccountByCode');
+      return entity == null ? null : _entityToMap(entity);
+    } catch (error) {
+      handleError(error, 'getAccountByCode');
       return null;
     }
+  }
+
+  Future<List<AccountEntity>> getAllAccounts() {
+    return dbService.accounts
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByName()
+        .findAll();
+  }
+
+  Future<List<AccountEntity>> getAccountsByGroup(String group) {
+    return dbService.accounts
+        .filter()
+        .groupEqualTo(group)
+        .and()
+        .isDeletedEqualTo(false)
+        .sortByName()
+        .findAll();
+  }
+
+  Future<List<AccountEntity>> searchAccounts(String query) async {
+    final normalized = query.trim();
+    if (normalized.isEmpty) {
+      return getAllAccounts();
+    }
+    return dbService.accounts
+        .filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group(
+          (builder) => builder
+              .nameContains(normalized, caseSensitive: false)
+              .or()
+              .codeContains(normalized, caseSensitive: false),
+        )
+        .sortByName()
+        .findAll();
+  }
+
+  Stream<List<AccountEntity>> watchAllAccounts() {
+    return dbService.accounts
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByName()
+        .watch(fireImmediately: true);
+  }
+
+  Future<void> saveAccount(AccountEntity account) async {
+    final entity = await _prepareAccountForSave(account);
+    final existing = await dbService.accounts.getById(entity.id);
+
+    await dbService.db.writeTxn(() async {
+      await dbService.accounts.put(entity);
+    });
+
+    await _syncQueueService.addToQueue(
+      collectionName: accountsCollection,
+      documentId: entity.id,
+      operation: existing == null ? 'create' : 'update',
+      payload: entity.toJson(),
+    );
+
+    await _syncIfOnline();
   }
 
   Future<void> upsertAccount(
@@ -213,27 +281,14 @@ class AccountsRepository extends OfflineFirstService {
       throw ArgumentError('Account code is required');
     }
 
-    final id = (accountData['id'] ?? code).toString();
-    final now = DateTime.now().toIso8601String();
+    final entity = _mapToEntity(accountData)
+      ..id = (accountData['id'] ?? code).toString().trim()
+      ..code = code;
 
-    final entity = _mapToEntity(accountData);
-    entity.id = id;
-    entity.code = code;
-    entity.updatedAt = DateTime.parse(now);
-    entity.syncStatus = SyncStatus.pending;
-    // createdAt handling removed as AccountEntity does not support it currently
-
-    await dbService.db.writeTxn(() async {
-      await dbService.accounts.put(entity);
-    });
-
-    final payload = _entityToMap(entity);
-    await syncToFirebase(
-      'set',
-      payload,
-      collectionName: accountsCollection,
-      syncImmediately: syncImmediately,
-    );
+    await saveAccount(entity);
+    if (syncImmediately && _connectivityService.isOnline) {
+      await _syncService.syncAllPending();
+    }
   }
 
   Future<void> ensureAccountForParty({
@@ -242,7 +297,9 @@ class AccountsRepository extends OfflineFirstService {
     required String group,
   }) async {
     final existing = await getAccountByCode(accountCode);
-    if (existing != null) return;
+    if (existing != null) {
+      return;
+    }
 
     await upsertAccount({
       'id': accountCode,
@@ -255,40 +312,105 @@ class AccountsRepository extends OfflineFirstService {
     AppLogger.info('Created party account $accountCode', tag: 'Accounting');
   }
 
-  // --- Helpers ---
-
-  AccountEntity _mapToEntity(Map<String, dynamic> map) {
-    final e = AccountEntity();
-    e.id = map['id']?.toString() ?? '';
-    e.code = map['code']?.toString() ?? '';
-    e.name = map['name']?.toString() ?? '';
-    e.group = map['group']?.toString() ?? 'Ungrouped';
-    e.parentAccount = map['parentAccount']?.toString() ?? '';
-    e.isSystem = map['isSystem'] == true;
-    e.isActive = map['isActive'] != false;
-    e.currentBalance =
-        double.tryParse(map['currentBalance']?.toString() ?? '0') ?? 0.0;
-
-    if (map['updatedAt'] != null) {
-      e.updatedAt =
-          DateTime.tryParse(map['updatedAt'].toString()) ?? DateTime.now();
-    } else {
-      e.updatedAt = DateTime.now();
+  Future<void> deleteAccount(String id) async {
+    final entity = await getAccountById(id);
+    if (entity == null) {
+      return;
     }
-    return e;
+    if (entity.isSystem) {
+      throw ArgumentError('System accounts cannot be deleted');
+    }
+
+    final now = DateTime.now();
+    entity
+      ..isDeleted = true
+      ..deletedAt = now
+      ..updatedAt = now
+      ..syncStatus = SyncStatus.pending
+      ..isSynced = false
+      ..lastSynced = null
+      ..version += 1
+      ..deviceId = await _deviceIdService.getDeviceId();
+
+    await dbService.db.writeTxn(() async {
+      await dbService.accounts.put(entity);
+    });
+
+    await _syncQueueService.addToQueue(
+      collectionName: accountsCollection,
+      documentId: entity.id,
+      operation: 'delete',
+      payload: entity.toJson(),
+    );
+
+    await _syncIfOnline();
   }
 
-  Map<String, dynamic> _entityToMap(AccountEntity e) {
-    return {
-      'id': e.id,
-      'code': e.code,
-      'name': e.name,
-      'group': e.group,
-      'parentAccount': e.parentAccount,
-      'isSystem': e.isSystem,
-      'isActive': e.isActive,
-      'currentBalance': e.currentBalance,
-      'updatedAt': e.updatedAt.toIso8601String(),
-    };
+  Future<AccountEntity> _prepareAccountForSave(AccountEntity account) async {
+    final now = DateTime.now();
+    final normalizedId = account.id.trim().isEmpty
+        ? (account.code.trim().isEmpty
+              ? now.microsecondsSinceEpoch.toString()
+              : account.code.trim().toUpperCase())
+        : account.id.trim();
+    final normalizedCode = account.code.trim().isEmpty
+        ? normalizedId.toUpperCase()
+        : account.code.trim().toUpperCase();
+    final existing = await dbService.accounts.getById(normalizedId);
+
+    account
+      ..id = normalizedId
+      ..code = normalizedCode
+      ..name = account.name.trim().isEmpty ? normalizedCode : account.name.trim()
+      ..group = account.group.trim().isEmpty ? 'Ungrouped' : account.group.trim()
+      ..parentAccount = account.parentAccount.trim()
+      ..updatedAt = now
+      ..syncStatus = SyncStatus.pending
+      ..isDeleted = false
+      ..isSynced = false
+      ..lastSynced = null
+      ..version = existing == null ? 1 : existing.version + 1
+      ..deviceId = await _deviceIdService.getDeviceId();
+
+    if (existing != null) {
+      account.deletedAt = existing.deletedAt;
+    }
+
+    return account;
+  }
+
+  Future<void> _syncIfOnline() async {
+    if (_connectivityService.isOnline) {
+      await _syncService.syncAllPending();
+    }
+  }
+
+  AccountEntity _mapToEntity(Map<String, dynamic> map) {
+    final entity = AccountEntity.fromJson(map);
+    entity
+      ..id = (map['id'] ?? map['code'] ?? '').toString().trim()
+      ..code = (map['code'] ?? map['id'] ?? '').toString().trim().toUpperCase()
+      ..name = (map['name'] ?? '').toString().trim()
+      ..group = (map['group'] ?? 'Ungrouped').toString().trim()
+      ..parentAccount = (map['parentAccount'] ?? '').toString().trim()
+      ..isSystem = map['isSystem'] == true
+      ..isActive = map['isActive'] != false
+      ..currentBalance = _toDouble(map['currentBalance']);
+
+    if (entity.updatedAt == DateTime.fromMillisecondsSinceEpoch(0)) {
+      entity.updatedAt = DateTime.now();
+    }
+    return entity;
+  }
+
+  Map<String, dynamic> _entityToMap(AccountEntity entity) {
+    return entity.toJson();
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
   }
 }

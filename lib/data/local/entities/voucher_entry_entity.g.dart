@@ -28,100 +28,140 @@ const VoucherEntryEntitySchema = CollectionSchema(
       name: r'accountingDimensionsJson',
       type: IsarType.string,
     ),
-    r'credit': PropertySchema(
+    r'createdAt': PropertySchema(
       id: 2,
+      name: r'createdAt',
+      type: IsarType.dateTime,
+    ),
+    r'credit': PropertySchema(
+      id: 3,
       name: r'credit',
       type: IsarType.double,
     ),
     r'date': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'date',
       type: IsarType.dateTime,
     ),
     r'dealerId': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'dealerId',
       type: IsarType.string,
     ),
     r'dealerName': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'dealerName',
       type: IsarType.string,
     ),
     r'debit': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'debit',
       type: IsarType.double,
     ),
     r'deletedAt': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
+    r'deviceId': PropertySchema(
+      id: 9,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
     r'dimensionVersion': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'dimensionVersion',
       type: IsarType.long,
     ),
     r'district': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'district',
       type: IsarType.string,
     ),
     r'division': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'division',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 15,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 16,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'narration': PropertySchema(
-      id: 13,
+      id: 17,
       name: r'narration',
       type: IsarType.string,
     ),
     r'route': PropertySchema(
-      id: 14,
+      id: 18,
       name: r'route',
       type: IsarType.string,
     ),
     r'saleDate': PropertySchema(
-      id: 15,
+      id: 19,
       name: r'saleDate',
       type: IsarType.string,
     ),
     r'salesmanId': PropertySchema(
-      id: 16,
+      id: 20,
       name: r'salesmanId',
       type: IsarType.string,
     ),
     r'salesmanName': PropertySchema(
-      id: 17,
+      id: 21,
       name: r'salesmanName',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 18,
+      id: 22,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _VoucherEntryEntitysyncStatusEnumValueMap,
     ),
+    r'transactionRefId': PropertySchema(
+      id: 23,
+      name: r'transactionRefId',
+      type: IsarType.string,
+    ),
+    r'transactionType': PropertySchema(
+      id: 24,
+      name: r'transactionType',
+      type: IsarType.string,
+    ),
     r'updatedAt': PropertySchema(
-      id: 19,
+      id: 25,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
+    r'version': PropertySchema(
+      id: 26,
+      name: r'version',
+      type: IsarType.long,
+    ),
     r'voucherId': PropertySchema(
-      id: 20,
+      id: 27,
       name: r'voucherId',
+      type: IsarType.string,
+    ),
+    r'voucherType': PropertySchema(
+      id: 28,
+      name: r'voucherType',
       type: IsarType.string,
     )
   },
@@ -282,6 +322,7 @@ int _voucherEntryEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.district;
     if (value != null) {
@@ -325,7 +366,25 @@ int _voucherEntryEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.transactionRefId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.transactionType;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.voucherId.length * 3;
+  {
+    final value = object.voucherType;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -337,25 +396,33 @@ void _voucherEntryEntitySerialize(
 ) {
   writer.writeString(offsets[0], object.accountCode);
   writer.writeString(offsets[1], object.accountingDimensionsJson);
-  writer.writeDouble(offsets[2], object.credit);
-  writer.writeDateTime(offsets[3], object.date);
-  writer.writeString(offsets[4], object.dealerId);
-  writer.writeString(offsets[5], object.dealerName);
-  writer.writeDouble(offsets[6], object.debit);
-  writer.writeDateTime(offsets[7], object.deletedAt);
-  writer.writeLong(offsets[8], object.dimensionVersion);
-  writer.writeString(offsets[9], object.district);
-  writer.writeString(offsets[10], object.division);
-  writer.writeString(offsets[11], object.id);
-  writer.writeBool(offsets[12], object.isDeleted);
-  writer.writeString(offsets[13], object.narration);
-  writer.writeString(offsets[14], object.route);
-  writer.writeString(offsets[15], object.saleDate);
-  writer.writeString(offsets[16], object.salesmanId);
-  writer.writeString(offsets[17], object.salesmanName);
-  writer.writeByte(offsets[18], object.syncStatus.index);
-  writer.writeDateTime(offsets[19], object.updatedAt);
-  writer.writeString(offsets[20], object.voucherId);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeDouble(offsets[3], object.credit);
+  writer.writeDateTime(offsets[4], object.date);
+  writer.writeString(offsets[5], object.dealerId);
+  writer.writeString(offsets[6], object.dealerName);
+  writer.writeDouble(offsets[7], object.debit);
+  writer.writeDateTime(offsets[8], object.deletedAt);
+  writer.writeString(offsets[9], object.deviceId);
+  writer.writeLong(offsets[10], object.dimensionVersion);
+  writer.writeString(offsets[11], object.district);
+  writer.writeString(offsets[12], object.division);
+  writer.writeString(offsets[13], object.id);
+  writer.writeBool(offsets[14], object.isDeleted);
+  writer.writeBool(offsets[15], object.isSynced);
+  writer.writeDateTime(offsets[16], object.lastSynced);
+  writer.writeString(offsets[17], object.narration);
+  writer.writeString(offsets[18], object.route);
+  writer.writeString(offsets[19], object.saleDate);
+  writer.writeString(offsets[20], object.salesmanId);
+  writer.writeString(offsets[21], object.salesmanName);
+  writer.writeByte(offsets[22], object.syncStatus.index);
+  writer.writeString(offsets[23], object.transactionRefId);
+  writer.writeString(offsets[24], object.transactionType);
+  writer.writeDateTime(offsets[25], object.updatedAt);
+  writer.writeLong(offsets[26], object.version);
+  writer.writeString(offsets[27], object.voucherId);
+  writer.writeString(offsets[28], object.voucherType);
 }
 
 VoucherEntryEntity _voucherEntryEntityDeserialize(
@@ -367,27 +434,35 @@ VoucherEntryEntity _voucherEntryEntityDeserialize(
   final object = VoucherEntryEntity();
   object.accountCode = reader.readString(offsets[0]);
   object.accountingDimensionsJson = reader.readStringOrNull(offsets[1]);
-  object.credit = reader.readDouble(offsets[2]);
-  object.date = reader.readDateTimeOrNull(offsets[3]);
-  object.dealerId = reader.readStringOrNull(offsets[4]);
-  object.dealerName = reader.readStringOrNull(offsets[5]);
-  object.debit = reader.readDouble(offsets[6]);
-  object.deletedAt = reader.readDateTimeOrNull(offsets[7]);
-  object.dimensionVersion = reader.readLongOrNull(offsets[8]);
-  object.district = reader.readStringOrNull(offsets[9]);
-  object.division = reader.readStringOrNull(offsets[10]);
-  object.id = reader.readString(offsets[11]);
-  object.isDeleted = reader.readBool(offsets[12]);
-  object.narration = reader.readStringOrNull(offsets[13]);
-  object.route = reader.readStringOrNull(offsets[14]);
-  object.saleDate = reader.readStringOrNull(offsets[15]);
-  object.salesmanId = reader.readStringOrNull(offsets[16]);
-  object.salesmanName = reader.readStringOrNull(offsets[17]);
+  object.createdAt = reader.readDateTimeOrNull(offsets[2]);
+  object.credit = reader.readDouble(offsets[3]);
+  object.date = reader.readDateTimeOrNull(offsets[4]);
+  object.dealerId = reader.readStringOrNull(offsets[5]);
+  object.dealerName = reader.readStringOrNull(offsets[6]);
+  object.debit = reader.readDouble(offsets[7]);
+  object.deletedAt = reader.readDateTimeOrNull(offsets[8]);
+  object.deviceId = reader.readString(offsets[9]);
+  object.dimensionVersion = reader.readLongOrNull(offsets[10]);
+  object.district = reader.readStringOrNull(offsets[11]);
+  object.division = reader.readStringOrNull(offsets[12]);
+  object.id = reader.readString(offsets[13]);
+  object.isDeleted = reader.readBool(offsets[14]);
+  object.isSynced = reader.readBool(offsets[15]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[16]);
+  object.narration = reader.readStringOrNull(offsets[17]);
+  object.route = reader.readStringOrNull(offsets[18]);
+  object.saleDate = reader.readStringOrNull(offsets[19]);
+  object.salesmanId = reader.readStringOrNull(offsets[20]);
+  object.salesmanName = reader.readStringOrNull(offsets[21]);
   object.syncStatus = _VoucherEntryEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[18])] ??
+          reader.readByteOrNull(offsets[22])] ??
       SyncStatus.pending;
-  object.updatedAt = reader.readDateTime(offsets[19]);
-  object.voucherId = reader.readString(offsets[20]);
+  object.transactionRefId = reader.readStringOrNull(offsets[23]);
+  object.transactionType = reader.readStringOrNull(offsets[24]);
+  object.updatedAt = reader.readDateTime(offsets[25]);
+  object.version = reader.readLong(offsets[26]);
+  object.voucherId = reader.readString(offsets[27]);
+  object.voucherType = reader.readStringOrNull(offsets[28]);
   return object;
 }
 
@@ -403,45 +478,61 @@ P _voucherEntryEntityDeserializeProp<P>(
     case 1:
       return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readDouble(offset)) as P;
-    case 3:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 3:
+      return (reader.readDouble(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 5:
       return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 8:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 9:
-      return (reader.readStringOrNull(offset)) as P;
-    case 10:
-      return (reader.readStringOrNull(offset)) as P;
-    case 11:
       return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readLongOrNull(offset)) as P;
+    case 11:
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 14:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 16:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 17:
       return (reader.readStringOrNull(offset)) as P;
     case 18:
+      return (reader.readStringOrNull(offset)) as P;
+    case 19:
+      return (reader.readStringOrNull(offset)) as P;
+    case 20:
+      return (reader.readStringOrNull(offset)) as P;
+    case 21:
+      return (reader.readStringOrNull(offset)) as P;
+    case 22:
       return (_VoucherEntryEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 19:
+    case 23:
+      return (reader.readStringOrNull(offset)) as P;
+    case 24:
+      return (reader.readStringOrNull(offset)) as P;
+    case 25:
       return (reader.readDateTime(offset)) as P;
-    case 20:
+    case 26:
+      return (reader.readLong(offset)) as P;
+    case 27:
       return (reader.readString(offset)) as P;
+    case 28:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1494,6 +1585,80 @@ extension VoucherEntryEntityQueryFilter
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      createdAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      createdAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      createdAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      createdAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      createdAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      createdAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'createdAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
       creditEqualTo(
     double value, {
     double epsilon = Query.epsilon,
@@ -2082,6 +2247,142 @@ extension VoucherEntryEntityQueryFilter
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
       dimensionVersionIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2610,6 +2911,16 @@ extension VoucherEntryEntityQueryFilter
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2657,6 +2968,80 @@ extension VoucherEntryEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -3492,6 +3877,314 @@ extension VoucherEntryEntityQueryFilter
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'transactionRefId',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'transactionRefId',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'transactionRefId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'transactionRefId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'transactionRefId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'transactionRefId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'transactionRefId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'transactionRefId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'transactionRefId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'transactionRefId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'transactionRefId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionRefIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'transactionRefId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'transactionType',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'transactionType',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'transactionType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'transactionType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'transactionType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'transactionType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'transactionType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'transactionType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'transactionType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'transactionType',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'transactionType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      transactionTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'transactionType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
       updatedAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -3539,6 +4232,62 @@ extension VoucherEntryEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'updatedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -3682,6 +4431,160 @@ extension VoucherEntryEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'voucherType',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'voucherType',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'voucherType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'voucherType',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'voucherType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterFilterCondition>
+      voucherTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'voucherType',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension VoucherEntryEntityQueryObject
@@ -3717,6 +4620,20 @@ extension VoucherEntryEntityQuerySortBy
       sortByAccountingDimensionsJsonDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'accountingDimensionsJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
     });
   }
 
@@ -3805,6 +4722,20 @@ extension VoucherEntryEntityQuerySortBy
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
       sortByDimensionVersion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dimensionVersion', Sort.asc);
@@ -3871,6 +4802,34 @@ extension VoucherEntryEntityQuerySortBy
       sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3959,6 +4918,34 @@ extension VoucherEntryEntityQuerySortBy
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByTransactionRefId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'transactionRefId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByTransactionRefIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'transactionRefId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByTransactionType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'transactionType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByTransactionTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'transactionType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
       sortByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.asc);
@@ -3973,6 +4960,20 @@ extension VoucherEntryEntityQuerySortBy
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
       sortByVoucherId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'voucherId', Sort.asc);
@@ -3983,6 +4984,20 @@ extension VoucherEntryEntityQuerySortBy
       sortByVoucherIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'voucherId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByVoucherType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voucherType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      sortByVoucherTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voucherType', Sort.desc);
     });
   }
 }
@@ -4014,6 +5029,20 @@ extension VoucherEntryEntityQuerySortThenBy
       thenByAccountingDimensionsJsonDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'accountingDimensionsJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
     });
   }
 
@@ -4102,6 +5131,20 @@ extension VoucherEntryEntityQuerySortThenBy
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
       thenByDimensionVersion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dimensionVersion', Sort.asc);
@@ -4172,6 +5215,20 @@ extension VoucherEntryEntityQuerySortThenBy
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -4182,6 +5239,20 @@ extension VoucherEntryEntityQuerySortThenBy
       thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -4270,6 +5341,34 @@ extension VoucherEntryEntityQuerySortThenBy
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByTransactionRefId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'transactionRefId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByTransactionRefIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'transactionRefId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByTransactionType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'transactionType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByTransactionTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'transactionType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
       thenByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.asc);
@@ -4284,6 +5383,20 @@ extension VoucherEntryEntityQuerySortThenBy
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
       thenByVoucherId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'voucherId', Sort.asc);
@@ -4294,6 +5407,20 @@ extension VoucherEntryEntityQuerySortThenBy
       thenByVoucherIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'voucherId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByVoucherType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voucherType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QAfterSortBy>
+      thenByVoucherTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voucherType', Sort.desc);
     });
   }
 }
@@ -4312,6 +5439,13 @@ extension VoucherEntryEntityQueryWhereDistinct
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'accountingDimensionsJson',
           caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
+      distinctByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdAt');
     });
   }
 
@@ -4358,6 +5492,13 @@ extension VoucherEntryEntityQueryWhereDistinct
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
       distinctByDimensionVersion() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'dimensionVersion');
@@ -4389,6 +5530,20 @@ extension VoucherEntryEntityQueryWhereDistinct
       distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -4435,6 +5590,22 @@ extension VoucherEntryEntityQueryWhereDistinct
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
+      distinctByTransactionRefId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'transactionRefId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
+      distinctByTransactionType({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'transactionType',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
       distinctByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'updatedAt');
@@ -4442,9 +5613,23 @@ extension VoucherEntryEntityQueryWhereDistinct
   }
 
   QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
       distinctByVoucherId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'voucherId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, VoucherEntryEntity, QDistinct>
+      distinctByVoucherType({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'voucherType', caseSensitive: caseSensitive);
     });
   }
 }
@@ -4468,6 +5653,13 @@ extension VoucherEntryEntityQueryProperty
       accountingDimensionsJsonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'accountingDimensionsJson');
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, DateTime?, QQueryOperations>
+      createdAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdAt');
     });
   }
 
@@ -4510,6 +5702,13 @@ extension VoucherEntryEntityQueryProperty
     });
   }
 
+  QueryBuilder<VoucherEntryEntity, String, QQueryOperations>
+      deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<VoucherEntryEntity, int?, QQueryOperations>
       dimensionVersionProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -4540,6 +5739,19 @@ extension VoucherEntryEntityQueryProperty
   QueryBuilder<VoucherEntryEntity, bool, QQueryOperations> isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -4584,6 +5796,20 @@ extension VoucherEntryEntityQueryProperty
     });
   }
 
+  QueryBuilder<VoucherEntryEntity, String?, QQueryOperations>
+      transactionRefIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'transactionRefId');
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, String?, QQueryOperations>
+      transactionTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'transactionType');
+    });
+  }
+
   QueryBuilder<VoucherEntryEntity, DateTime, QQueryOperations>
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -4591,10 +5817,23 @@ extension VoucherEntryEntityQueryProperty
     });
   }
 
+  QueryBuilder<VoucherEntryEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
+    });
+  }
+
   QueryBuilder<VoucherEntryEntity, String, QQueryOperations>
       voucherIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'voucherId');
+    });
+  }
+
+  QueryBuilder<VoucherEntryEntity, String?, QQueryOperations>
+      voucherTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'voucherType');
     });
   }
 }

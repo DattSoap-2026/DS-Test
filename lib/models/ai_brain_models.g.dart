@@ -32,16 +32,26 @@ const AIChatMessageSchema = CollectionSchema(
       name: r'isUser',
       type: IsarType.bool,
     ),
-    r'role': PropertySchema(
+    r'lastModified': PropertySchema(
       id: 3,
+      name: r'lastModified',
+      type: IsarType.dateTime,
+    ),
+    r'role': PropertySchema(
+      id: 4,
       name: r'role',
       type: IsarType.string,
       enumMap: _AIChatMessageroleEnumValueMap,
     ),
     r'timestamp': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'timestamp',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 6,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _aIChatMessageEstimateSize,
@@ -98,8 +108,10 @@ void _aIChatMessageSerialize(
   writer.writeString(offsets[0], object.content);
   writer.writeString(offsets[1], object.contextData);
   writer.writeBool(offsets[2], object.isUser);
-  writer.writeString(offsets[3], object.role.name);
-  writer.writeDateTime(offsets[4], object.timestamp);
+  writer.writeDateTime(offsets[3], object.lastModified);
+  writer.writeString(offsets[4], object.role.name);
+  writer.writeDateTime(offsets[5], object.timestamp);
+  writer.writeLong(offsets[6], object.version);
 }
 
 AIChatMessage _aIChatMessageDeserialize(
@@ -112,10 +124,12 @@ AIChatMessage _aIChatMessageDeserialize(
   object.content = reader.readString(offsets[0]);
   object.contextData = reader.readStringOrNull(offsets[1]);
   object.id = id;
+  object.lastModified = reader.readDateTime(offsets[3]);
   object.role =
-      _AIChatMessageroleValueEnumMap[reader.readStringOrNull(offsets[3])] ??
+      _AIChatMessageroleValueEnumMap[reader.readStringOrNull(offsets[4])] ??
           MessageRole.user;
-  object.timestamp = reader.readDateTime(offsets[4]);
+  object.timestamp = reader.readDateTime(offsets[5]);
+  object.version = reader.readLong(offsets[6]);
   return object;
 }
 
@@ -133,10 +147,14 @@ P _aIChatMessageDeserializeProp<P>(
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:
+      return (reader.readDateTime(offset)) as P;
+    case 4:
       return (_AIChatMessageroleValueEnumMap[reader.readStringOrNull(offset)] ??
           MessageRole.user) as P;
-    case 4:
+    case 5:
       return (reader.readDateTime(offset)) as P;
+    case 6:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -704,6 +722,62 @@ extension AIChatMessageQueryFilter
     });
   }
 
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterFilterCondition>
+      lastModifiedEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterFilterCondition>
+      lastModifiedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterFilterCondition>
+      lastModifiedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterFilterCondition>
+      lastModifiedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastModified',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<AIChatMessage, AIChatMessage, QAfterFilterCondition> roleEqualTo(
     MessageRole value, {
     bool caseSensitive = true,
@@ -894,6 +968,62 @@ extension AIChatMessageQueryFilter
       ));
     });
   }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension AIChatMessageQueryObject
@@ -941,6 +1071,20 @@ extension AIChatMessageQuerySortBy
     });
   }
 
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterSortBy>
+      sortByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterSortBy>
+      sortByLastModifiedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.desc);
+    });
+  }
+
   QueryBuilder<AIChatMessage, AIChatMessage, QAfterSortBy> sortByRole() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'role', Sort.asc);
@@ -963,6 +1107,18 @@ extension AIChatMessageQuerySortBy
       sortByTimestampDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'timestamp', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterSortBy> sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 }
@@ -1018,6 +1174,20 @@ extension AIChatMessageQuerySortThenBy
     });
   }
 
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterSortBy>
+      thenByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterSortBy>
+      thenByLastModifiedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.desc);
+    });
+  }
+
   QueryBuilder<AIChatMessage, AIChatMessage, QAfterSortBy> thenByRole() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'role', Sort.asc);
@@ -1040,6 +1210,18 @@ extension AIChatMessageQuerySortThenBy
       thenByTimestampDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'timestamp', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QAfterSortBy> thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 }
@@ -1066,6 +1248,13 @@ extension AIChatMessageQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AIChatMessage, AIChatMessage, QDistinct>
+      distinctByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastModified');
+    });
+  }
+
   QueryBuilder<AIChatMessage, AIChatMessage, QDistinct> distinctByRole(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1076,6 +1265,12 @@ extension AIChatMessageQueryWhereDistinct
   QueryBuilder<AIChatMessage, AIChatMessage, QDistinct> distinctByTimestamp() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'timestamp');
+    });
+  }
+
+  QueryBuilder<AIChatMessage, AIChatMessage, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
     });
   }
 }
@@ -1106,6 +1301,13 @@ extension AIChatMessageQueryProperty
     });
   }
 
+  QueryBuilder<AIChatMessage, DateTime, QQueryOperations>
+      lastModifiedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastModified');
+    });
+  }
+
   QueryBuilder<AIChatMessage, MessageRole, QQueryOperations> roleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'role');
@@ -1115,6 +1317,12 @@ extension AIChatMessageQueryProperty
   QueryBuilder<AIChatMessage, DateTime, QQueryOperations> timestampProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'timestamp');
+    });
+  }
+
+  QueryBuilder<AIChatMessage, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }
@@ -1140,15 +1348,25 @@ const AILearningItemSchema = CollectionSchema(
       name: r'content',
       type: IsarType.string,
     ),
-    r'learnedAt': PropertySchema(
+    r'lastModified': PropertySchema(
       id: 2,
+      name: r'lastModified',
+      type: IsarType.dateTime,
+    ),
+    r'learnedAt': PropertySchema(
+      id: 3,
       name: r'learnedAt',
       type: IsarType.dateTime,
     ),
     r'topic': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'topic',
       type: IsarType.string,
+    ),
+    r'version': PropertySchema(
+      id: 5,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _aILearningItemEstimateSize,
@@ -1198,8 +1416,10 @@ void _aILearningItemSerialize(
 ) {
   writer.writeDouble(offsets[0], object.confidence);
   writer.writeString(offsets[1], object.content);
-  writer.writeDateTime(offsets[2], object.learnedAt);
-  writer.writeString(offsets[3], object.topic);
+  writer.writeDateTime(offsets[2], object.lastModified);
+  writer.writeDateTime(offsets[3], object.learnedAt);
+  writer.writeString(offsets[4], object.topic);
+  writer.writeLong(offsets[5], object.version);
 }
 
 AILearningItem _aILearningItemDeserialize(
@@ -1212,8 +1432,10 @@ AILearningItem _aILearningItemDeserialize(
   object.confidence = reader.readDouble(offsets[0]);
   object.content = reader.readString(offsets[1]);
   object.id = id;
-  object.learnedAt = reader.readDateTime(offsets[2]);
-  object.topic = reader.readString(offsets[3]);
+  object.lastModified = reader.readDateTime(offsets[2]);
+  object.learnedAt = reader.readDateTime(offsets[3]);
+  object.topic = reader.readString(offsets[4]);
+  object.version = reader.readLong(offsets[5]);
   return object;
 }
 
@@ -1231,7 +1453,11 @@ P _aILearningItemDeserializeProp<P>(
     case 2:
       return (reader.readDateTime(offset)) as P;
     case 3:
+      return (reader.readDateTime(offset)) as P;
+    case 4:
       return (reader.readString(offset)) as P;
+    case 5:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1738,6 +1964,62 @@ extension AILearningItemQueryFilter
   }
 
   QueryBuilder<AILearningItem, AILearningItem, QAfterFilterCondition>
+      lastModifiedEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterFilterCondition>
+      lastModifiedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterFilterCondition>
+      lastModifiedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterFilterCondition>
+      lastModifiedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastModified',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterFilterCondition>
       learnedAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1928,6 +2210,62 @@ extension AILearningItemQueryFilter
       ));
     });
   }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension AILearningItemQueryObject
@@ -1965,6 +2303,20 @@ extension AILearningItemQuerySortBy
     });
   }
 
+  QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy>
+      sortByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy>
+      sortByLastModifiedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.desc);
+    });
+  }
+
   QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy> sortByLearnedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'learnedAt', Sort.asc);
@@ -1987,6 +2339,19 @@ extension AILearningItemQuerySortBy
   QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy> sortByTopicDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'topic', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 }
@@ -2032,6 +2397,20 @@ extension AILearningItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy>
+      thenByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy>
+      thenByLastModifiedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.desc);
+    });
+  }
+
   QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy> thenByLearnedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'learnedAt', Sort.asc);
@@ -2056,6 +2435,19 @@ extension AILearningItemQuerySortThenBy
       return query.addSortBy(r'topic', Sort.desc);
     });
   }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension AILearningItemQueryWhereDistinct
@@ -2075,6 +2467,13 @@ extension AILearningItemQueryWhereDistinct
   }
 
   QueryBuilder<AILearningItem, AILearningItem, QDistinct>
+      distinctByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastModified');
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QDistinct>
       distinctByLearnedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'learnedAt');
@@ -2085,6 +2484,12 @@ extension AILearningItemQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'topic', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AILearningItem, AILearningItem, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
     });
   }
 }
@@ -2109,6 +2514,13 @@ extension AILearningItemQueryProperty
     });
   }
 
+  QueryBuilder<AILearningItem, DateTime, QQueryOperations>
+      lastModifiedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastModified');
+    });
+  }
+
   QueryBuilder<AILearningItem, DateTime, QQueryOperations> learnedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'learnedAt');
@@ -2118,6 +2530,12 @@ extension AILearningItemQueryProperty
   QueryBuilder<AILearningItem, String, QQueryOperations> topicProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'topic');
+    });
+  }
+
+  QueryBuilder<AILearningItem, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }
@@ -2143,10 +2561,20 @@ const AIInsightCacheSchema = CollectionSchema(
       name: r'key',
       type: IsarType.string,
     ),
-    r'value': PropertySchema(
+    r'lastModified': PropertySchema(
       id: 2,
+      name: r'lastModified',
+      type: IsarType.dateTime,
+    ),
+    r'value': PropertySchema(
+      id: 3,
       name: r'value',
       type: IsarType.string,
+    ),
+    r'version': PropertySchema(
+      id: 4,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _aIInsightCacheEstimateSize,
@@ -2196,7 +2624,9 @@ void _aIInsightCacheSerialize(
 ) {
   writer.writeDateTime(offsets[0], object.expiresAt);
   writer.writeString(offsets[1], object.key);
-  writer.writeString(offsets[2], object.value);
+  writer.writeDateTime(offsets[2], object.lastModified);
+  writer.writeString(offsets[3], object.value);
+  writer.writeLong(offsets[4], object.version);
 }
 
 AIInsightCache _aIInsightCacheDeserialize(
@@ -2209,7 +2639,9 @@ AIInsightCache _aIInsightCacheDeserialize(
   object.expiresAt = reader.readDateTime(offsets[0]);
   object.id = id;
   object.key = reader.readString(offsets[1]);
-  object.value = reader.readString(offsets[2]);
+  object.lastModified = reader.readDateTime(offsets[2]);
+  object.value = reader.readString(offsets[3]);
+  object.version = reader.readLong(offsets[4]);
   return object;
 }
 
@@ -2225,7 +2657,11 @@ P _aIInsightCacheDeserializeProp<P>(
     case 1:
       return (reader.readString(offset)) as P;
     case 2:
+      return (reader.readDateTime(offset)) as P;
+    case 3:
       return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -2675,6 +3111,62 @@ extension AIInsightCacheQueryFilter
   }
 
   QueryBuilder<AIInsightCache, AIInsightCache, QAfterFilterCondition>
+      lastModifiedEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterFilterCondition>
+      lastModifiedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterFilterCondition>
+      lastModifiedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterFilterCondition>
+      lastModifiedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastModified',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterFilterCondition>
       valueEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -2809,6 +3301,62 @@ extension AIInsightCacheQueryFilter
       ));
     });
   }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension AIInsightCacheQueryObject
@@ -2844,6 +3392,20 @@ extension AIInsightCacheQuerySortBy
     });
   }
 
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy>
+      sortByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy>
+      sortByLastModifiedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.desc);
+    });
+  }
+
   QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy> sortByValue() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'value', Sort.asc);
@@ -2853,6 +3415,19 @@ extension AIInsightCacheQuerySortBy
   QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy> sortByValueDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'value', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 }
@@ -2896,6 +3471,20 @@ extension AIInsightCacheQuerySortThenBy
     });
   }
 
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy>
+      thenByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy>
+      thenByLastModifiedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.desc);
+    });
+  }
+
   QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy> thenByValue() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'value', Sort.asc);
@@ -2905,6 +3494,19 @@ extension AIInsightCacheQuerySortThenBy
   QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy> thenByValueDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'value', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 }
@@ -2925,10 +3527,23 @@ extension AIInsightCacheQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AIInsightCache, AIInsightCache, QDistinct>
+      distinctByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastModified');
+    });
+  }
+
   QueryBuilder<AIInsightCache, AIInsightCache, QDistinct> distinctByValue(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'value', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AIInsightCache, AIInsightCache, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
     });
   }
 }
@@ -2953,9 +3568,22 @@ extension AIInsightCacheQueryProperty
     });
   }
 
+  QueryBuilder<AIInsightCache, DateTime, QQueryOperations>
+      lastModifiedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastModified');
+    });
+  }
+
   QueryBuilder<AIInsightCache, String, QQueryOperations> valueProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'value');
+    });
+  }
+
+  QueryBuilder<AIInsightCache, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }
@@ -2976,15 +3604,25 @@ const AIBrainSettingsSchema = CollectionSchema(
       name: r'enableLearning',
       type: IsarType.bool,
     ),
-    r'preferredModel': PropertySchema(
+    r'lastModified': PropertySchema(
       id: 1,
+      name: r'lastModified',
+      type: IsarType.dateTime,
+    ),
+    r'preferredModel': PropertySchema(
+      id: 2,
       name: r'preferredModel',
       type: IsarType.string,
     ),
     r'temperature': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'temperature',
       type: IsarType.double,
+    ),
+    r'version': PropertySchema(
+      id: 4,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _aIBrainSettingsEstimateSize,
@@ -3023,8 +3661,10 @@ void _aIBrainSettingsSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeBool(offsets[0], object.enableLearning);
-  writer.writeString(offsets[1], object.preferredModel);
-  writer.writeDouble(offsets[2], object.temperature);
+  writer.writeDateTime(offsets[1], object.lastModified);
+  writer.writeString(offsets[2], object.preferredModel);
+  writer.writeDouble(offsets[3], object.temperature);
+  writer.writeLong(offsets[4], object.version);
 }
 
 AIBrainSettings _aIBrainSettingsDeserialize(
@@ -3036,8 +3676,10 @@ AIBrainSettings _aIBrainSettingsDeserialize(
   final object = AIBrainSettings();
   object.enableLearning = reader.readBool(offsets[0]);
   object.id = id;
-  object.preferredModel = reader.readStringOrNull(offsets[1]);
-  object.temperature = reader.readDouble(offsets[2]);
+  object.lastModified = reader.readDateTime(offsets[1]);
+  object.preferredModel = reader.readStringOrNull(offsets[2]);
+  object.temperature = reader.readDouble(offsets[3]);
+  object.version = reader.readLong(offsets[4]);
   return object;
 }
 
@@ -3051,9 +3693,13 @@ P _aIBrainSettingsDeserializeProp<P>(
     case 0:
       return (reader.readBool(offset)) as P;
     case 1:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
+      return (reader.readStringOrNull(offset)) as P;
+    case 3:
       return (reader.readDouble(offset)) as P;
+    case 4:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -3212,6 +3858,62 @@ extension AIBrainSettingsQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'id',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterFilterCondition>
+      lastModifiedEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterFilterCondition>
+      lastModifiedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterFilterCondition>
+      lastModifiedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterFilterCondition>
+      lastModifiedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastModified',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -3439,6 +4141,62 @@ extension AIBrainSettingsQueryFilter
       ));
     });
   }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension AIBrainSettingsQueryObject
@@ -3460,6 +4218,20 @@ extension AIBrainSettingsQuerySortBy
       sortByEnableLearningDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'enableLearning', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterSortBy>
+      sortByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterSortBy>
+      sortByLastModifiedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.desc);
     });
   }
 
@@ -3488,6 +4260,19 @@ extension AIBrainSettingsQuerySortBy
       sortByTemperatureDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'temperature', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 }
@@ -3521,6 +4306,20 @@ extension AIBrainSettingsQuerySortThenBy
   }
 
   QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterSortBy>
+      thenByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterSortBy>
+      thenByLastModifiedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterSortBy>
       thenByPreferredModel() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'preferredModel', Sort.asc);
@@ -3547,6 +4346,19 @@ extension AIBrainSettingsQuerySortThenBy
       return query.addSortBy(r'temperature', Sort.desc);
     });
   }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension AIBrainSettingsQueryWhereDistinct
@@ -3555,6 +4367,13 @@ extension AIBrainSettingsQueryWhereDistinct
       distinctByEnableLearning() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'enableLearning');
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QDistinct>
+      distinctByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastModified');
     });
   }
 
@@ -3570,6 +4389,13 @@ extension AIBrainSettingsQueryWhereDistinct
       distinctByTemperature() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'temperature');
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, AIBrainSettings, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
     });
   }
 }
@@ -3589,6 +4415,13 @@ extension AIBrainSettingsQueryProperty
     });
   }
 
+  QueryBuilder<AIBrainSettings, DateTime, QQueryOperations>
+      lastModifiedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastModified');
+    });
+  }
+
   QueryBuilder<AIBrainSettings, String?, QQueryOperations>
       preferredModelProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -3600,6 +4433,12 @@ extension AIBrainSettingsQueryProperty
       temperatureProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'temperature');
+    });
+  }
+
+  QueryBuilder<AIBrainSettings, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:isar/isar.dart';
 import '../base_entity.dart';
+import '../entity_json_utils.dart';
 import 'package:flutter_app/models/types/product_types.dart';
 import '../../../services/field_encryption_service.dart';
 
@@ -135,7 +136,238 @@ class ProductEntity extends BaseEntity {
   double? productionLossPercent;
   bool? batchTrackingEnabled;
 
-  // Getters for Service compatibility if needed
+  /// Converts this entity into a sync-safe json map.
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'sku': sku,
+      'createdAt': createdAt?.toIso8601String(),
+      'itemType': itemType,
+      'type': type,
+      'category': category,
+      'stock': stock,
+      'baseUnit': baseUnit,
+      'secondaryUnit': secondaryUnit,
+      'conversionFactor': conversionFactor,
+      'price': price,
+      'status': status,
+      'supplierName': supplierName,
+      'description': description,
+      'imageUrl': imageUrl,
+      'localImagePath': localImagePath,
+      'minimumSafetyStock': minimumSafetyStock,
+      'reorderLevel': reorderLevel,
+      'subcategory': subcategory,
+      'departmentId': departmentId,
+      'baseSemiId': baseSemiId,
+      'secondaryPrice': secondaryPrice,
+      'mrp': mrp,
+      'purchasePrice': purchasePrice,
+      'averageCost': averageCost,
+      'lastCost': lastCost,
+      'gstRate': gstRate,
+      'defaultDiscount': defaultDiscount,
+      'supplierId': supplierId,
+      'stockAlertLevel': stockAlertLevel,
+      'simpleSchemeBuy': simpleSchemeBuy,
+      'simpleSchemeGet': simpleSchemeGet,
+      'unitWeightGrams': unitWeightGrams,
+      'weightPerUnit': weightPerUnit,
+      'volumePerUnit': volumePerUnit,
+      'density': density,
+      'packagingType': packagingType,
+      'packagingRecipeJson': packagingRecipeJson,
+      'shelfLife': shelfLife,
+      'barcode': barcode,
+      'productionStage': productionStage,
+      'wastagePercent': wastagePercent,
+      'boxesPerBatch': boxesPerBatch,
+      'internalCost': internalCost,
+      'expiryDays': expiryDays,
+      'batchMandatory': batchMandatory,
+      'storageConditions': storageConditions,
+      'isTankMaterial': isTankMaterial,
+      'dimensions': dimensions,
+      'sizeVariant': sizeVariant,
+      'hazardLevel': hazardLevel,
+      'safetyPrecautions': safetyPrecautions,
+      'storageRequirements': storageRequirements,
+      'ppeRequired': ppeRequired,
+      'allowedSemiFinishedIds': allowedSemiFinishedIds,
+      'allowedDepartmentIds': allowedDepartmentIds,
+      'unitsPerBundle': unitsPerBundle,
+      'entityType': entityType,
+      'standardBatchInputKg': standardBatchInputKg,
+      'standardBatchOutputPcs': standardBatchOutputPcs,
+      'productionFormula': productionFormula,
+      'expectedOutputQty': expectedOutputQty,
+      'productionLossPercent': productionLossPercent,
+      'batchTrackingEnabled': batchTrackingEnabled,
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
+  /// Builds an entity from a sync-safe json map.
+  static ProductEntity fromJson(Map<String, dynamic> json) {
+    final entity = ProductEntity()
+      ..id = parseString(
+        json['id'] ?? json['firebaseId'],
+        fallback: '',
+      )
+      ..name = parseString(json['name'])
+      ..sku = parseString(json['sku'])
+      ..createdAt = parseDateOrNull(json['createdAt'])
+      ..itemType = parseString(json['itemType'])
+      ..type = parseString(json['type'])
+      ..category = parseString(json['category'], fallback: '')
+      ..stock = json['stock'] == null ? 0.0 : parseDouble(json['stock'])
+      ..baseUnit = parseString(json['baseUnit'])
+      ..secondaryUnit = parseString(json['secondaryUnit'], fallback: '')
+      ..conversionFactor = json['conversionFactor'] == null
+          ? 1.0
+          : parseDouble(json['conversionFactor'])
+      ..price = json['price'] == null ? 0.0 : parseDouble(json['price'])
+      ..status = parseString(json['status'], fallback: '')
+      ..supplierName = parseString(json['supplierName'], fallback: '')
+      ..description = parseString(json['description'], fallback: '')
+      ..imageUrl = parseString(json['imageUrl'], fallback: '')
+      ..localImagePath = parseString(json['localImagePath'], fallback: '')
+      ..minimumSafetyStock = json['minimumSafetyStock'] == null
+          ? null
+          : parseDouble(json['minimumSafetyStock'])
+      ..reorderLevel = json['reorderLevel'] == null
+          ? null
+          : parseDouble(json['reorderLevel'])
+      ..subcategory = parseString(json['subcategory'], fallback: '')
+      ..departmentId = parseString(json['departmentId'], fallback: '')
+      ..baseSemiId = parseString(json['baseSemiId'], fallback: '')
+      ..secondaryPrice = json['secondaryPrice'] == null
+          ? null
+          : parseDouble(json['secondaryPrice'])
+      ..mrp = json['mrp'] == null ? null : parseDouble(json['mrp'])
+      ..purchasePrice = json['purchasePrice'] == null
+          ? null
+          : parseDouble(json['purchasePrice'])
+      ..averageCost = json['averageCost'] == null
+          ? null
+          : parseDouble(json['averageCost'])
+      ..lastCost = json['lastCost'] == null
+          ? null
+          : parseDouble(json['lastCost'])
+      ..gstRate = json['gstRate'] == null
+          ? null
+          : parseDouble(json['gstRate'])
+      ..defaultDiscount = json['defaultDiscount'] == null
+          ? null
+          : parseDouble(json['defaultDiscount'])
+      ..supplierId = parseString(json['supplierId'], fallback: '')
+      ..stockAlertLevel = json['stockAlertLevel'] == null
+          ? null
+          : parseDouble(json['stockAlertLevel'])
+      ..simpleSchemeBuy = json['simpleSchemeBuy'] == null
+          ? null
+          : parseDouble(json['simpleSchemeBuy'])
+      ..simpleSchemeGet = json['simpleSchemeGet'] == null
+          ? null
+          : parseDouble(json['simpleSchemeGet'])
+      ..unitWeightGrams = json['unitWeightGrams'] == null
+          ? null
+          : parseDouble(json['unitWeightGrams'])
+      ..weightPerUnit = json['weightPerUnit'] == null
+          ? null
+          : parseDouble(json['weightPerUnit'])
+      ..volumePerUnit = json['volumePerUnit'] == null
+          ? null
+          : parseDouble(json['volumePerUnit'])
+      ..density = json['density'] == null ? null : parseDouble(json['density'])
+      ..packagingType = parseString(json['packagingType'], fallback: '')
+      ..packagingRecipeJson = parseString(
+        json['packagingRecipeJson'],
+        fallback: '',
+      )
+      ..shelfLife = json['shelfLife'] == null
+          ? null
+          : parseDouble(json['shelfLife'])
+      ..barcode = parseString(json['barcode'], fallback: '')
+      ..productionStage = parseString(json['productionStage'], fallback: '')
+      ..wastagePercent = json['wastagePercent'] == null
+          ? null
+          : parseDouble(json['wastagePercent'])
+      ..boxesPerBatch = json['boxesPerBatch'] == null
+          ? null
+          : parseInt(json['boxesPerBatch'])
+      ..internalCost = json['internalCost'] == null
+          ? null
+          : parseDouble(json['internalCost'])
+      ..expiryDays = json['expiryDays'] == null
+          ? null
+          : parseDouble(json['expiryDays'])
+      ..batchMandatory = json['batchMandatory'] == null
+          ? null
+          : parseBool(json['batchMandatory'])
+      ..storageConditions = parseString(json['storageConditions'], fallback: '')
+      ..isTankMaterial = json['isTankMaterial'] == null
+          ? null
+          : parseBool(json['isTankMaterial'])
+      ..sizeVariant = parseString(json['sizeVariant'], fallback: '')
+      ..hazardLevel = parseString(json['hazardLevel'], fallback: '')
+      ..safetyPrecautions = parseString(
+        json['safetyPrecautions'],
+        fallback: '',
+      )
+      ..storageRequirements = parseStringList(json['storageRequirements'])
+      ..ppeRequired = parseStringList(json['ppeRequired'])
+      ..allowedSemiFinishedIds = parseStringList(
+        json['allowedSemiFinishedIds'],
+      )
+      ..allowedDepartmentIds = parseStringList(json['allowedDepartmentIds'])
+      ..unitsPerBundle = json['unitsPerBundle'] == null
+          ? null
+          : parseInt(json['unitsPerBundle'])
+      ..entityType = parseString(json['entityType'], fallback: '')
+      ..standardBatchInputKg = json['standardBatchInputKg'] == null
+          ? null
+          : parseDouble(json['standardBatchInputKg'])
+      ..standardBatchOutputPcs = json['standardBatchOutputPcs'] == null
+          ? null
+          : parseDouble(json['standardBatchOutputPcs'])
+      ..productionFormula = parseString(json['productionFormula'], fallback: '')
+      ..expectedOutputQty = json['expectedOutputQty'] == null
+          ? null
+          : parseDouble(json['expectedOutputQty'])
+      ..productionLossPercent = json['productionLossPercent'] == null
+          ? null
+          : parseDouble(json['productionLossPercent'])
+      ..batchTrackingEnabled = json['batchTrackingEnabled'] == null
+          ? null
+          : parseBool(json['batchTrackingEnabled'])
+      ..updatedAt = parseDate(
+        json['updatedAt'] ?? json['lastModified'],
+      )
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId'], fallback: '');
+
+    final rawDimensions = json['dimensions'];
+    if (rawDimensions is Map) {
+      entity.dimensions = Map<String, dynamic>.from(rawDimensions);
+    }
+
+    return entity;
+  }
 
   Product toDomain() {
     final priceValue = _decryptDouble(price, 'price') ?? 0.0;

@@ -17,6 +17,7 @@ class SyncQueue {
   late String operation;
   late String payload;
   int retryCount = 0;
+  int maxRetries = 5;
   DateTime createdAt = DateTime.now();
   DateTime? lastAttemptAt;
   bool isFailed = false;
@@ -29,6 +30,7 @@ class SyncQueue {
     String? operation,
     String? payload,
     int? retryCount,
+    int? maxRetries,
     DateTime? createdAt,
     DateTime? lastAttemptAt,
     bool? isFailed,
@@ -40,6 +42,7 @@ class SyncQueue {
       ..operation = operation ?? this.operation
       ..payload = payload ?? this.payload
       ..retryCount = retryCount ?? this.retryCount
+      ..maxRetries = maxRetries ?? this.maxRetries
       ..createdAt = createdAt ?? this.createdAt
       ..lastAttemptAt = lastAttemptAt ?? this.lastAttemptAt
       ..isFailed = isFailed ?? this.isFailed;

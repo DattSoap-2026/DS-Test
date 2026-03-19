@@ -42,161 +42,181 @@ const VehicleEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'fitnessExpiryDate': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 5,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'fitnessExpiryDate': PropertySchema(
+      id: 6,
       name: r'fitnessExpiryDate',
       type: IsarType.dateTime,
     ),
     r'fuelType': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'fuelType',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'id',
       type: IsarType.string,
     ),
     r'insuranceExpiryDate': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'insuranceExpiryDate',
       type: IsarType.dateTime,
     ),
     r'insuranceProvider': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'insuranceProvider',
       type: IsarType.string,
     ),
     r'insuranceStartDate': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'insuranceStartDate',
       type: IsarType.dateTime,
     ),
     r'isDeleted': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 13,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
     r'lastDieselFill': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'lastDieselFill',
       type: IsarType.string,
     ),
+    r'lastSynced': PropertySchema(
+      id: 15,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'maxAverage': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'maxAverage',
       type: IsarType.double,
     ),
     r'minAverage': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'minAverage',
       type: IsarType.double,
     ),
     r'model': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'model',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'name',
       type: IsarType.string,
     ),
     r'number': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'number',
       type: IsarType.string,
     ),
     r'permitExpiryDate': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'permitExpiryDate',
       type: IsarType.dateTime,
     ),
     r'permitNumber': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'permitNumber',
       type: IsarType.string,
     ),
     r'policyNumber': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'policyNumber',
       type: IsarType.string,
     ),
     r'pucExpiryDate': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'pucExpiryDate',
       type: IsarType.dateTime,
     ),
     r'pucNumber': PropertySchema(
-      id: 22,
+      id: 25,
       name: r'pucNumber',
       type: IsarType.string,
     ),
     r'purchaseDate': PropertySchema(
-      id: 23,
+      id: 26,
       name: r'purchaseDate',
       type: IsarType.dateTime,
     ),
     r'rcNumber': PropertySchema(
-      id: 24,
+      id: 27,
       name: r'rcNumber',
       type: IsarType.string,
     ),
     r'serialNumber': PropertySchema(
-      id: 25,
+      id: 28,
       name: r'serialNumber',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 26,
+      id: 29,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 27,
+      id: 30,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _VehicleEntitysyncStatusEnumValueMap,
     ),
     r'totalDieselCost': PropertySchema(
-      id: 28,
+      id: 31,
       name: r'totalDieselCost',
       type: IsarType.double,
     ),
     r'totalDistance': PropertySchema(
-      id: 29,
+      id: 32,
       name: r'totalDistance',
       type: IsarType.double,
     ),
     r'totalFuelConsumed': PropertySchema(
-      id: 30,
+      id: 33,
       name: r'totalFuelConsumed',
       type: IsarType.double,
     ),
     r'totalMaintenanceCost': PropertySchema(
-      id: 31,
+      id: 34,
       name: r'totalMaintenanceCost',
       type: IsarType.double,
     ),
     r'totalTyreCost': PropertySchema(
-      id: 32,
+      id: 35,
       name: r'totalTyreCost',
       type: IsarType.double,
     ),
     r'type': PropertySchema(
-      id: 33,
+      id: 36,
       name: r'type',
       type: IsarType.string,
     ),
     r'tyreSize': PropertySchema(
-      id: 34,
+      id: 37,
       name: r'tyreSize',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 35,
+      id: 38,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 39,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _vehicleEntityEstimateSize,
@@ -247,6 +267,7 @@ int _vehicleEntityEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.createdAt.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.fuelType;
     if (value != null) {
@@ -326,37 +347,41 @@ void _vehicleEntitySerialize(
   writer.writeString(offsets[2], object.createdAt);
   writer.writeDouble(offsets[3], object.currentOdometer);
   writer.writeDateTime(offsets[4], object.deletedAt);
-  writer.writeDateTime(offsets[5], object.fitnessExpiryDate);
-  writer.writeString(offsets[6], object.fuelType);
-  writer.writeString(offsets[7], object.id);
-  writer.writeDateTime(offsets[8], object.insuranceExpiryDate);
-  writer.writeString(offsets[9], object.insuranceProvider);
-  writer.writeDateTime(offsets[10], object.insuranceStartDate);
-  writer.writeBool(offsets[11], object.isDeleted);
-  writer.writeString(offsets[12], object.lastDieselFill);
-  writer.writeDouble(offsets[13], object.maxAverage);
-  writer.writeDouble(offsets[14], object.minAverage);
-  writer.writeString(offsets[15], object.model);
-  writer.writeString(offsets[16], object.name);
-  writer.writeString(offsets[17], object.number);
-  writer.writeDateTime(offsets[18], object.permitExpiryDate);
-  writer.writeString(offsets[19], object.permitNumber);
-  writer.writeString(offsets[20], object.policyNumber);
-  writer.writeDateTime(offsets[21], object.pucExpiryDate);
-  writer.writeString(offsets[22], object.pucNumber);
-  writer.writeDateTime(offsets[23], object.purchaseDate);
-  writer.writeString(offsets[24], object.rcNumber);
-  writer.writeString(offsets[25], object.serialNumber);
-  writer.writeString(offsets[26], object.status);
-  writer.writeByte(offsets[27], object.syncStatus.index);
-  writer.writeDouble(offsets[28], object.totalDieselCost);
-  writer.writeDouble(offsets[29], object.totalDistance);
-  writer.writeDouble(offsets[30], object.totalFuelConsumed);
-  writer.writeDouble(offsets[31], object.totalMaintenanceCost);
-  writer.writeDouble(offsets[32], object.totalTyreCost);
-  writer.writeString(offsets[33], object.type);
-  writer.writeString(offsets[34], object.tyreSize);
-  writer.writeDateTime(offsets[35], object.updatedAt);
+  writer.writeString(offsets[5], object.deviceId);
+  writer.writeDateTime(offsets[6], object.fitnessExpiryDate);
+  writer.writeString(offsets[7], object.fuelType);
+  writer.writeString(offsets[8], object.id);
+  writer.writeDateTime(offsets[9], object.insuranceExpiryDate);
+  writer.writeString(offsets[10], object.insuranceProvider);
+  writer.writeDateTime(offsets[11], object.insuranceStartDate);
+  writer.writeBool(offsets[12], object.isDeleted);
+  writer.writeBool(offsets[13], object.isSynced);
+  writer.writeString(offsets[14], object.lastDieselFill);
+  writer.writeDateTime(offsets[15], object.lastSynced);
+  writer.writeDouble(offsets[16], object.maxAverage);
+  writer.writeDouble(offsets[17], object.minAverage);
+  writer.writeString(offsets[18], object.model);
+  writer.writeString(offsets[19], object.name);
+  writer.writeString(offsets[20], object.number);
+  writer.writeDateTime(offsets[21], object.permitExpiryDate);
+  writer.writeString(offsets[22], object.permitNumber);
+  writer.writeString(offsets[23], object.policyNumber);
+  writer.writeDateTime(offsets[24], object.pucExpiryDate);
+  writer.writeString(offsets[25], object.pucNumber);
+  writer.writeDateTime(offsets[26], object.purchaseDate);
+  writer.writeString(offsets[27], object.rcNumber);
+  writer.writeString(offsets[28], object.serialNumber);
+  writer.writeString(offsets[29], object.status);
+  writer.writeByte(offsets[30], object.syncStatus.index);
+  writer.writeDouble(offsets[31], object.totalDieselCost);
+  writer.writeDouble(offsets[32], object.totalDistance);
+  writer.writeDouble(offsets[33], object.totalFuelConsumed);
+  writer.writeDouble(offsets[34], object.totalMaintenanceCost);
+  writer.writeDouble(offsets[35], object.totalTyreCost);
+  writer.writeString(offsets[36], object.type);
+  writer.writeString(offsets[37], object.tyreSize);
+  writer.writeDateTime(offsets[38], object.updatedAt);
+  writer.writeLong(offsets[39], object.version);
 }
 
 VehicleEntity _vehicleEntityDeserialize(
@@ -371,39 +396,43 @@ VehicleEntity _vehicleEntityDeserialize(
   object.createdAt = reader.readString(offsets[2]);
   object.currentOdometer = reader.readDouble(offsets[3]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[4]);
-  object.fitnessExpiryDate = reader.readDateTimeOrNull(offsets[5]);
-  object.fuelType = reader.readStringOrNull(offsets[6]);
-  object.id = reader.readString(offsets[7]);
-  object.insuranceExpiryDate = reader.readDateTimeOrNull(offsets[8]);
-  object.insuranceProvider = reader.readStringOrNull(offsets[9]);
-  object.insuranceStartDate = reader.readDateTimeOrNull(offsets[10]);
-  object.isDeleted = reader.readBool(offsets[11]);
-  object.lastDieselFill = reader.readStringOrNull(offsets[12]);
-  object.maxAverage = reader.readDouble(offsets[13]);
-  object.minAverage = reader.readDouble(offsets[14]);
-  object.model = reader.readStringOrNull(offsets[15]);
-  object.name = reader.readString(offsets[16]);
-  object.number = reader.readString(offsets[17]);
-  object.permitExpiryDate = reader.readDateTimeOrNull(offsets[18]);
-  object.permitNumber = reader.readStringOrNull(offsets[19]);
-  object.policyNumber = reader.readStringOrNull(offsets[20]);
-  object.pucExpiryDate = reader.readDateTimeOrNull(offsets[21]);
-  object.pucNumber = reader.readStringOrNull(offsets[22]);
-  object.purchaseDate = reader.readDateTimeOrNull(offsets[23]);
-  object.rcNumber = reader.readStringOrNull(offsets[24]);
-  object.serialNumber = reader.readStringOrNull(offsets[25]);
-  object.status = reader.readString(offsets[26]);
+  object.deviceId = reader.readString(offsets[5]);
+  object.fitnessExpiryDate = reader.readDateTimeOrNull(offsets[6]);
+  object.fuelType = reader.readStringOrNull(offsets[7]);
+  object.id = reader.readString(offsets[8]);
+  object.insuranceExpiryDate = reader.readDateTimeOrNull(offsets[9]);
+  object.insuranceProvider = reader.readStringOrNull(offsets[10]);
+  object.insuranceStartDate = reader.readDateTimeOrNull(offsets[11]);
+  object.isDeleted = reader.readBool(offsets[12]);
+  object.isSynced = reader.readBool(offsets[13]);
+  object.lastDieselFill = reader.readStringOrNull(offsets[14]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[15]);
+  object.maxAverage = reader.readDouble(offsets[16]);
+  object.minAverage = reader.readDouble(offsets[17]);
+  object.model = reader.readStringOrNull(offsets[18]);
+  object.name = reader.readString(offsets[19]);
+  object.number = reader.readString(offsets[20]);
+  object.permitExpiryDate = reader.readDateTimeOrNull(offsets[21]);
+  object.permitNumber = reader.readStringOrNull(offsets[22]);
+  object.policyNumber = reader.readStringOrNull(offsets[23]);
+  object.pucExpiryDate = reader.readDateTimeOrNull(offsets[24]);
+  object.pucNumber = reader.readStringOrNull(offsets[25]);
+  object.purchaseDate = reader.readDateTimeOrNull(offsets[26]);
+  object.rcNumber = reader.readStringOrNull(offsets[27]);
+  object.serialNumber = reader.readStringOrNull(offsets[28]);
+  object.status = reader.readString(offsets[29]);
   object.syncStatus = _VehicleEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[27])] ??
+          reader.readByteOrNull(offsets[30])] ??
       SyncStatus.pending;
-  object.totalDieselCost = reader.readDouble(offsets[28]);
-  object.totalDistance = reader.readDouble(offsets[29]);
-  object.totalFuelConsumed = reader.readDouble(offsets[30]);
-  object.totalMaintenanceCost = reader.readDouble(offsets[31]);
-  object.totalTyreCost = reader.readDouble(offsets[32]);
-  object.type = reader.readString(offsets[33]);
-  object.tyreSize = reader.readStringOrNull(offsets[34]);
-  object.updatedAt = reader.readDateTime(offsets[35]);
+  object.totalDieselCost = reader.readDouble(offsets[31]);
+  object.totalDistance = reader.readDouble(offsets[32]);
+  object.totalFuelConsumed = reader.readDouble(offsets[33]);
+  object.totalMaintenanceCost = reader.readDouble(offsets[34]);
+  object.totalTyreCost = reader.readDouble(offsets[35]);
+  object.type = reader.readString(offsets[36]);
+  object.tyreSize = reader.readStringOrNull(offsets[37]);
+  object.updatedAt = reader.readDateTime(offsets[38]);
+  object.version = reader.readLong(offsets[39]);
   return object;
 }
 
@@ -425,69 +454,77 @@ P _vehicleEntityDeserializeProp<P>(
     case 4:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 5:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 9:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 10:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 11:
-      return (reader.readBool(offset)) as P;
-    case 12:
-      return (reader.readStringOrNull(offset)) as P;
-    case 13:
-      return (reader.readDouble(offset)) as P;
-    case 14:
-      return (reader.readDouble(offset)) as P;
-    case 15:
-      return (reader.readStringOrNull(offset)) as P;
-    case 16:
-      return (reader.readString(offset)) as P;
-    case 17:
-      return (reader.readString(offset)) as P;
-    case 18:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 12:
+      return (reader.readBool(offset)) as P;
+    case 13:
+      return (reader.readBool(offset)) as P;
+    case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 16:
+      return (reader.readDouble(offset)) as P;
+    case 17:
+      return (reader.readDouble(offset)) as P;
+    case 18:
+      return (reader.readStringOrNull(offset)) as P;
     case 19:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 20:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 21:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 22:
       return (reader.readStringOrNull(offset)) as P;
     case 23:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 24:
       return (reader.readStringOrNull(offset)) as P;
+    case 24:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 25:
       return (reader.readStringOrNull(offset)) as P;
     case 26:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 27:
+      return (reader.readStringOrNull(offset)) as P;
+    case 28:
+      return (reader.readStringOrNull(offset)) as P;
+    case 29:
+      return (reader.readString(offset)) as P;
+    case 30:
       return (_VehicleEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 28:
-      return (reader.readDouble(offset)) as P;
-    case 29:
-      return (reader.readDouble(offset)) as P;
-    case 30:
-      return (reader.readDouble(offset)) as P;
     case 31:
       return (reader.readDouble(offset)) as P;
     case 32:
       return (reader.readDouble(offset)) as P;
     case 33:
-      return (reader.readString(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 34:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 35:
+      return (reader.readDouble(offset)) as P;
+    case 36:
+      return (reader.readString(offset)) as P;
+    case 37:
+      return (reader.readStringOrNull(offset)) as P;
+    case 38:
       return (reader.readDateTime(offset)) as P;
+    case 39:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1222,6 +1259,142 @@ extension VehicleEntityQueryFilter
   }
 
   QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
       fitnessExpiryDateIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1896,6 +2069,16 @@ extension VehicleEntityQueryFilter
   }
 
   QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2101,6 +2284,80 @@ extension VehicleEntityQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'lastDieselFill',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -4520,6 +4777,62 @@ extension VehicleEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension VehicleEntityQueryObject
@@ -4593,6 +4906,19 @@ extension VehicleEntityQuerySortBy
       sortByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -4690,6 +5016,19 @@ extension VehicleEntityQuerySortBy
     });
   }
 
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy>
       sortByLastDieselFill() {
     return QueryBuilder.apply(this, (query) {
@@ -4701,6 +5040,19 @@ extension VehicleEntityQuerySortBy
       sortByLastDieselFillDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastDieselFill', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -5008,6 +5360,18 @@ extension VehicleEntityQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension VehicleEntityQuerySortThenBy
@@ -5075,6 +5439,19 @@ extension VehicleEntityQuerySortThenBy
       thenByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -5172,6 +5549,19 @@ extension VehicleEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -5195,6 +5585,19 @@ extension VehicleEntityQuerySortThenBy
       thenByLastDieselFillDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastDieselFill', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -5502,6 +5905,18 @@ extension VehicleEntityQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QAfterSortBy> thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension VehicleEntityQueryWhereDistinct
@@ -5535,6 +5950,13 @@ extension VehicleEntityQueryWhereDistinct
   QueryBuilder<VehicleEntity, VehicleEntity, QDistinct> distinctByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
     });
   }
 
@@ -5587,11 +6009,23 @@ extension VehicleEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<VehicleEntity, VehicleEntity, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
   QueryBuilder<VehicleEntity, VehicleEntity, QDistinct>
       distinctByLastDieselFill({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastDieselFill',
           caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QDistinct> distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -5751,6 +6185,12 @@ extension VehicleEntityQueryWhereDistinct
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<VehicleEntity, VehicleEntity, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension VehicleEntityQueryProperty
@@ -5789,6 +6229,12 @@ extension VehicleEntityQueryProperty
   QueryBuilder<VehicleEntity, DateTime?, QQueryOperations> deletedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<VehicleEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
     });
   }
 
@@ -5838,10 +6284,23 @@ extension VehicleEntityQueryProperty
     });
   }
 
+  QueryBuilder<VehicleEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
   QueryBuilder<VehicleEntity, String?, QQueryOperations>
       lastDieselFillProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastDieselFill');
+    });
+  }
+
+  QueryBuilder<VehicleEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -5992,6 +6451,12 @@ extension VehicleEntityQueryProperty
   QueryBuilder<VehicleEntity, DateTime, QQueryOperations> updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<VehicleEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

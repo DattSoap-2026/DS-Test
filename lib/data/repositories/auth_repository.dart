@@ -4,8 +4,13 @@
 
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
+import '../../core/network/connectivity_service.dart';
+import '../../core/sync/collection_registry.dart';
+import '../../core/sync/sync_queue_service.dart';
+import '../../core/sync/sync_service.dart';
+import '../../core/utils/device_id_service.dart';
+import '../local/base_entity.dart';
 import '../local/entities/user_entity.dart';
 import '../../services/database_service.dart';
 import '../../utils/app_logger.dart';
@@ -16,8 +21,23 @@ class AuthRepository {
   final DatabaseService _dbService;
   final FirebaseAuth? _firebaseAuth;
   final firestore.FirebaseFirestore? _db;
+  final SyncQueueService _syncQueueService;
+  final SyncService _syncService;
+  final ConnectivityService _connectivityService;
+  final DeviceIdService _deviceIdService;
 
-  AuthRepository(this._dbService, this._firebaseAuth, this._db);
+  AuthRepository(
+    this._dbService,
+    this._firebaseAuth,
+    this._db, {
+    SyncQueueService? syncQueueService,
+    SyncService? syncService,
+    ConnectivityService? connectivityService,
+    DeviceIdService? deviceIdService,
+  }) : _syncQueueService = syncQueueService ?? SyncQueueService.instance,
+       _syncService = syncService ?? SyncService.instance,
+       _connectivityService = connectivityService ?? ConnectivityService.instance,
+       _deviceIdService = deviceIdService ?? DeviceIdService.instance;
 
   String _normalizeAccountStatus(
     dynamic rawStatus, {
@@ -53,6 +73,8 @@ class AuthRepository {
       final byId = await _dbService.users
           .filter()
           .idEqualTo(firebaseUser.uid)
+          .and()
+          .isDeletedEqualTo(false)
           .findFirst();
 
       if (byId != null) return byId;
@@ -61,6 +83,8 @@ class AuthRepository {
       return await _dbService.users
           .filter()
           .emailEqualTo(firebaseUser.email!, caseSensitive: false)
+          .and()
+          .isDeletedEqualTo(false)
           .findFirst();
     }
     return null;
@@ -73,7 +97,9 @@ class AuthRepository {
   //         (e.g. accountant@dattsoap.local) cannot hijack the session.
   Future<UserEntity?> getLastCachedUser() async {
     try {
-      final cachedUsers = await _dbService.users.where().findAll();
+      final cachedUsers = (await _dbService.users.where().findAll())
+          .where((user) => !user.isDeleted)
+          .toList();
       if (cachedUsers.isEmpty) return null;
 
       // Try to match the current Firebase Auth identity first.
@@ -185,34 +211,10 @@ class AuthRepository {
         }
 
         if (doc.exists) {
-          // [AUTH_LOCK_OVERRIDE] - Identity Linking (best effort)
-          // Some Firestore rules intentionally block non-admin users from
-          // creating role-bearing /users/{uid} docs. In that case we must
-          // continue with the verified legacy doc instead of failing login.
-          final legacyData = doc.data() ?? {};
-          try {
-            await _db.collection('users').doc(uid).set({
-              ...legacyData,
-              'uid': uid,
-              'id': doc.id,
-              'updatedAt': firestore.FieldValue.serverTimestamp(),
-            }, firestore.SetOptions(merge: true));
-
-            AppLogger.success(
-              'Identity Linked: Processed legacy profile (${doc.id}) for $normalizedEmail. Account is now hard-locked to UID: $uid',
-              tag: 'Auth',
-            );
-            doc = await _db.collection('users').doc(uid).get();
-          } on firestore.FirebaseException catch (e) {
-            if (e.code == 'permission-denied') {
-              AppLogger.warning(
-                'Identity linking skipped for $normalizedEmail due to Firestore permissions. Continuing with legacy profile (${doc.id}).',
-                tag: 'Auth',
-              );
-            } else {
-              rethrow;
-            }
-          }
+          AppLogger.info(
+            'Using verified legacy profile (${doc.id}) for $normalizedEmail without client-side identity linking write.',
+            tag: 'Auth',
+          );
         } else {
           await _firebaseAuth.signOut();
           throw FirebaseAuthException(
@@ -282,6 +284,9 @@ class AuthRepository {
       }
 
       // 3. Persist to cache only AFTER verification passes
+      final existingLocal = await _dbService.users.getById(doc.id);
+      final deviceId = await _deviceIdService.getDeviceId();
+      final now = DateTime.now();
       final newUser = UserEntity()
         ..id = doc
             .id // Use the ACTUAL Firestore Document ID for future syncs
@@ -294,7 +299,14 @@ class AuthRepository {
         ..designation = data?['designation']
         ..departmentsJson = jsonEncode(data?['departments'] ?? [])
         ..isActive = isActive
-        ..updatedAt = DateTime.now();
+        ..updatedAt = now
+        ..syncStatus = SyncStatus.synced
+        ..isSynced = true
+        ..lastSynced = now
+        ..version = (data?['version'] as num?)?.toInt() ??
+            existingLocal?.version ??
+            1
+        ..deviceId = deviceId;
 
       await _dbService.db.writeTxn(() async {
         await _dbService.users.put(newUser);
@@ -317,10 +329,40 @@ class AuthRepository {
     }
   }
 
-  Future<void> saveUser(UserEntity user) async {
+  Future<void> saveUser(
+    UserEntity user, {
+    bool queueForSync = false,
+    String operation = 'update',
+  }) async {
+    final now = DateTime.now();
+    final existing = await _dbService.users.getById(user.id);
+    user.updatedAt = now;
+    user.deviceId = user.deviceId.isEmpty
+        ? await _deviceIdService.getDeviceId()
+        : user.deviceId;
+    user.version = existing == null ? user.version : existing.version + 1;
+    user.isSynced = !queueForSync;
+    user.lastSynced = queueForSync ? null : now;
+    user.syncStatus = queueForSync ? SyncStatus.pending : SyncStatus.synced;
+
     await _dbService.db.writeTxn(() async {
       await _dbService.users.put(user);
     });
+
+    if (!queueForSync) {
+      return;
+    }
+
+    await _syncQueueService.addToQueue(
+      collectionName: CollectionRegistry.users,
+      documentId: user.id,
+      operation: operation,
+      payload: user.toJson(),
+    );
+
+    if (_connectivityService.isOnline) {
+      await _syncService.syncAllPending();
+    }
   }
 
   Future<void> signOut() async {
@@ -335,12 +377,15 @@ class AuthRepository {
         await _firebaseAuth.signOut().timeout(
           const Duration(seconds: 5),
           onTimeout: () {
-            debugPrint('AuthRepo: Firebase signOut timed out');
+            AppLogger.warning(
+              'Firebase signOut timed out in AuthRepository.',
+              tag: 'Auth',
+            );
           },
         );
       }
     } catch (e) {
-      debugPrint('AuthRepo: Firebase signOut error: $e');
+      AppLogger.warning('Firebase signOut error: $e', tag: 'Auth');
     }
   }
 }

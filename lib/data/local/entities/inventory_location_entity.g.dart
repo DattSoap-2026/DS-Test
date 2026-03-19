@@ -28,56 +28,76 @@ const InventoryLocationEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'id': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 2,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'id': PropertySchema(
+      id: 3,
       name: r'id',
       type: IsarType.string,
     ),
     r'isActive': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'isActive',
       type: IsarType.bool,
     ),
     r'isDeleted': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isPrimaryMainWarehouse': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'isPrimaryMainWarehouse',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 7,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 8,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'name': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'name',
       type: IsarType.string,
     ),
     r'ownerUserUid': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'ownerUserUid',
       type: IsarType.string,
     ),
     r'parentLocationId': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'parentLocationId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _InventoryLocationEntitysyncStatusEnumValueMap,
     ),
     r'type': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'type',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 15,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _inventoryLocationEntityEstimateSize,
@@ -180,6 +200,7 @@ int _inventoryLocationEntityEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.code.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.id.length * 3;
   bytesCount += 3 + object.name.length * 3;
   {
@@ -206,16 +227,20 @@ void _inventoryLocationEntitySerialize(
 ) {
   writer.writeString(offsets[0], object.code);
   writer.writeDateTime(offsets[1], object.deletedAt);
-  writer.writeString(offsets[2], object.id);
-  writer.writeBool(offsets[3], object.isActive);
-  writer.writeBool(offsets[4], object.isDeleted);
-  writer.writeBool(offsets[5], object.isPrimaryMainWarehouse);
-  writer.writeString(offsets[6], object.name);
-  writer.writeString(offsets[7], object.ownerUserUid);
-  writer.writeString(offsets[8], object.parentLocationId);
-  writer.writeByte(offsets[9], object.syncStatus.index);
-  writer.writeString(offsets[10], object.type);
-  writer.writeDateTime(offsets[11], object.updatedAt);
+  writer.writeString(offsets[2], object.deviceId);
+  writer.writeString(offsets[3], object.id);
+  writer.writeBool(offsets[4], object.isActive);
+  writer.writeBool(offsets[5], object.isDeleted);
+  writer.writeBool(offsets[6], object.isPrimaryMainWarehouse);
+  writer.writeBool(offsets[7], object.isSynced);
+  writer.writeDateTime(offsets[8], object.lastSynced);
+  writer.writeString(offsets[9], object.name);
+  writer.writeString(offsets[10], object.ownerUserUid);
+  writer.writeString(offsets[11], object.parentLocationId);
+  writer.writeByte(offsets[12], object.syncStatus.index);
+  writer.writeString(offsets[13], object.type);
+  writer.writeDateTime(offsets[14], object.updatedAt);
+  writer.writeLong(offsets[15], object.version);
 }
 
 InventoryLocationEntity _inventoryLocationEntityDeserialize(
@@ -227,18 +252,22 @@ InventoryLocationEntity _inventoryLocationEntityDeserialize(
   final object = InventoryLocationEntity();
   object.code = reader.readString(offsets[0]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[1]);
-  object.id = reader.readString(offsets[2]);
-  object.isActive = reader.readBool(offsets[3]);
-  object.isDeleted = reader.readBool(offsets[4]);
-  object.isPrimaryMainWarehouse = reader.readBool(offsets[5]);
-  object.name = reader.readString(offsets[6]);
-  object.ownerUserUid = reader.readStringOrNull(offsets[7]);
-  object.parentLocationId = reader.readStringOrNull(offsets[8]);
+  object.deviceId = reader.readString(offsets[2]);
+  object.id = reader.readString(offsets[3]);
+  object.isActive = reader.readBool(offsets[4]);
+  object.isDeleted = reader.readBool(offsets[5]);
+  object.isPrimaryMainWarehouse = reader.readBool(offsets[6]);
+  object.isSynced = reader.readBool(offsets[7]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[8]);
+  object.name = reader.readString(offsets[9]);
+  object.ownerUserUid = reader.readStringOrNull(offsets[10]);
+  object.parentLocationId = reader.readStringOrNull(offsets[11]);
   object.syncStatus = _InventoryLocationEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[9])] ??
+          reader.readByteOrNull(offsets[12])] ??
       SyncStatus.pending;
-  object.type = reader.readString(offsets[10]);
-  object.updatedAt = reader.readDateTime(offsets[11]);
+  object.type = reader.readString(offsets[13]);
+  object.updatedAt = reader.readDateTime(offsets[14]);
+  object.version = reader.readLong(offsets[15]);
   return object;
 }
 
@@ -256,25 +285,33 @@ P _inventoryLocationEntityDeserializeProp<P>(
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 4:
       return (reader.readBool(offset)) as P;
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readStringOrNull(offset)) as P;
+    case 11:
+      return (reader.readStringOrNull(offset)) as P;
+    case 12:
       return (_InventoryLocationEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 10:
+    case 13:
       return (reader.readString(offset)) as P;
-    case 11:
+    case 14:
       return (reader.readDateTime(offset)) as P;
+    case 15:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1022,6 +1059,144 @@ extension InventoryLocationEntityQueryFilter on QueryBuilder<
   }
 
   QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+          QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+          QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
       QAfterFilterCondition> idEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1190,6 +1365,16 @@ extension InventoryLocationEntityQueryFilter on QueryBuilder<
   }
 
   QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
       QAfterFilterCondition> isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1237,6 +1422,80 @@ extension InventoryLocationEntityQueryFilter on QueryBuilder<
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1944,6 +2203,62 @@ extension InventoryLocationEntityQueryFilter on QueryBuilder<
       ));
     });
   }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity,
+      QAfterFilterCondition> versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension InventoryLocationEntityQueryObject on QueryBuilder<
@@ -1979,6 +2294,20 @@ extension InventoryLocationEntityQuerySortBy
       sortByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -2035,6 +2364,34 @@ extension InventoryLocationEntityQuerySortBy
       sortByIsPrimaryMainWarehouseDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isPrimaryMainWarehouse', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2121,6 +2478,20 @@ extension InventoryLocationEntityQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension InventoryLocationEntityQuerySortThenBy on QueryBuilder<
@@ -2150,6 +2521,20 @@ extension InventoryLocationEntityQuerySortThenBy on QueryBuilder<
       thenByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -2210,6 +2595,20 @@ extension InventoryLocationEntityQuerySortThenBy on QueryBuilder<
   }
 
   QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -2220,6 +2619,20 @@ extension InventoryLocationEntityQuerySortThenBy on QueryBuilder<
       thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2306,6 +2719,20 @@ extension InventoryLocationEntityQuerySortThenBy on QueryBuilder<
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension InventoryLocationEntityQueryWhereDistinct on QueryBuilder<
@@ -2321,6 +2748,13 @@ extension InventoryLocationEntityQueryWhereDistinct on QueryBuilder<
       distinctByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
     });
   }
 
@@ -2349,6 +2783,20 @@ extension InventoryLocationEntityQueryWhereDistinct on QueryBuilder<
       distinctByIsPrimaryMainWarehouse() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isPrimaryMainWarehouse');
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -2394,6 +2842,13 @@ extension InventoryLocationEntityQueryWhereDistinct on QueryBuilder<
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<InventoryLocationEntity, InventoryLocationEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension InventoryLocationEntityQueryProperty on QueryBuilder<
@@ -2416,6 +2871,13 @@ extension InventoryLocationEntityQueryProperty on QueryBuilder<
       deletedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, String, QQueryOperations>
+      deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
     });
   }
 
@@ -2443,6 +2905,20 @@ extension InventoryLocationEntityQueryProperty on QueryBuilder<
       isPrimaryMainWarehouseProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isPrimaryMainWarehouse');
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, bool, QQueryOperations>
+      isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -2485,6 +2961,13 @@ extension InventoryLocationEntityQueryProperty on QueryBuilder<
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<InventoryLocationEntity, int, QQueryOperations>
+      versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

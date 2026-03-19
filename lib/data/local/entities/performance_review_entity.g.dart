@@ -28,101 +28,121 @@ const PerformanceReviewEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'employeeComments': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 2,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'employeeComments': PropertySchema(
+      id: 3,
       name: r'employeeComments',
       type: IsarType.string,
     ),
     r'employeeId': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'employeeId',
       type: IsarType.string,
     ),
     r'goals': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'goals',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'id',
       type: IsarType.string,
     ),
     r'improvements': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'improvements',
       type: IsarType.string,
     ),
     r'initiativeScore': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'initiativeScore',
       type: IsarType.long,
     ),
     r'isDeleted': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 10,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 11,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'managerComments': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'managerComments',
       type: IsarType.string,
     ),
     r'overallRating': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'overallRating',
       type: IsarType.double,
     ),
     r'productivityScore': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'productivityScore',
       type: IsarType.long,
     ),
     r'qualityScore': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'qualityScore',
       type: IsarType.long,
     ),
     r'reviewDate': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'reviewDate',
       type: IsarType.string,
     ),
     r'reviewPeriod': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'reviewPeriod',
       type: IsarType.string,
     ),
     r'reviewerId': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'reviewerId',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'status',
       type: IsarType.string,
     ),
     r'strengths': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'strengths',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _PerformanceReviewEntitysyncStatusEnumValueMap,
     ),
     r'teamworkScore': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'teamworkScore',
       type: IsarType.long,
     ),
     r'updatedAt': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 24,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _performanceReviewEntityEstimateSize,
@@ -211,6 +231,7 @@ int _performanceReviewEntityEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.employeeComments;
     if (value != null) {
@@ -258,25 +279,29 @@ void _performanceReviewEntitySerialize(
 ) {
   writer.writeLong(offsets[0], object.attendanceScore);
   writer.writeDateTime(offsets[1], object.deletedAt);
-  writer.writeString(offsets[2], object.employeeComments);
-  writer.writeString(offsets[3], object.employeeId);
-  writer.writeString(offsets[4], object.goals);
-  writer.writeString(offsets[5], object.id);
-  writer.writeString(offsets[6], object.improvements);
-  writer.writeLong(offsets[7], object.initiativeScore);
-  writer.writeBool(offsets[8], object.isDeleted);
-  writer.writeString(offsets[9], object.managerComments);
-  writer.writeDouble(offsets[10], object.overallRating);
-  writer.writeLong(offsets[11], object.productivityScore);
-  writer.writeLong(offsets[12], object.qualityScore);
-  writer.writeString(offsets[13], object.reviewDate);
-  writer.writeString(offsets[14], object.reviewPeriod);
-  writer.writeString(offsets[15], object.reviewerId);
-  writer.writeString(offsets[16], object.status);
-  writer.writeString(offsets[17], object.strengths);
-  writer.writeByte(offsets[18], object.syncStatus.index);
-  writer.writeLong(offsets[19], object.teamworkScore);
-  writer.writeDateTime(offsets[20], object.updatedAt);
+  writer.writeString(offsets[2], object.deviceId);
+  writer.writeString(offsets[3], object.employeeComments);
+  writer.writeString(offsets[4], object.employeeId);
+  writer.writeString(offsets[5], object.goals);
+  writer.writeString(offsets[6], object.id);
+  writer.writeString(offsets[7], object.improvements);
+  writer.writeLong(offsets[8], object.initiativeScore);
+  writer.writeBool(offsets[9], object.isDeleted);
+  writer.writeBool(offsets[10], object.isSynced);
+  writer.writeDateTime(offsets[11], object.lastSynced);
+  writer.writeString(offsets[12], object.managerComments);
+  writer.writeDouble(offsets[13], object.overallRating);
+  writer.writeLong(offsets[14], object.productivityScore);
+  writer.writeLong(offsets[15], object.qualityScore);
+  writer.writeString(offsets[16], object.reviewDate);
+  writer.writeString(offsets[17], object.reviewPeriod);
+  writer.writeString(offsets[18], object.reviewerId);
+  writer.writeString(offsets[19], object.status);
+  writer.writeString(offsets[20], object.strengths);
+  writer.writeByte(offsets[21], object.syncStatus.index);
+  writer.writeLong(offsets[22], object.teamworkScore);
+  writer.writeDateTime(offsets[23], object.updatedAt);
+  writer.writeLong(offsets[24], object.version);
 }
 
 PerformanceReviewEntity _performanceReviewEntityDeserialize(
@@ -288,27 +313,31 @@ PerformanceReviewEntity _performanceReviewEntityDeserialize(
   final object = PerformanceReviewEntity();
   object.attendanceScore = reader.readLongOrNull(offsets[0]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[1]);
-  object.employeeComments = reader.readStringOrNull(offsets[2]);
-  object.employeeId = reader.readString(offsets[3]);
-  object.goals = reader.readStringOrNull(offsets[4]);
-  object.id = reader.readString(offsets[5]);
-  object.improvements = reader.readStringOrNull(offsets[6]);
-  object.initiativeScore = reader.readLongOrNull(offsets[7]);
-  object.isDeleted = reader.readBool(offsets[8]);
-  object.managerComments = reader.readStringOrNull(offsets[9]);
-  object.overallRating = reader.readDoubleOrNull(offsets[10]);
-  object.productivityScore = reader.readLongOrNull(offsets[11]);
-  object.qualityScore = reader.readLongOrNull(offsets[12]);
-  object.reviewDate = reader.readString(offsets[13]);
-  object.reviewPeriod = reader.readString(offsets[14]);
-  object.reviewerId = reader.readString(offsets[15]);
-  object.status = reader.readString(offsets[16]);
-  object.strengths = reader.readStringOrNull(offsets[17]);
+  object.deviceId = reader.readString(offsets[2]);
+  object.employeeComments = reader.readStringOrNull(offsets[3]);
+  object.employeeId = reader.readString(offsets[4]);
+  object.goals = reader.readStringOrNull(offsets[5]);
+  object.id = reader.readString(offsets[6]);
+  object.improvements = reader.readStringOrNull(offsets[7]);
+  object.initiativeScore = reader.readLongOrNull(offsets[8]);
+  object.isDeleted = reader.readBool(offsets[9]);
+  object.isSynced = reader.readBool(offsets[10]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[11]);
+  object.managerComments = reader.readStringOrNull(offsets[12]);
+  object.overallRating = reader.readDoubleOrNull(offsets[13]);
+  object.productivityScore = reader.readLongOrNull(offsets[14]);
+  object.qualityScore = reader.readLongOrNull(offsets[15]);
+  object.reviewDate = reader.readString(offsets[16]);
+  object.reviewPeriod = reader.readString(offsets[17]);
+  object.reviewerId = reader.readString(offsets[18]);
+  object.status = reader.readString(offsets[19]);
+  object.strengths = reader.readStringOrNull(offsets[20]);
   object.syncStatus = _PerformanceReviewEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[18])] ??
+          reader.readByteOrNull(offsets[21])] ??
       SyncStatus.pending;
-  object.teamworkScore = reader.readLongOrNull(offsets[19]);
-  object.updatedAt = reader.readDateTime(offsets[20]);
+  object.teamworkScore = reader.readLongOrNull(offsets[22]);
+  object.updatedAt = reader.readDateTime(offsets[23]);
+  object.version = reader.readLong(offsets[24]);
   return object;
 }
 
@@ -324,45 +353,53 @@ P _performanceReviewEntityDeserializeProp<P>(
     case 1:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readLongOrNull(offset)) as P;
-    case 8:
-      return (reader.readBool(offset)) as P;
-    case 9:
       return (reader.readStringOrNull(offset)) as P;
+    case 8:
+      return (reader.readLongOrNull(offset)) as P;
+    case 9:
+      return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 12:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 14:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 15:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 16:
       return (reader.readString(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 18:
+      return (reader.readString(offset)) as P;
+    case 19:
+      return (reader.readString(offset)) as P;
+    case 20:
+      return (reader.readStringOrNull(offset)) as P;
+    case 21:
       return (_PerformanceReviewEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 19:
+    case 22:
       return (reader.readLongOrNull(offset)) as P;
-    case 20:
+    case 23:
       return (reader.readDateTime(offset)) as P;
+    case 24:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -899,6 +936,144 @@ extension PerformanceReviewEntityQueryFilter on QueryBuilder<
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+          QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+          QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
       ));
     });
   }
@@ -1732,6 +1907,16 @@ extension PerformanceReviewEntityQueryFilter on QueryBuilder<
   }
 
   QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
       QAfterFilterCondition> isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1779,6 +1964,80 @@ extension PerformanceReviewEntityQueryFilter on QueryBuilder<
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -3068,6 +3327,62 @@ extension PerformanceReviewEntityQueryFilter on QueryBuilder<
       ));
     });
   }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity,
+      QAfterFilterCondition> versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension PerformanceReviewEntityQueryObject on QueryBuilder<
@@ -3103,6 +3418,20 @@ extension PerformanceReviewEntityQuerySortBy
       sortByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -3201,6 +3530,34 @@ extension PerformanceReviewEntityQuerySortBy
       sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3371,6 +3728,20 @@ extension PerformanceReviewEntityQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension PerformanceReviewEntityQuerySortThenBy on QueryBuilder<
@@ -3400,6 +3771,20 @@ extension PerformanceReviewEntityQuerySortThenBy on QueryBuilder<
       thenByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -3502,6 +3887,20 @@ extension PerformanceReviewEntityQuerySortThenBy on QueryBuilder<
   }
 
   QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -3512,6 +3911,20 @@ extension PerformanceReviewEntityQuerySortThenBy on QueryBuilder<
       thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3682,6 +4095,20 @@ extension PerformanceReviewEntityQuerySortThenBy on QueryBuilder<
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension PerformanceReviewEntityQueryWhereDistinct on QueryBuilder<
@@ -3697,6 +4124,13 @@ extension PerformanceReviewEntityQueryWhereDistinct on QueryBuilder<
       distinctByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
     });
   }
 
@@ -3747,6 +4181,20 @@ extension PerformanceReviewEntityQueryWhereDistinct on QueryBuilder<
       distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -3834,6 +4282,13 @@ extension PerformanceReviewEntityQueryWhereDistinct on QueryBuilder<
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<PerformanceReviewEntity, PerformanceReviewEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension PerformanceReviewEntityQueryProperty on QueryBuilder<
@@ -3856,6 +4311,13 @@ extension PerformanceReviewEntityQueryProperty on QueryBuilder<
       deletedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, String, QQueryOperations>
+      deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
     });
   }
 
@@ -3904,6 +4366,20 @@ extension PerformanceReviewEntityQueryProperty on QueryBuilder<
       isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, bool, QQueryOperations>
+      isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -3988,6 +4464,13 @@ extension PerformanceReviewEntityQueryProperty on QueryBuilder<
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<PerformanceReviewEntity, int, QQueryOperations>
+      versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

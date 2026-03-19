@@ -72,175 +72,195 @@ const SaleEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'discountAmount': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 11,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'discountAmount': PropertySchema(
+      id: 12,
       name: r'discountAmount',
       type: IsarType.double,
     ),
     r'discountPercentage': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'discountPercentage',
       type: IsarType.double,
     ),
     r'dispatchRequired': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'dispatchRequired',
       type: IsarType.bool,
     ),
     r'gstPercentage': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'gstPercentage',
       type: IsarType.double,
     ),
     r'gstType': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'gstType',
       type: IsarType.string,
     ),
     r'humanReadableId': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'humanReadableId',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'id',
       type: IsarType.string,
     ),
     r'igstAmount': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'igstAmount',
       type: IsarType.double,
     ),
     r'isDeleted': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 21,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
     r'itemDiscountAmount': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'itemDiscountAmount',
       type: IsarType.double,
     ),
     r'itemProductIds': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'itemProductIds',
       type: IsarType.stringList,
     ),
     r'items': PropertySchema(
-      id: 22,
+      id: 24,
       name: r'items',
       type: IsarType.objectList,
       target: r'SaleItemEntity',
     ),
+    r'lastSynced': PropertySchema(
+      id: 25,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'month': PropertySchema(
-      id: 23,
+      id: 26,
       name: r'month',
       type: IsarType.long,
     ),
     r'paidAmount': PropertySchema(
-      id: 24,
+      id: 27,
       name: r'paidAmount',
       type: IsarType.double,
     ),
     r'paymentStatus': PropertySchema(
-      id: 25,
+      id: 28,
       name: r'paymentStatus',
       type: IsarType.string,
     ),
     r'recipientId': PropertySchema(
-      id: 26,
+      id: 29,
       name: r'recipientId',
       type: IsarType.string,
     ),
     r'recipientName': PropertySchema(
-      id: 27,
+      id: 30,
       name: r'recipientName',
       type: IsarType.string,
     ),
     r'recipientType': PropertySchema(
-      id: 28,
+      id: 31,
       name: r'recipientType',
       type: IsarType.string,
     ),
     r'roundOff': PropertySchema(
-      id: 29,
+      id: 32,
       name: r'roundOff',
       type: IsarType.double,
     ),
     r'route': PropertySchema(
-      id: 30,
+      id: 33,
       name: r'route',
       type: IsarType.string,
     ),
     r'saleType': PropertySchema(
-      id: 31,
+      id: 34,
       name: r'saleType',
       type: IsarType.string,
     ),
     r'salesmanId': PropertySchema(
-      id: 32,
+      id: 35,
       name: r'salesmanId',
       type: IsarType.string,
     ),
     r'salesmanName': PropertySchema(
-      id: 33,
+      id: 36,
       name: r'salesmanName',
       type: IsarType.string,
     ),
     r'sgstAmount': PropertySchema(
-      id: 34,
+      id: 37,
       name: r'sgstAmount',
       type: IsarType.double,
     ),
     r'sourceWarehouseId': PropertySchema(
-      id: 35,
+      id: 38,
       name: r'sourceWarehouseId',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 36,
+      id: 39,
       name: r'status',
       type: IsarType.string,
     ),
     r'subtotal': PropertySchema(
-      id: 37,
+      id: 40,
       name: r'subtotal',
       type: IsarType.double,
     ),
     r'syncStatus': PropertySchema(
-      id: 38,
+      id: 41,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _SaleEntitysyncStatusEnumValueMap,
     ),
     r'taxableAmount': PropertySchema(
-      id: 39,
+      id: 42,
       name: r'taxableAmount',
       type: IsarType.double,
     ),
     r'totalAmount': PropertySchema(
-      id: 40,
+      id: 43,
       name: r'totalAmount',
       type: IsarType.double,
     ),
     r'tripId': PropertySchema(
-      id: 41,
+      id: 44,
       name: r'tripId',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 42,
+      id: 45,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'vehicleNumber': PropertySchema(
-      id: 43,
+      id: 46,
       name: r'vehicleNumber',
       type: IsarType.string,
     ),
+    r'version': PropertySchema(
+      id: 47,
+      name: r'version',
+      type: IsarType.long,
+    ),
     r'year': PropertySchema(
-      id: 44,
+      id: 48,
       name: r'year',
       type: IsarType.long,
     )
@@ -401,6 +421,7 @@ int _saleEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.gstType;
     if (value != null) {
@@ -507,45 +528,49 @@ void _saleEntitySerialize(
   writer.writeString(offsets[8], object.createdAt);
   writer.writeString(offsets[9], object.createdByRole);
   writer.writeDateTime(offsets[10], object.deletedAt);
-  writer.writeDouble(offsets[11], object.discountAmount);
-  writer.writeDouble(offsets[12], object.discountPercentage);
-  writer.writeBool(offsets[13], object.dispatchRequired);
-  writer.writeDouble(offsets[14], object.gstPercentage);
-  writer.writeString(offsets[15], object.gstType);
-  writer.writeString(offsets[16], object.humanReadableId);
-  writer.writeString(offsets[17], object.id);
-  writer.writeDouble(offsets[18], object.igstAmount);
-  writer.writeBool(offsets[19], object.isDeleted);
-  writer.writeDouble(offsets[20], object.itemDiscountAmount);
-  writer.writeStringList(offsets[21], object.itemProductIds);
+  writer.writeString(offsets[11], object.deviceId);
+  writer.writeDouble(offsets[12], object.discountAmount);
+  writer.writeDouble(offsets[13], object.discountPercentage);
+  writer.writeBool(offsets[14], object.dispatchRequired);
+  writer.writeDouble(offsets[15], object.gstPercentage);
+  writer.writeString(offsets[16], object.gstType);
+  writer.writeString(offsets[17], object.humanReadableId);
+  writer.writeString(offsets[18], object.id);
+  writer.writeDouble(offsets[19], object.igstAmount);
+  writer.writeBool(offsets[20], object.isDeleted);
+  writer.writeBool(offsets[21], object.isSynced);
+  writer.writeDouble(offsets[22], object.itemDiscountAmount);
+  writer.writeStringList(offsets[23], object.itemProductIds);
   writer.writeObjectList<SaleItemEntity>(
-    offsets[22],
+    offsets[24],
     allOffsets,
     SaleItemEntitySchema.serialize,
     object.items,
   );
-  writer.writeLong(offsets[23], object.month);
-  writer.writeDouble(offsets[24], object.paidAmount);
-  writer.writeString(offsets[25], object.paymentStatus);
-  writer.writeString(offsets[26], object.recipientId);
-  writer.writeString(offsets[27], object.recipientName);
-  writer.writeString(offsets[28], object.recipientType);
-  writer.writeDouble(offsets[29], object.roundOff);
-  writer.writeString(offsets[30], object.route);
-  writer.writeString(offsets[31], object.saleType);
-  writer.writeString(offsets[32], object.salesmanId);
-  writer.writeString(offsets[33], object.salesmanName);
-  writer.writeDouble(offsets[34], object.sgstAmount);
-  writer.writeString(offsets[35], object.sourceWarehouseId);
-  writer.writeString(offsets[36], object.status);
-  writer.writeDouble(offsets[37], object.subtotal);
-  writer.writeByte(offsets[38], object.syncStatus.index);
-  writer.writeDouble(offsets[39], object.taxableAmount);
-  writer.writeDouble(offsets[40], object.totalAmount);
-  writer.writeString(offsets[41], object.tripId);
-  writer.writeDateTime(offsets[42], object.updatedAt);
-  writer.writeString(offsets[43], object.vehicleNumber);
-  writer.writeLong(offsets[44], object.year);
+  writer.writeDateTime(offsets[25], object.lastSynced);
+  writer.writeLong(offsets[26], object.month);
+  writer.writeDouble(offsets[27], object.paidAmount);
+  writer.writeString(offsets[28], object.paymentStatus);
+  writer.writeString(offsets[29], object.recipientId);
+  writer.writeString(offsets[30], object.recipientName);
+  writer.writeString(offsets[31], object.recipientType);
+  writer.writeDouble(offsets[32], object.roundOff);
+  writer.writeString(offsets[33], object.route);
+  writer.writeString(offsets[34], object.saleType);
+  writer.writeString(offsets[35], object.salesmanId);
+  writer.writeString(offsets[36], object.salesmanName);
+  writer.writeDouble(offsets[37], object.sgstAmount);
+  writer.writeString(offsets[38], object.sourceWarehouseId);
+  writer.writeString(offsets[39], object.status);
+  writer.writeDouble(offsets[40], object.subtotal);
+  writer.writeByte(offsets[41], object.syncStatus.index);
+  writer.writeDouble(offsets[42], object.taxableAmount);
+  writer.writeDouble(offsets[43], object.totalAmount);
+  writer.writeString(offsets[44], object.tripId);
+  writer.writeDateTime(offsets[45], object.updatedAt);
+  writer.writeString(offsets[46], object.vehicleNumber);
+  writer.writeLong(offsets[47], object.version);
+  writer.writeLong(offsets[48], object.year);
 }
 
 SaleEntity _saleEntityDeserialize(
@@ -566,47 +591,51 @@ SaleEntity _saleEntityDeserialize(
   object.createdAt = reader.readString(offsets[8]);
   object.createdByRole = reader.readStringOrNull(offsets[9]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[10]);
-  object.discountAmount = reader.readDoubleOrNull(offsets[11]);
-  object.discountPercentage = reader.readDoubleOrNull(offsets[12]);
-  object.dispatchRequired = reader.readBoolOrNull(offsets[13]);
-  object.gstPercentage = reader.readDoubleOrNull(offsets[14]);
-  object.gstType = reader.readStringOrNull(offsets[15]);
-  object.humanReadableId = reader.readStringOrNull(offsets[16]);
-  object.id = reader.readString(offsets[17]);
-  object.igstAmount = reader.readDoubleOrNull(offsets[18]);
-  object.isDeleted = reader.readBool(offsets[19]);
-  object.itemDiscountAmount = reader.readDoubleOrNull(offsets[20]);
-  object.itemProductIds = reader.readStringList(offsets[21]);
+  object.deviceId = reader.readString(offsets[11]);
+  object.discountAmount = reader.readDoubleOrNull(offsets[12]);
+  object.discountPercentage = reader.readDoubleOrNull(offsets[13]);
+  object.dispatchRequired = reader.readBoolOrNull(offsets[14]);
+  object.gstPercentage = reader.readDoubleOrNull(offsets[15]);
+  object.gstType = reader.readStringOrNull(offsets[16]);
+  object.humanReadableId = reader.readStringOrNull(offsets[17]);
+  object.id = reader.readString(offsets[18]);
+  object.igstAmount = reader.readDoubleOrNull(offsets[19]);
+  object.isDeleted = reader.readBool(offsets[20]);
+  object.isSynced = reader.readBool(offsets[21]);
+  object.itemDiscountAmount = reader.readDoubleOrNull(offsets[22]);
+  object.itemProductIds = reader.readStringList(offsets[23]);
   object.items = reader.readObjectList<SaleItemEntity>(
-    offsets[22],
+    offsets[24],
     SaleItemEntitySchema.deserialize,
     allOffsets,
     SaleItemEntity(),
   );
-  object.month = reader.readLongOrNull(offsets[23]);
-  object.paidAmount = reader.readDoubleOrNull(offsets[24]);
-  object.paymentStatus = reader.readStringOrNull(offsets[25]);
-  object.recipientId = reader.readString(offsets[26]);
-  object.recipientName = reader.readString(offsets[27]);
-  object.recipientType = reader.readString(offsets[28]);
-  object.roundOff = reader.readDoubleOrNull(offsets[29]);
-  object.route = reader.readStringOrNull(offsets[30]);
-  object.saleType = reader.readStringOrNull(offsets[31]);
-  object.salesmanId = reader.readString(offsets[32]);
-  object.salesmanName = reader.readString(offsets[33]);
-  object.sgstAmount = reader.readDoubleOrNull(offsets[34]);
-  object.sourceWarehouseId = reader.readStringOrNull(offsets[35]);
-  object.status = reader.readStringOrNull(offsets[36]);
-  object.subtotal = reader.readDoubleOrNull(offsets[37]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[25]);
+  object.month = reader.readLongOrNull(offsets[26]);
+  object.paidAmount = reader.readDoubleOrNull(offsets[27]);
+  object.paymentStatus = reader.readStringOrNull(offsets[28]);
+  object.recipientId = reader.readString(offsets[29]);
+  object.recipientName = reader.readString(offsets[30]);
+  object.recipientType = reader.readString(offsets[31]);
+  object.roundOff = reader.readDoubleOrNull(offsets[32]);
+  object.route = reader.readStringOrNull(offsets[33]);
+  object.saleType = reader.readStringOrNull(offsets[34]);
+  object.salesmanId = reader.readString(offsets[35]);
+  object.salesmanName = reader.readString(offsets[36]);
+  object.sgstAmount = reader.readDoubleOrNull(offsets[37]);
+  object.sourceWarehouseId = reader.readStringOrNull(offsets[38]);
+  object.status = reader.readStringOrNull(offsets[39]);
+  object.subtotal = reader.readDoubleOrNull(offsets[40]);
   object.syncStatus =
-      _SaleEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[38])] ??
+      _SaleEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[41])] ??
           SyncStatus.pending;
-  object.taxableAmount = reader.readDoubleOrNull(offsets[39]);
-  object.totalAmount = reader.readDoubleOrNull(offsets[40]);
-  object.tripId = reader.readStringOrNull(offsets[41]);
-  object.updatedAt = reader.readDateTime(offsets[42]);
-  object.vehicleNumber = reader.readStringOrNull(offsets[43]);
-  object.year = reader.readLongOrNull(offsets[44]);
+  object.taxableAmount = reader.readDoubleOrNull(offsets[42]);
+  object.totalAmount = reader.readDoubleOrNull(offsets[43]);
+  object.tripId = reader.readStringOrNull(offsets[44]);
+  object.updatedAt = reader.readDateTime(offsets[45]);
+  object.vehicleNumber = reader.readStringOrNull(offsets[46]);
+  object.version = reader.readLong(offsets[47]);
+  object.year = reader.readLongOrNull(offsets[48]);
   return object;
 }
 
@@ -640,79 +669,87 @@ P _saleEntityDeserializeProp<P>(
     case 10:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 11:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 12:
       return (reader.readDoubleOrNull(offset)) as P;
     case 13:
-      return (reader.readBoolOrNull(offset)) as P;
-    case 14:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 14:
+      return (reader.readBoolOrNull(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 16:
       return (reader.readStringOrNull(offset)) as P;
     case 17:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 18:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 19:
-      return (reader.readBool(offset)) as P;
-    case 20:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 20:
+      return (reader.readBool(offset)) as P;
     case 21:
-      return (reader.readStringList(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 22:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 23:
+      return (reader.readStringList(offset)) as P;
+    case 24:
       return (reader.readObjectList<SaleItemEntity>(
         offset,
         SaleItemEntitySchema.deserialize,
         allOffsets,
         SaleItemEntity(),
       )) as P;
-    case 23:
-      return (reader.readLongOrNull(offset)) as P;
-    case 24:
-      return (reader.readDoubleOrNull(offset)) as P;
     case 25:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 26:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 27:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 28:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 29:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 30:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 31:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 32:
-      return (reader.readString(offset)) as P;
-    case 33:
-      return (reader.readString(offset)) as P;
-    case 34:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 33:
+      return (reader.readStringOrNull(offset)) as P;
+    case 34:
+      return (reader.readStringOrNull(offset)) as P;
     case 35:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 36:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 37:
       return (reader.readDoubleOrNull(offset)) as P;
     case 38:
-      return (_SaleEntitysyncStatusValueEnumMap[
-              reader.readByteOrNull(offset)] ??
-          SyncStatus.pending) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 39:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 40:
       return (reader.readDoubleOrNull(offset)) as P;
     case 41:
-      return (reader.readStringOrNull(offset)) as P;
+      return (_SaleEntitysyncStatusValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          SyncStatus.pending) as P;
     case 42:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 43:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 44:
+      return (reader.readStringOrNull(offset)) as P;
+    case 45:
+      return (reader.readDateTime(offset)) as P;
+    case 46:
+      return (reader.readStringOrNull(offset)) as P;
+    case 47:
+      return (reader.readLong(offset)) as P;
+    case 48:
       return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2608,6 +2645,140 @@ extension SaleEntityQueryFilter
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> deviceIdContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> deviceIdMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
       discountAmountIsNull() {
     return QueryBuilder.apply(this, (query) {
@@ -3413,6 +3584,16 @@ extension SaleEntityQueryFilter
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> isSyncedEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> isarIdEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -3895,6 +4076,79 @@ extension SaleEntityQueryFilter
         upper,
         includeUpper,
       );
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> lastSyncedEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
@@ -6303,6 +6557,60 @@ extension SaleEntityQueryFilter
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> versionEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterFilterCondition> yearIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -6526,6 +6834,18 @@ extension SaleEntityQuerySortBy
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByDiscountAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discountAmount', Sort.asc);
@@ -6639,6 +6959,18 @@ extension SaleEntityQuerySortBy
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy>
       sortByItemDiscountAmount() {
     return QueryBuilder.apply(this, (query) {
@@ -6650,6 +6982,18 @@ extension SaleEntityQuerySortBy
       sortByItemDiscountAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'itemDiscountAmount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -6906,6 +7250,18 @@ extension SaleEntityQuerySortBy
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> sortByYear() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'year', Sort.asc);
@@ -7059,6 +7415,18 @@ extension SaleEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByDiscountAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discountAmount', Sort.asc);
@@ -7172,6 +7540,18 @@ extension SaleEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -7195,6 +7575,18 @@ extension SaleEntityQuerySortThenBy
       thenByItemDiscountAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'itemDiscountAmount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -7451,6 +7843,18 @@ extension SaleEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QAfterSortBy> thenByYear() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'year', Sort.asc);
@@ -7542,6 +7946,13 @@ extension SaleEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QDistinct> distinctByDiscountAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'discountAmount');
@@ -7601,6 +8012,12 @@ extension SaleEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QDistinct>
       distinctByItemDiscountAmount() {
     return QueryBuilder.apply(this, (query) {
@@ -7611,6 +8028,12 @@ extension SaleEntityQueryWhereDistinct
   QueryBuilder<SaleEntity, SaleEntity, QDistinct> distinctByItemProductIds() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'itemProductIds');
+    });
+  }
+
+  QueryBuilder<SaleEntity, SaleEntity, QDistinct> distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -7757,6 +8180,12 @@ extension SaleEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<SaleEntity, SaleEntity, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
+
   QueryBuilder<SaleEntity, SaleEntity, QDistinct> distinctByYear() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'year');
@@ -7841,6 +8270,12 @@ extension SaleEntityQueryProperty
     });
   }
 
+  QueryBuilder<SaleEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<SaleEntity, double?, QQueryOperations> discountAmountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'discountAmount');
@@ -7897,6 +8332,12 @@ extension SaleEntityQueryProperty
     });
   }
 
+  QueryBuilder<SaleEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
   QueryBuilder<SaleEntity, double?, QQueryOperations>
       itemDiscountAmountProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -7915,6 +8356,12 @@ extension SaleEntityQueryProperty
       itemsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'items');
+    });
+  }
+
+  QueryBuilder<SaleEntity, DateTime?, QQueryOperations> lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -8042,6 +8489,12 @@ extension SaleEntityQueryProperty
   QueryBuilder<SaleEntity, String?, QQueryOperations> vehicleNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'vehicleNumber');
+    });
+  }
+
+  QueryBuilder<SaleEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 

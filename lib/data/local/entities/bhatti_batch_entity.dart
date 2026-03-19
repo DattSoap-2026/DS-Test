@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:isar/isar.dart';
-import '../base_entity.dart';
+
 import '../../../services/bhatti_service.dart';
+import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'bhatti_batch_entity.g.dart';
 
@@ -16,16 +20,18 @@ class ConsumedItem {
 
   factory ConsumedItem.fromJson(Map<String, dynamic> json) {
     return ConsumedItem()
-      ..materialId =
-          json['materialId'] as String? ?? json['rawMaterialId'] as String?
-      ..name = json['name'] as String?
-      ..quantity = (json['quantity'] as num?)?.toDouble()
-      ..unit = json['unit'] as String?
-      ..cost = (json['cost'] as num?)?.toDouble();
+      ..materialId = parseString(
+        json['materialId'] ?? json['rawMaterialId'],
+        fallback: '',
+      )
+      ..name = parseString(json['name'], fallback: '')
+      ..quantity = parseDouble(json['quantity'])
+      ..unit = parseString(json['unit'], fallback: '')
+      ..cost = parseDouble(json['cost']);
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'materialId': materialId,
       'name': name,
       'quantity': quantity,
@@ -47,24 +53,23 @@ class TankConsumptionItem {
 
   factory TankConsumptionItem.fromJson(Map<String, dynamic> json) {
     return TankConsumptionItem()
-      ..tankId = json['tankId'] as String?
-      ..tankName = json['tankName'] as String?
-      ..materialId = json['materialId'] as String?
-      ..quantity = (json['quantity'] as num?)?.toDouble()
-      ..lots = (json['lots'] as List?)
-          ?.map(
-            (e) => LotConsumptionItem.fromJson(Map<String, dynamic>.from(e)),
-          )
-          .toList();
+      ..tankId = parseString(json['tankId'], fallback: '')
+      ..tankName = parseString(json['tankName'], fallback: '')
+      ..materialId = parseString(json['materialId'], fallback: '')
+      ..quantity = parseDouble(json['quantity'])
+      ..lots = parseJsonList(json['lots'])
+          .whereType<Map>()
+          .map((item) => LotConsumptionItem.fromJson(Map<String, dynamic>.from(item)))
+          .toList(growable: false);
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'tankId': tankId,
       'tankName': tankName,
       'materialId': materialId,
       'quantity': quantity,
-      'lots': lots?.map((e) => e.toJson()).toList(),
+      'lots': lots?.map((item) => item.toJson()).toList(),
     };
   }
 }
@@ -79,13 +84,17 @@ class LotConsumptionItem {
 
   factory LotConsumptionItem.fromJson(Map<String, dynamic> json) {
     return LotConsumptionItem()
-      ..lotId = json['lotId'] as String?
-      ..quantity = (json['quantity'] as num?)?.toDouble()
-      ..cost = (json['cost'] as num?)?.toDouble();
+      ..lotId = parseString(json['lotId'], fallback: '')
+      ..quantity = parseDouble(json['quantity'])
+      ..cost = parseDouble(json['cost']);
   }
 
   Map<String, dynamic> toJson() {
-    return {'lotId': lotId, 'quantity': quantity, 'cost': cost};
+    return <String, dynamic>{
+      'lotId': lotId,
+      'quantity': quantity,
+      'cost': cost,
+    };
   }
 }
 
@@ -101,32 +110,57 @@ class BhattiBatchEntity extends BaseEntity {
   late String targetProductId;
 
   late String targetProductName;
-
   late int batchCount;
-
   late int outputBoxes;
-
   late String supervisorId;
-
   late String supervisorName;
 
   @Index()
-  late String status; // 'cooking', 'completed'
+  late String status;
 
   late List<ConsumedItem> rawMaterialsConsumed;
-
   late List<TankConsumptionItem> tankConsumptions;
-
   late double totalBatchCost;
-
   late double costPerBox;
-
   String? issueId;
-
   late DateTime createdAt;
 
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'bhattiName': bhattiName,
+      'batchNumber': batchNumber,
+      'targetProductId': targetProductId,
+      'targetProductName': targetProductName,
+      'batchCount': batchCount,
+      'outputBoxes': outputBoxes,
+      'supervisorId': supervisorId,
+      'supervisorName': supervisorName,
+      'status': status,
+      'rawMaterialsConsumed': jsonEncode(
+        rawMaterialsConsumed.map((item) => item.toJson()).toList(),
+      ),
+      'tankConsumptions': jsonEncode(
+        tankConsumptions.map((item) => item.toJson()).toList(),
+      ),
+      'totalBatchCost': totalBatchCost,
+      'costPerBox': costPerBox,
+      'issueId': issueId,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
   Map<String, dynamic> toFirebaseJson() {
-    return {
+    return <String, dynamic>{
       'id': id,
       'bhattiName': bhattiName,
       'batchNumber': batchNumber,
@@ -138,9 +172,11 @@ class BhattiBatchEntity extends BaseEntity {
       'supervisorName': supervisorName,
       'status': status,
       'rawMaterialsConsumed': rawMaterialsConsumed
-          .map((e) => e.toJson())
+          .map((item) => item.toJson())
           .toList(),
-      'tankConsumptions': tankConsumptions.map((e) => e.toJson()).toList(),
+      'tankConsumptions': tankConsumptions
+          .map((item) => item.toJson())
+          .toList(),
       'totalBatchCost': totalBatchCost,
       'costPerBox': costPerBox,
       'issueId': issueId,
@@ -148,6 +184,9 @@ class BhattiBatchEntity extends BaseEntity {
       'updatedAt': updatedAt.toIso8601String(),
       'isDeleted': isDeleted,
       'deletedAt': deletedAt?.toIso8601String(),
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
     };
   }
 
@@ -164,9 +203,9 @@ class BhattiBatchEntity extends BaseEntity {
       supervisorName: supervisorName,
       status: status,
       rawMaterialsConsumed: rawMaterialsConsumed
-          .map((e) => e.toJson())
+          .map((item) => item.toJson())
           .toList(),
-      tankConsumptions: tankConsumptions.map((e) => e.toJson()).toList(),
+      tankConsumptions: tankConsumptions.map((item) => item.toJson()).toList(),
       totalBatchCost: totalBatchCost,
       costPerBox: costPerBox,
       issueId: issueId ?? '',
@@ -175,40 +214,52 @@ class BhattiBatchEntity extends BaseEntity {
     );
   }
 
-  static BhattiBatchEntity fromFirebaseJson(Map<String, dynamic> json) {
-    final entity = BhattiBatchEntity()
-      ..id = json['id'] as String
-      ..bhattiName = json['bhattiName'] as String
-      ..batchNumber = json['batchNumber'] as String
-      ..targetProductId = json['targetProductId'] as String
-      ..targetProductName = json['targetProductName'] as String? ?? 'Unknown'
-      ..batchCount = (json['batchCount'] as num).toInt()
-      ..outputBoxes = (json['outputBoxes'] as num?)?.toInt() ?? 0
-      ..supervisorId = json['supervisorId'] as String
-      ..supervisorName = json['supervisorName'] as String? ?? 'Unknown'
-      ..status = json['status'] as String? ?? 'cooking'
-      ..rawMaterialsConsumed = (json['rawMaterialsConsumed'] as List? ?? [])
-          .map((e) => ConsumedItem.fromJson(Map<String, dynamic>.from(e)))
-          .toList()
-      ..tankConsumptions = (json['tankConsumptions'] as List? ?? [])
-          .map(
-            (e) => TankConsumptionItem.fromJson(Map<String, dynamic>.from(e)),
-          )
-          .toList()
-      ..totalBatchCost = (json['totalBatchCost'] as num?)?.toDouble() ?? 0.0
-      ..costPerBox = (json['costPerBox'] as num?)?.toDouble() ?? 0.0
-      ..issueId = json['issueId'] as String?
-      ..createdAt = DateTime.parse(
-        json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
-      )
-      ..updatedAt = DateTime.parse(
-        json['updatedAt'] as String? ??
-            json['createdAt'] as String? ??
-            DateTime.now().toIso8601String(),
-      )
-      ..isDeleted = json['isDeleted'] == true
-      ..deletedAt = DateTime.tryParse(json['deletedAt']?.toString() ?? '');
+  static BhattiBatchEntity fromJson(Map<String, dynamic> json) {
+    return BhattiBatchEntity()
+      ..id = parseString(json['id'])
+      ..bhattiName = parseString(json['bhattiName'])
+      ..batchNumber = parseString(json['batchNumber'])
+      ..targetProductId = parseString(json['targetProductId'])
+      ..targetProductName = parseString(json['targetProductName'])
+      ..batchCount = parseInt(json['batchCount'])
+      ..outputBoxes = parseInt(json['outputBoxes'])
+      ..supervisorId = parseString(json['supervisorId'])
+      ..supervisorName = parseString(json['supervisorName'])
+      ..status = parseString(json['status'], fallback: 'cooking')
+      ..rawMaterialsConsumed = parseJsonList(json['rawMaterialsConsumed'])
+          .whereType<Map>()
+          .map((item) => ConsumedItem.fromJson(Map<String, dynamic>.from(item)))
+          .toList(growable: false)
+      ..tankConsumptions = parseJsonList(json['tankConsumptions'])
+          .whereType<Map>()
+          .map((item) => TankConsumptionItem.fromJson(Map<String, dynamic>.from(item)))
+          .toList(growable: false)
+      ..totalBatchCost = parseDouble(json['totalBatchCost'])
+      ..costPerBox = parseDouble(json['costPerBox'])
+      ..issueId = parseString(json['issueId'], fallback: '')
+      ..createdAt = parseDate(json['createdAt'])
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
+  }
 
-    return entity;
+  static BhattiBatchEntity fromFirebaseJson(Map<String, dynamic> json) {
+    return fromJson(<String, dynamic>{
+      ...json,
+      'rawMaterialsConsumed': json['rawMaterialsConsumed'] is String
+          ? json['rawMaterialsConsumed']
+          : jsonEncode((json['rawMaterialsConsumed'] as List?) ?? const <dynamic>[]),
+      'tankConsumptions': json['tankConsumptions'] is String
+          ? json['tankConsumptions']
+          : jsonEncode((json['tankConsumptions'] as List?) ?? const <dynamic>[]),
+      'syncStatus': SyncStatus.synced.name,
+      'isSynced': true,
+      'lastSynced': DateTime.now().toIso8601String(),
+    });
   }
 }

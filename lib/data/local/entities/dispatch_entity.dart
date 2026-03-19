@@ -1,7 +1,10 @@
-import 'package:isar/isar.dart';
 import 'dart:convert';
-import '../base_entity.dart';
+
+import 'package:isar/isar.dart';
+
 import '../../../models/inventory/stock_dispatch.dart';
+import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'dispatch_entity.g.dart';
 
@@ -15,23 +18,18 @@ class DispatchEntity extends BaseEntity {
 
   late String salesmanName;
   String? storeId;
-
   late String vehicleNumber;
   late String dispatchRoute;
   late String salesRoute;
-
-  // Storing items as JSON string since Isar doesn't support complex embedded objects well without their own entities
   late String itemsJson;
 
   @Index()
-  late String status; // 'created', 'loaded', 'received', 'closed'
+  late String status;
 
   late int totalQuantity;
   late double totalAmount;
-
-  late String source; // e.g. 'direct', 'order'
+  late String source;
   late bool isOrderBasedDispatch;
-
   String? orderId;
   String? orderNo;
   String? dealerId;
@@ -42,17 +40,45 @@ class DispatchEntity extends BaseEntity {
 
   DateTime? receivedAt;
 
-  // Convert to Domain Object
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'dispatchId': dispatchId,
+      'salesmanId': salesmanId,
+      'salesmanName': salesmanName,
+      'storeId': storeId,
+      'vehicleNumber': vehicleNumber,
+      'dispatchRoute': dispatchRoute,
+      'salesRoute': salesRoute,
+      'itemsJson': itemsJson,
+      'status': status,
+      'totalQuantity': totalQuantity,
+      'totalAmount': totalAmount,
+      'source': source,
+      'isOrderBasedDispatch': isOrderBasedDispatch,
+      'orderId': orderId,
+      'orderNo': orderNo,
+      'dealerId': dealerId,
+      'dealerName': dealerName,
+      'createdAt': createdAt.toIso8601String(),
+      'receivedAt': receivedAt?.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
   StockDispatch toDomain() {
-    List<DispatchItem> parsedItems = [];
-    try {
-      final List<dynamic> decoded = jsonDecode(itemsJson);
-      parsedItems = decoded
-          .map((e) => DispatchItem.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      // print('Error decoding dispatch items json: $e');
-    }
+    final parsedItems = parseJsonList(itemsJson)
+        .whereType<Map>()
+        .map((item) => DispatchItem.fromJson(Map<String, dynamic>.from(item)))
+        .toList(growable: false);
 
     return StockDispatch(
       id: id,
@@ -65,7 +91,7 @@ class DispatchEntity extends BaseEntity {
       salesRoute: salesRoute,
       items: parsedItems,
       status: DispatchStatus.values.firstWhere(
-        (e) => e.name == status,
+        (value) => value.name == status,
         orElse: () => DispatchStatus.created,
       ),
       totalQuantity: totalQuantity,
@@ -81,7 +107,38 @@ class DispatchEntity extends BaseEntity {
     );
   }
 
-  // Create from Domain Object
+  static DispatchEntity fromJson(Map<String, dynamic> json) {
+    return DispatchEntity()
+      ..id = parseString(json['id'])
+      ..dispatchId = parseString(json['dispatchId'])
+      ..salesmanId = parseString(json['salesmanId'])
+      ..salesmanName = parseString(json['salesmanName'])
+      ..storeId = parseString(json['storeId'], fallback: '')
+      ..vehicleNumber = parseString(json['vehicleNumber'])
+      ..dispatchRoute = parseString(json['dispatchRoute'])
+      ..salesRoute = parseString(json['salesRoute'])
+      ..itemsJson = parseString(json['itemsJson'], fallback: '[]')
+      ..status = parseString(json['status'], fallback: 'created')
+      ..totalQuantity = parseInt(json['totalQuantity'])
+      ..totalAmount = parseDouble(json['totalAmount'])
+      ..source = parseString(json['source'])
+      ..isOrderBasedDispatch = parseBool(json['isOrderBasedDispatch'])
+      ..orderId = parseString(json['orderId'], fallback: '')
+      ..orderNo = parseString(json['orderNo'], fallback: '')
+      ..dealerId = parseString(json['dealerId'], fallback: '')
+      ..dealerName = parseString(json['dealerName'], fallback: '')
+      ..createdAt = parseDate(json['createdAt'])
+      ..receivedAt = parseDateOrNull(json['receivedAt'])
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
+  }
+
   static DispatchEntity fromDomain(StockDispatch dispatch) {
     return DispatchEntity()
       ..id = dispatch.id
@@ -92,7 +149,7 @@ class DispatchEntity extends BaseEntity {
       ..vehicleNumber = dispatch.vehicleNumber
       ..dispatchRoute = dispatch.dispatchRoute
       ..salesRoute = dispatch.salesRoute
-      ..itemsJson = jsonEncode(dispatch.items.map((e) => e.toJson()).toList())
+      ..itemsJson = jsonEncode(dispatch.items.map((item) => item.toJson()).toList())
       ..status = dispatch.status.name
       ..totalQuantity = dispatch.totalQuantity
       ..totalAmount = dispatch.totalAmount
@@ -105,8 +162,7 @@ class DispatchEntity extends BaseEntity {
       ..createdAt = dispatch.createdAt
       ..updatedAt = dispatch.receivedAt ?? dispatch.createdAt
       ..receivedAt = dispatch.receivedAt
-      // We assume it's synced if it's coming from a domain object usually loaded from network,
-      // but if created locally, this should be handled by the caller.
-      ..syncStatus = SyncStatus.synced;
+      ..syncStatus = SyncStatus.pending
+      ..isDeleted = false;
   }
 }

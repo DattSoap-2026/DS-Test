@@ -50,6 +50,92 @@ class UserEntity extends BaseEntity {
   String? assignedWarehouseId; // For Production Supervisors
   String? assignedWarehouseName;
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'role': role,
+      'isActive': isActive,
+      'phone': phone,
+      'status': status,
+      'assignedRoutes': assignedRoutes,
+      'passwordHash': passwordHash,
+      'permissions': permissions,
+      'department': department,
+      'designation': designation,
+      'departments': _decodeJsonObject(departmentsJson),
+      'departmentsJson': departmentsJson,
+      'allocatedStock': _decodeJsonObject(allocatedStockJson),
+      'allocatedStockJson': allocatedStockJson,
+      'assignedBhatti': assignedBhatti,
+      'assignedBaseProductId': assignedBaseProductId,
+      'assignedBaseProductName': assignedBaseProductName,
+      'assignedVehicleId': assignedVehicleId,
+      'assignedVehicleName': assignedVehicleName,
+      'assignedVehicleNumber': assignedVehicleNumber,
+      'assignedDeliveryRoute': assignedDeliveryRoute,
+      'assignedSalesRoute': assignedSalesRoute,
+      'assignedWarehouseId': assignedWarehouseId,
+      'assignedWarehouseName': assignedWarehouseName,
+      'updatedAt': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'isDeleted': isDeleted,
+      'isSynced': isSynced,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
+  static UserEntity fromJson(Map<String, dynamic> json) {
+    final entity = UserEntity()
+      ..id = json['id']?.toString() ?? ''
+      ..name = json['name']?.toString()
+      ..email = json['email']?.toString()
+      ..role = json['role']?.toString()
+      ..isActive = json['isActive'] != false
+      ..phone = json['phone']?.toString()
+      ..status = json['status']?.toString()
+      ..assignedRoutes = (json['assignedRoutes'] as List?)
+          ?.map((item) => item.toString())
+          .toList()
+      ..passwordHash = json['passwordHash']?.toString()
+      ..permissions = (json['permissions'] as List?)
+          ?.map((item) => item.toString())
+          .toList()
+      ..department = json['department']?.toString()
+      ..designation = json['designation']?.toString()
+      ..departmentsJson = _encodeJsonValue(
+        json['departments'],
+        fallback: json['departmentsJson']?.toString(),
+      )
+      ..allocatedStockJson = _encodeJsonValue(
+        json['allocatedStock'],
+        fallback: json['allocatedStockJson']?.toString(),
+      )
+      ..assignedBhatti = json['assignedBhatti']?.toString()
+      ..assignedBaseProductId = json['assignedBaseProductId']?.toString()
+      ..assignedBaseProductName = json['assignedBaseProductName']?.toString()
+      ..assignedVehicleId = json['assignedVehicleId']?.toString()
+      ..assignedVehicleName = json['assignedVehicleName']?.toString()
+      ..assignedVehicleNumber = json['assignedVehicleNumber']?.toString()
+      ..assignedDeliveryRoute = json['assignedDeliveryRoute']?.toString()
+      ..assignedSalesRoute = json['assignedSalesRoute']?.toString()
+      ..assignedWarehouseId = json['assignedWarehouseId']?.toString()
+      ..assignedWarehouseName = json['assignedWarehouseName']?.toString()
+      ..updatedAt =
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+          DateTime.now()
+      ..deletedAt = DateTime.tryParse(json['deletedAt']?.toString() ?? '')
+      ..isDeleted = json['isDeleted'] == true
+      ..isSynced = json['isSynced'] == true
+      ..lastSynced = DateTime.tryParse(json['lastSynced']?.toString() ?? '')
+      ..version = (json['version'] as num? ?? 1).toInt()
+      ..deviceId = json['deviceId']?.toString() ?? '';
+    return entity;
+  }
+
   AppUser toDomain() {
     UserRole resolvedRole;
     if (email?.toLowerCase() == 'admin@dattsoap.com') {
@@ -124,6 +210,31 @@ class UserEntity extends BaseEntity {
       );
     } catch (e) {
       return {};
+    }
+  }
+
+  static dynamic _decodeJsonObject(String? raw) {
+    if (raw == null || raw.trim().isEmpty) {
+      return null;
+    }
+    try {
+      return jsonDecode(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String? _encodeJsonValue(dynamic value, {String? fallback}) {
+    if (value == null) {
+      return fallback;
+    }
+    if (value is String) {
+      return value;
+    }
+    try {
+      return jsonEncode(value);
+    } catch (_) {
+      return fallback;
     }
   }
 }

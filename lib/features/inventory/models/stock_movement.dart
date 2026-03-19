@@ -2,6 +2,9 @@ import 'package:isar/isar.dart';
 
 part 'stock_movement.g.dart';
 
+// DEPRECATED: Use StockMovementEntity from
+// lib/data/local/entities/stock_movement_entity.dart.
+
 /// Immutable stock movement audit record.
 @Collection()
 class StockMovement {

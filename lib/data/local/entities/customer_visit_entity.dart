@@ -1,6 +1,8 @@
 import 'package:isar/isar.dart';
-import '../base_entity.dart';
+
 import '../../../services/visit_service.dart';
+import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'customer_visit_entity.g.dart';
 
@@ -20,7 +22,7 @@ class CustomerVisitEntity extends BaseEntity {
   late String salesmanName;
 
   @Index()
-  late String status; // 'in_progress', 'completed', 'skipped'
+  late String status;
 
   late String arrivalTime;
   String? departureTime;
@@ -38,7 +40,39 @@ class CustomerVisitEntity extends BaseEntity {
 
   late String createdAt;
 
-  // Convert to domain model
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'sessionId': sessionId,
+      'customerId': customerId,
+      'customerName': customerName,
+      'salesmanId': salesmanId,
+      'salesmanName': salesmanName,
+      'status': status,
+      'arrivalTime': arrivalTime,
+      'departureTime': departureTime,
+      'visitDuration': visitDuration,
+      'saleId': saleId,
+      'saleAmount': saleAmount,
+      'paymentCollected': paymentCollected,
+      'notes': notes,
+      'photoUrl': photoUrl,
+      'skipReason': skipReason,
+      'skipNote': skipNote,
+      'sequenceNumber': sequenceNumber,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
   CustomerVisit toDomain() {
     return CustomerVisit(
       id: id,
@@ -64,7 +98,43 @@ class CustomerVisitEntity extends BaseEntity {
     );
   }
 
-  // Create from domain model
+  static CustomerVisitEntity fromJson(Map<String, dynamic> json) {
+    return CustomerVisitEntity()
+      ..id = parseString(json['id'])
+      ..sessionId = parseString(json['sessionId'])
+      ..customerId = parseString(json['customerId'])
+      ..customerName = parseString(json['customerName'])
+      ..salesmanId = parseString(json['salesmanId'])
+      ..salesmanName = parseString(json['salesmanName'])
+      ..status = parseString(json['status'], fallback: 'in_progress')
+      ..arrivalTime = parseString(json['arrivalTime'])
+      ..departureTime = parseString(json['departureTime'], fallback: '')
+      ..visitDuration = json['visitDuration'] == null
+          ? null
+          : parseDouble(json['visitDuration'])
+      ..saleId = parseString(json['saleId'], fallback: '')
+      ..saleAmount = json['saleAmount'] == null
+          ? null
+          : parseDouble(json['saleAmount'])
+      ..paymentCollected = json['paymentCollected'] == null
+          ? null
+          : parseDouble(json['paymentCollected'])
+      ..notes = parseString(json['notes'], fallback: '')
+      ..photoUrl = parseString(json['photoUrl'], fallback: '')
+      ..skipReason = parseString(json['skipReason'], fallback: '')
+      ..skipNote = parseString(json['skipNote'], fallback: '')
+      ..sequenceNumber = parseInt(json['sequenceNumber'])
+      ..createdAt = parseString(json['createdAt'])
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
+  }
+
   static CustomerVisitEntity fromDomain(CustomerVisit visit) {
     return CustomerVisitEntity()
       ..id = visit.id
@@ -86,10 +156,8 @@ class CustomerVisitEntity extends BaseEntity {
       ..skipNote = visit.skipNote
       ..sequenceNumber = visit.sequenceNumber
       ..createdAt = visit.createdAt
-      ..updatedAt = (visit.updatedAt != null && visit.updatedAt!.isNotEmpty)
-          ? DateTime.parse(visit.updatedAt!)
-          : DateTime.now()
-      ..syncStatus = SyncStatus.synced
+      ..updatedAt = parseDate(visit.updatedAt)
+      ..syncStatus = SyncStatus.pending
       ..isDeleted = false;
   }
 }

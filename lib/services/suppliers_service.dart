@@ -1,6 +1,7 @@
+import '../data/local/entities/supplier_entity.dart';
+import '../data/repositories/procurement_repository.dart';
+import 'database_service.dart';
 import 'offline_first_service.dart';
-
-const suppliersCollection = 'suppliers';
 
 class Supplier {
   final String id;
@@ -16,8 +17,8 @@ class Supplier {
   final String? gstin;
   final String? pan;
   final String? paymentTerms;
-  final String status; // 'active' or 'inactive'
-  final String type; // 'supplier' or 'vendor'
+  final String status;
+  final String type;
   final String createdAt;
   final String? updatedAt;
 
@@ -88,7 +89,10 @@ class Supplier {
 }
 
 class SuppliersService extends OfflineFirstService {
-  SuppliersService(super.firebase);
+  SuppliersService(super.firebase)
+    : _procurementRepository = ProcurementRepository(DatabaseService.instance);
+
+  final ProcurementRepository _procurementRepository;
 
   @override
   String get localStorageKey => 'local_suppliers';
@@ -99,56 +103,25 @@ class SuppliersService extends OfflineFirstService {
     int? limitCount,
   }) async {
     try {
-      // 1. ALWAYS read from local storage first
-      var items = await loadFromLocal();
+      var suppliers = (await _procurementRepository.getAllSuppliers())
+          .map(_toDomain)
+          .toList(growable: false);
 
-      // 2. If local is empty, try to bootstrap from Firebase ONCE
-      if (items.isEmpty) {
-        final firestore = db;
-        if (firestore != null) {
-          try {
-            final snapshot = await firestore
-                .collection(suppliersCollection)
-                .orderBy('name')
-                .get()
-                .timeout(const Duration(seconds: 3));
-            items = snapshot.docs
-                .map((doc) => {...doc.data(), 'id': doc.id})
-                .toList();
-
-            if (items.isNotEmpty) {
-              await saveToLocal(items);
-            }
-          } catch (_) {
-            // Firebase failed, but that's okay
-          }
-        }
+      if (status != null && status.trim().isNotEmpty) {
+        suppliers = suppliers
+            .where((supplier) => supplier.status == status)
+            .toList(growable: false);
       }
 
-      // 3. Apply filters in memory
-      var filteredItems = items;
-
-      if (status != null) {
-        filteredItems = filteredItems
-            .where((item) => item['status'] == status)
-            .toList();
+      if (type != null && type.trim().isNotEmpty && type != 'supplier') {
+        suppliers = const <Supplier>[];
       }
 
-      if (type != null) {
-        filteredItems = filteredItems
-            .where(
-              (item) => (item['type'] ?? 'supplier') == type,
-            ) // Handle legacy data
-            .toList();
+      if (limitCount != null && suppliers.length > limitCount) {
+        suppliers = suppliers.take(limitCount).toList(growable: false);
       }
 
-      // 4. Apply limit
-      if (limitCount != null && filteredItems.length > limitCount) {
-        filteredItems = filteredItems.take(limitCount).toList();
-      }
-
-      // 5. Convert to Supplier objects
-      return filteredItems.map((item) => Supplier.fromJson(item)).toList();
+      return suppliers;
     } catch (e) {
       handleError(e, 'getSuppliers');
       rethrow;
@@ -157,18 +130,8 @@ class SuppliersService extends OfflineFirstService {
 
   Future<Supplier?> getSupplierById(String id) async {
     try {
-      final firestore = db;
-      if (firestore == null) return null;
-
-      final docRef = firestore.collection(suppliersCollection).doc(id);
-      final docSnap = await docRef.get();
-
-      if (docSnap.exists) {
-        final data = Map<String, dynamic>.from(docSnap.data() as Map);
-        data['id'] = docSnap.id;
-        return Supplier.fromJson(data);
-      }
-      return null;
+      final entity = await _procurementRepository.getSupplierById(id);
+      return entity == null ? null : _toDomain(entity);
     } catch (e) {
       handleError(e, 'getSupplierById');
       rethrow;
@@ -192,41 +155,25 @@ class SuppliersService extends OfflineFirstService {
     String type = 'supplier',
   }) async {
     try {
-      // 1. Generate ID and prepare data
-      final supplierId = generateId();
-      final now = getCurrentTimestamp();
+      final now = DateTime.now();
+      final supplier = SupplierEntity()
+        ..id = generateId()
+        ..name = name
+        ..contactPerson = contactPerson
+        ..mobile = mobile
+        ..email = email
+        ..address = address
+        ..addressLine2 = addressLine2
+        ..city = city
+        ..state = state
+        ..pincode = pincode
+        ..gstin = gstin
+        ..pan = pan
+        ..status = status
+        ..paymentTerms = paymentTerms
+        ..createdAt = now;
 
-      final supplierData = {
-        'id': supplierId,
-        'name': name,
-        'contactPerson': contactPerson,
-        'mobile': mobile,
-        if (email != null) 'email': email,
-        'address': address,
-        if (addressLine2 != null) 'addressLine2': addressLine2,
-        if (city != null) 'city': city,
-        if (state != null) 'state': state,
-        if (pincode != null) 'pincode': pincode,
-        if (gstin != null) 'gstin': gstin,
-        if (pan != null) 'pan': pan,
-        if (paymentTerms != null) 'paymentTerms': paymentTerms,
-        'status': status,
-        'type': type,
-        'createdAt': now,
-        'lastUpdatedAt': now,
-      };
-
-      // 2. MANDATORY: Save to local storage FIRST
-      await addToLocal(supplierData);
-
-      // 3. Queue for durable Firebase sync
-      await syncToFirebase(
-        'set',
-        supplierData,
-        collectionName: suppliersCollection,
-        syncImmediately: false,
-      );
-
+      await _procurementRepository.saveSupplier(supplier);
       return true;
     } catch (e) {
       handleError(e, 'addSupplier');
@@ -252,35 +199,27 @@ class SuppliersService extends OfflineFirstService {
     String? type,
   }) async {
     try {
-      final now = getCurrentTimestamp();
-      final updates = <String, dynamic>{
-        'id': id,
-        'lastUpdatedAt': now,
-        'updatedAt': now,
-      };
+      final existing = await _procurementRepository.getSupplierById(id);
+      if (existing == null) {
+        return false;
+      }
 
-      if (name != null) updates['name'] = name;
-      if (contactPerson != null) updates['contactPerson'] = contactPerson;
-      if (mobile != null) updates['mobile'] = mobile;
-      if (email != null) updates['email'] = email;
-      if (address != null) updates['address'] = address;
-      if (addressLine2 != null) updates['addressLine2'] = addressLine2;
-      if (city != null) updates['city'] = city;
-      if (state != null) updates['state'] = state;
-      if (pincode != null) updates['pincode'] = pincode;
-      if (gstin != null) updates['gstin'] = gstin;
-      if (pan != null) updates['pan'] = pan;
-      if (paymentTerms != null) updates['paymentTerms'] = paymentTerms;
-      if (status != null) updates['status'] = status;
-      if (type != null) updates['type'] = type;
+      existing
+        ..name = name ?? existing.name
+        ..contactPerson = contactPerson ?? existing.contactPerson
+        ..mobile = mobile ?? existing.mobile
+        ..email = email ?? existing.email
+        ..address = address ?? existing.address
+        ..addressLine2 = addressLine2 ?? existing.addressLine2
+        ..city = city ?? existing.city
+        ..state = state ?? existing.state
+        ..pincode = pincode ?? existing.pincode
+        ..gstin = gstin ?? existing.gstin
+        ..pan = pan ?? existing.pan
+        ..paymentTerms = paymentTerms ?? existing.paymentTerms
+        ..status = status ?? existing.status;
 
-      await updateInLocal(id, updates);
-      await syncToFirebase(
-        'update',
-        updates,
-        collectionName: suppliersCollection,
-        syncImmediately: false,
-      );
+      await _procurementRepository.saveSupplier(existing);
       return true;
     } catch (e) {
       handleError(e, 'updateSupplier');
@@ -290,24 +229,34 @@ class SuppliersService extends OfflineFirstService {
 
   Future<bool> deleteSupplier(String id) async {
     try {
-      // Soft delete by setting status to inactive
-      final updates = <String, dynamic>{
-        'id': id,
-        'status': 'inactive',
-        'lastUpdatedAt': getCurrentTimestamp(),
-        'updatedAt': getCurrentTimestamp(),
-      };
-      await updateInLocal(id, updates);
-      await syncToFirebase(
-        'update',
-        updates,
-        collectionName: suppliersCollection,
-        syncImmediately: false,
-      );
+      await _procurementRepository.deleteSupplier(id);
       return true;
     } catch (e) {
       handleError(e, 'deleteSupplier');
       rethrow;
     }
+  }
+
+  Supplier _toDomain(SupplierEntity entity) {
+    return Supplier(
+      id: entity.id,
+      name: entity.name,
+      contactPerson: entity.contactPerson ?? '',
+      mobile: entity.mobile ?? '',
+      email: entity.email,
+      address: entity.address ?? '',
+      addressLine2: entity.addressLine2,
+      city: entity.city,
+      state: entity.state,
+      pincode: entity.pincode,
+      gstin: entity.gstin,
+      pan: entity.pan,
+      paymentTerms: entity.paymentTerms,
+      status: entity.status,
+      type: 'supplier',
+      createdAt:
+          entity.createdAt?.toIso8601String() ?? entity.updatedAt.toIso8601String(),
+      updatedAt: entity.updatedAt.toIso8601String(),
+    );
   }
 }

@@ -7,12 +7,14 @@ import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/firebase/firebase_config.dart';
-import '../../features/inventory/models/product.dart';
-import '../../features/inventory/models/stock_movement.dart';
+import '../../data/local/base_entity.dart';
+import '../../data/local/entities/product_entity.dart';
+import '../../data/local/entities/stock_movement_entity.dart';
 import '../../features/inventory/models/sync_queue.dart';
 import '../database/isar_service.dart';
 import '../utils/device_id_service.dart';
 import '../utils/sync_logger.dart';
+import 'collection_registry.dart';
 import 'conflict_resolver.dart';
 import 'sync_queue_service.dart';
 
@@ -43,21 +45,40 @@ class SyncStatusSnapshot {
   }
 }
 
-/// Handles bidirectional inventory synchronization.
+/// Per-collection sync status.
+class CollectionSyncStatus {
+  /// Creates a collection-specific sync status snapshot.
+  const CollectionSyncStatus({
+    required this.collectionName,
+    required this.isSyncing,
+    required this.lastSyncTime,
+    required this.pendingCount,
+  });
+
+  final String collectionName;
+  final bool isSyncing;
+  final DateTime? lastSyncTime;
+  final int pendingCount;
+}
+
+/// Handles bidirectional synchronization for the offline-first app.
 class SyncService {
   SyncService._internal();
 
   static final SyncService instance = SyncService._internal();
 
-  static const String productsCollection = 'products';
-  static const String stockMovementsCollection = 'stock_movements';
-  static const String lastSyncAtKey = 'inventory_sync_last_sync_at_v1';
+  static const String productsCollection = CollectionRegistry.products;
+  static const String stockMovementsCollection =
+      CollectionRegistry.stockMovements;
+  static const String lastSyncAtKey = 'core_sync_last_sync_at_v2';
 
   final IsarService _isarService = IsarService.instance;
   final SyncQueueService _queueService = SyncQueueService.instance;
   final DeviceIdService _deviceIdService = DeviceIdService.instance;
   final StreamController<SyncStatusSnapshot> _statusController =
       StreamController<SyncStatusSnapshot>.broadcast();
+
+  final ValueNotifier<bool> isSyncing = ValueNotifier<bool>(false);
 
   SyncStatusSnapshot _status = const SyncStatusSnapshot(
     isSyncing: false,
@@ -75,6 +96,13 @@ class SyncService {
   /// Initializes sync status tracking.
   Future<void> initialize() async {
     try {
+      final preferences = await SharedPreferences.getInstance();
+      final lastSyncTimestamp = preferences.getInt(lastSyncAtKey);
+      _status = _status.copyWith(
+        lastSyncTime: lastSyncTimestamp == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(lastSyncTimestamp),
+      );
       await _refreshPendingCount();
       _emitStatus();
     } catch (error, stackTrace) {
@@ -87,20 +115,15 @@ class SyncService {
     }
   }
 
-  /// Pushes local unsynced records and queued operations to Firestore.
-  Future<void> pushToFirebase() async {
-    if (_syncInProgress) {
-      return;
-    }
-    _syncInProgress = true;
-    _setSyncing(true);
+  /// Pushes all pending local changes to Firebase.
+  Future<void> pushAllPending() async {
     try {
       final firestore = firebaseServices.db;
       if (firestore == null) {
         return;
       }
 
-      final queueItems = await _queueService.getAllPending();
+      final queueItems = await _queueService.getPendingQueue();
       final products = await _isarService.products
           .filter()
           .isSyncedEqualTo(false)
@@ -116,7 +139,7 @@ class SyncService {
         ...queueItems.map(_buildQueueOperation),
       ];
 
-      final operations = await compute(_prepareBatchOperations, rawOperations);
+      final operations = await compute(_dedupeOperations, rawOperations);
       if (operations.isEmpty) {
         await _refreshPendingCount();
         return;
@@ -128,28 +151,44 @@ class SyncService {
       for (final operation in operations) {
         final collectionName = operation['collectionName'] as String;
         final documentId = operation['documentId'] as String;
-        final type = operation['operation'] as String;
+        final operationType = operation['operation'] as String;
         final payload = Map<String, dynamic>.from(
-          operation['payload'] as Map<String, dynamic>,
+          operation['payload'] as Map<dynamic, dynamic>,
         );
 
+        if (CollectionRegistry.isLocalOnly(collectionName)) {
+          final queueId = operation['queueId'] as int?;
+          if (queueId != null) {
+            await _queueService.markProcessed(queueId);
+          }
+          continue;
+        }
+
+        final document = firestore.collection(collectionName).doc(documentId);
         try {
-          final document = firestore.collection(collectionName).doc(documentId);
-          if (type == 'delete') {
+          if (operationType == 'delete') {
             batch.set(
               document,
               <String, dynamic>{
                 'isDeleted': true,
-                'lastModified': _toTimestamp(payload['lastModified']),
+                'deletedAt': _toTimestamp(payload['deletedAt']),
+                'lastModified': _toTimestamp(
+                  payload['lastModified'] ?? payload['updatedAt'],
+                ),
                 'version': payload['version'],
                 'deviceId': payload['deviceId'],
               },
               SetOptions(merge: true),
             );
           } else {
-            batch.set(document, _firestorePayload(payload), SetOptions(merge: true));
+            batch.set(
+              document,
+              _firestorePayload(payload),
+              SetOptions(merge: true),
+            );
           }
           pendingCommit.add(operation);
+
           if (pendingCommit.length == 500) {
             await batch.commit();
             await _applySuccessfulOperations(pendingCommit);
@@ -184,23 +223,23 @@ class SyncService {
         }
       }
 
-      await _queueService.deleteOldProcessed();
+      await _queueService.clearOldFailed();
       await _refreshPendingCount();
     } catch (error, stackTrace) {
       SyncLogger.instance.e(
-        'pushToFirebase failed',
+        'pushAllPending failed',
         error: error,
         stackTrace: stackTrace,
         time: DateTime.now(),
       );
-    } finally {
-      _syncInProgress = false;
-      _setSyncing(false);
     }
   }
 
+  /// Compatibility alias retained for existing startup and feature code.
+  Future<void> pushToFirebase() => pushAllPending();
+
   /// Pulls remote changes newer than the stored last sync timestamp.
-  Future<void> pullFromFirebase() async {
+  Future<void> pullAllChanges() async {
     try {
       final firestore = firebaseServices.db;
       if (firestore == null) {
@@ -211,84 +250,17 @@ class SyncService {
       final lastSyncTimestamp = preferences.getInt(lastSyncAtKey) ?? 0;
       final lastSyncTime = DateTime.fromMillisecondsSinceEpoch(lastSyncTimestamp);
 
-      final productSnapshot = await firestore
-          .collection(productsCollection)
-          .where(
-            'lastModified',
-            isGreaterThan: Timestamp.fromDate(lastSyncTime),
-          )
-          .get();
+      final latestProductChange = await _pullProducts(firestore, lastSyncTime);
+      final latestMovementChange = await _pullStockMovements(
+        firestore,
+        lastSyncTime,
+      );
 
-      final movementSnapshot = await firestore
-          .collection(stockMovementsCollection)
-          .where(
-            'timestamp',
-            isGreaterThan: Timestamp.fromDate(lastSyncTime),
-          )
-          .get();
-
-      final payload = <String, dynamic>{
-        'products': productSnapshot.docs
-            .map((doc) => <String, dynamic>{'id': doc.id, 'data': doc.data()})
-            .toList(),
-        'stockMovements': movementSnapshot.docs
-            .map((doc) => <String, dynamic>{'id': doc.id, 'data': doc.data()})
-            .toList(),
-      };
-
-      final normalized = await compute(_normalizePullPayload, payload);
-      var latestRemoteChange = lastSyncTime;
-
-      for (final rawProduct in normalized['products'] as List<dynamic>) {
-        final remote = Product.fromJson(
-          Map<String, dynamic>.from(rawProduct as Map<dynamic, dynamic>),
-        );
-        final local = await _isarService.products
-            .filter()
-            .firebaseIdEqualTo(remote.firebaseId)
-            .findFirst();
-        final resolution = ConflictResolver.resolveProduct(
-          local: local,
-          remote: remote.copyWith(isSynced: true),
-        );
-
-        await _isarService.isar.writeTxn(() async {
-          await _isarService.products.put(
-            resolution.product.copyWith(
-              isSynced: true,
-              lastSynced: DateTime.now(),
-            ),
-          );
-        });
-
-        if (remote.lastModified.isAfter(latestRemoteChange)) {
-          latestRemoteChange = remote.lastModified;
-        }
-      }
-
-      for (final rawMovement in normalized['stockMovements'] as List<dynamic>) {
-        final remote = StockMovement.fromJson(
-          Map<String, dynamic>.from(rawMovement as Map<dynamic, dynamic>),
-        );
-        final local = await _isarService.stockMovements
-            .filter()
-            .firebaseIdEqualTo(remote.firebaseId)
-            .findFirst();
-        final resolution = ConflictResolver.resolveStockMovement(
-          local: local,
-          remote: remote.copyWith(isSynced: true),
-        );
-
-        await _isarService.isar.writeTxn(() async {
-          await _isarService.stockMovements.put(
-            resolution.stockMovement.copyWith(isSynced: true),
-          );
-        });
-
-        if (remote.timestamp.isAfter(latestRemoteChange)) {
-          latestRemoteChange = remote.timestamp;
-        }
-      }
+      final latestRemoteChange = <DateTime>[
+        lastSyncTime,
+        if (latestProductChange != null) latestProductChange,
+        if (latestMovementChange != null) latestMovementChange,
+      ].reduce((value, element) => value.isAfter(element) ? value : element);
 
       await preferences.setInt(
         lastSyncAtKey,
@@ -298,7 +270,7 @@ class SyncService {
       _emitStatus();
     } catch (error, stackTrace) {
       SyncLogger.instance.e(
-        'pullFromFirebase failed',
+        'pullAllChanges failed',
         error: error,
         stackTrace: stackTrace,
         time: DateTime.now(),
@@ -306,15 +278,156 @@ class SyncService {
     }
   }
 
-  /// Runs push followed by pull without blocking UI.
-  Future<void> syncAllPending() async {
-    unawaited(
-      Future<void>(() async {
-        await pushToFirebase();
-        await pullFromFirebase();
-        await _refreshPendingCount();
-      }),
+  /// Compatibility alias retained for existing startup and feature code.
+  Future<void> pullFromFirebase() => pullAllChanges();
+
+  /// Returns the current sync status for a Firestore collection.
+  Future<CollectionSyncStatus> getSyncStatusFor(String collectionName) async {
+    final pendingCount = await _queueService.getPendingCount(
+      collectionName: collectionName,
     );
+    return CollectionSyncStatus(
+      collectionName: collectionName,
+      isSyncing: _status.isSyncing,
+      lastSyncTime: _status.lastSyncTime,
+      pendingCount: pendingCount,
+    );
+  }
+
+  /// Runs push followed by pull.
+  Future<void> syncAllPending() async {
+    if (_syncInProgress) {
+      return;
+    }
+    _syncInProgress = true;
+    _setSyncing(true);
+    try {
+      await pushAllPending();
+      await pullAllChanges();
+      await _refreshPendingCount();
+    } finally {
+      _syncInProgress = false;
+      _setSyncing(false);
+    }
+  }
+
+  Future<DateTime?> _pullProducts(
+    FirebaseFirestore firestore,
+    DateTime lastSyncTime,
+  ) async {
+    final snapshot = await firestore
+        .collection(productsCollection)
+        .where('lastModified', isGreaterThan: Timestamp.fromDate(lastSyncTime))
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    final rawDocuments = snapshot.docs
+        .map((doc) => <String, dynamic>{'id': doc.id, 'data': doc.data()})
+        .toList(growable: false);
+    final normalized = await compute(_normalizeProductPayload, rawDocuments);
+
+    DateTime? latestRemoteChange;
+    for (final entry in normalized) {
+      final remote = ProductEntity.fromJson(entry)
+        ..syncStatus = SyncStatus.synced
+        ..isSynced = true
+        ..lastSynced = DateTime.now();
+      final local = await _isarService.products
+          .filter()
+          .idEqualTo(remote.id)
+          .findFirst();
+      final resolution = await ConflictResolver.resolve(
+        localRecord: local,
+        firebaseRecord: remote,
+        collectionName: productsCollection,
+        documentId: remote.id,
+      );
+
+      if (resolution.action == SyncConflictAction.pushLocal && local != null) {
+        await _queueService.addToQueue(
+          collectionName: productsCollection,
+          documentId: local.id,
+          operation: local.isDeleted ? 'delete' : 'update',
+          payload: local.toJson(),
+        );
+      } else {
+        await _isarService.isar.writeTxn(() async {
+          await _isarService.products.put(remote);
+        });
+      }
+
+      final remoteModified = remote.updatedAt;
+      if (latestRemoteChange == null ||
+          remoteModified.isAfter(latestRemoteChange)) {
+        latestRemoteChange = remoteModified;
+      }
+    }
+
+    return latestRemoteChange;
+  }
+
+  Future<DateTime?> _pullStockMovements(
+    FirebaseFirestore firestore,
+    DateTime lastSyncTime,
+  ) async {
+    final snapshot = await firestore
+        .collection(stockMovementsCollection)
+        .where('timestamp', isGreaterThan: Timestamp.fromDate(lastSyncTime))
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    final rawDocuments = snapshot.docs
+        .map((doc) => <String, dynamic>{'id': doc.id, 'data': doc.data()})
+        .toList(growable: false);
+    final normalized = await compute(
+      _normalizeStockMovementPayload,
+      rawDocuments,
+    );
+
+    DateTime? latestRemoteChange;
+    for (final entry in normalized) {
+      final remote = StockMovementEntity.fromJson(entry)
+        ..syncStatus = SyncStatus.synced
+        ..isSynced = true
+        ..lastSynced = DateTime.now();
+      final local = await _isarService.stockMovements
+          .filter()
+          .idEqualTo(remote.id)
+          .findFirst();
+      final resolution = await ConflictResolver.resolve(
+        localRecord: local,
+        firebaseRecord: remote,
+        collectionName: stockMovementsCollection,
+        documentId: remote.id,
+      );
+
+      if (resolution.action == SyncConflictAction.pushLocal && local != null) {
+        await _queueService.addToQueue(
+          collectionName: stockMovementsCollection,
+          documentId: local.id,
+          operation: local.isDeleted ? 'delete' : 'create',
+          payload: local.toJson(),
+        );
+      } else {
+        await _isarService.isar.writeTxn(() async {
+          await _isarService.stockMovements.put(remote);
+        });
+      }
+
+      final remoteModified = remote.occurredAt;
+      if (latestRemoteChange == null ||
+          remoteModified.isAfter(latestRemoteChange)) {
+        latestRemoteChange = remoteModified;
+      }
+    }
+
+    return latestRemoteChange;
   }
 
   Future<void> _applySuccessfulOperations(
@@ -322,6 +435,7 @@ class SyncService {
   ) async {
     final deviceId = await _deviceIdService.getDeviceId();
     final processedAt = DateTime.now();
+    final processedQueueIds = <int>[];
 
     await _isarService.isar.writeTxn(() async {
       for (final operation in operations) {
@@ -332,39 +446,46 @@ class SyncService {
         if (collectionName == productsCollection) {
           final existing = await _isarService.products
               .filter()
-              .firebaseIdEqualTo(documentId)
+              .idEqualTo(documentId)
               .findFirst();
           if (existing != null) {
-            await _isarService.products.put(
-              existing.copyWith(
-                isSynced: true,
-                lastSynced: processedAt,
-                deviceId: existing.deviceId.isEmpty ? deviceId : existing.deviceId,
-              ),
-            );
+            existing
+              ..syncStatus = SyncStatus.synced
+              ..isSynced = true
+              ..lastSynced = processedAt
+              ..deviceId = existing.deviceId.isEmpty
+                  ? deviceId
+                  : existing.deviceId;
+            await _isarService.products.put(existing);
           }
         }
 
         if (collectionName == stockMovementsCollection) {
           final existing = await _isarService.stockMovements
               .filter()
-              .firebaseIdEqualTo(documentId)
+              .idEqualTo(documentId)
               .findFirst();
           if (existing != null) {
-            await _isarService.stockMovements.put(
-              existing.copyWith(
-                isSynced: true,
-                deviceId: existing.deviceId.isEmpty ? deviceId : existing.deviceId,
-              ),
-            );
+            existing
+              ..syncStatus = SyncStatus.synced
+              ..isSynced = true
+              ..lastSynced = processedAt
+              ..deviceId = existing.deviceId.isEmpty
+                  ? deviceId
+                  : existing.deviceId;
+            await _isarService.stockMovements.put(existing);
           }
         }
 
         if (queueId != null) {
-          await _isarService.syncQueues.delete(queueId);
+          processedQueueIds.add(queueId);
         }
       }
     });
+
+    for (final queueId in processedQueueIds) {
+      await _queueService.markProcessed(queueId);
+    }
 
     _status = _status.copyWith(lastSyncTime: processedAt);
     _emitStatus();
@@ -379,29 +500,29 @@ class SyncService {
         collectionName: operation['collectionName'] as String,
         documentId: operation['documentId'] as String,
         operation: operation['operation'] as String,
-        payload: Map<String, dynamic>.from(
-          operation['payload'] as Map<String, dynamic>,
-        ),
+        payload: operation['payload'],
       );
     }
     await _refreshPendingCount();
   }
 
-  Map<String, dynamic> _buildProductOperation(Product product) {
+  Map<String, dynamic> _buildProductOperation(ProductEntity product) {
     return <String, dynamic>{
       'collectionName': productsCollection,
-      'documentId': product.firebaseId,
+      'documentId': product.id,
       'operation': product.isDeleted ? 'delete' : 'update',
       'payload': product.toJson(),
       'queueId': null,
     };
   }
 
-  Map<String, dynamic> _buildStockMovementOperation(StockMovement stockMovement) {
+  Map<String, dynamic> _buildStockMovementOperation(
+    StockMovementEntity stockMovement,
+  ) {
     return <String, dynamic>{
       'collectionName': stockMovementsCollection,
-      'documentId': stockMovement.firebaseId,
-      'operation': 'create',
+      'documentId': stockMovement.id,
+      'operation': stockMovement.isDeleted ? 'delete' : 'create',
       'payload': stockMovement.toJson(),
       'queueId': null,
     };
@@ -419,20 +540,26 @@ class SyncService {
 
   Map<String, dynamic> _firestorePayload(Map<String, dynamic> payload) {
     final normalized = Map<String, dynamic>.from(payload);
-    final lastModified = _toTimestamp(normalized['lastModified']);
-    final lastSynced = _toTimestamp(normalized['lastSynced']);
-    final timestamp = _toTimestamp(normalized['timestamp']);
+    final timestampFields = <String>[
+      'updatedAt',
+      'lastModified',
+      'lastSynced',
+      'timestamp',
+      'occurredAt',
+      'createdAt',
+      'deletedAt',
+      'entryDate',
+      'transactionDate',
+      'expiryDate',
+    ];
 
-    if (lastModified != null) {
-      normalized['lastModified'] = lastModified;
-    }
-    if (lastSynced != null) {
-      normalized['lastSynced'] = lastSynced;
-    } else {
-      normalized.remove('lastSynced');
-    }
-    if (timestamp != null) {
-      normalized['timestamp'] = timestamp;
+    for (final field in timestampFields) {
+      final timestamp = _toTimestamp(normalized[field]);
+      if (timestamp != null) {
+        normalized[field] = timestamp;
+      } else if (normalized[field] == null) {
+        normalized.remove(field);
+      }
     }
 
     return normalized;
@@ -458,16 +585,14 @@ class SyncService {
   }
 
   Future<void> _refreshPendingCount() async {
-    final count = await _isarService.syncQueues
-        .filter()
-        .isFailedEqualTo(false)
-        .count();
+    final count = await _queueService.getPendingCount();
     _status = _status.copyWith(pendingCount: count);
     _emitStatus();
   }
 
-  void _setSyncing(bool isSyncing) {
-    _status = _status.copyWith(isSyncing: isSyncing);
+  void _setSyncing(bool syncing) {
+    isSyncing.value = syncing;
+    _status = _status.copyWith(isSyncing: syncing);
     _emitStatus();
   }
 
@@ -478,51 +603,64 @@ class SyncService {
   }
 }
 
-Map<String, dynamic> _normalizePullPayload(Map<String, dynamic> payload) {
-  final products = (payload['products'] as List<dynamic>)
-      .map((dynamic raw) {
-        final entry = Map<String, dynamic>.from(raw as Map<dynamic, dynamic>);
-        final data = Map<String, dynamic>.from(
-          entry['data'] as Map<dynamic, dynamic>,
-        );
-        data['firebaseId'] = entry['id'];
-        data['lastModified'] = _normalizeDate(data['lastModified']);
-        data['lastSynced'] = _normalizeDate(data['lastSynced']);
-        return data;
-      })
-      .toList();
-
-  final stockMovements = (payload['stockMovements'] as List<dynamic>)
-      .map((dynamic raw) {
-        final entry = Map<String, dynamic>.from(raw as Map<dynamic, dynamic>);
-        final data = Map<String, dynamic>.from(
-          entry['data'] as Map<dynamic, dynamic>,
-        );
-        data['firebaseId'] = entry['id'];
-        data['timestamp'] = _normalizeDate(data['timestamp']);
-        return data;
-      })
-      .toList();
-
-  return <String, dynamic>{
-    'products': products,
-    'stockMovements': stockMovements,
-  };
-}
-
-List<Map<String, dynamic>> _prepareBatchOperations(
+List<Map<String, dynamic>> _dedupeOperations(
   List<Map<String, dynamic>> operations,
 ) {
   final deduped = <String, Map<String, dynamic>>{};
   for (final operation in operations) {
-    final collectionName = operation['collectionName'] as String;
-    final documentId = operation['documentId'] as String;
-    if (documentId.isEmpty) {
+    final collectionName = operation['collectionName'] as String? ?? '';
+    final documentId = operation['documentId'] as String? ?? '';
+    if (collectionName.isEmpty || documentId.isEmpty) {
       continue;
     }
     deduped['$collectionName::$documentId'] = operation;
   }
-  return deduped.values.toList();
+  return deduped.values.toList(growable: false);
+}
+
+List<Map<String, dynamic>> _normalizeProductPayload(
+  List<Map<String, dynamic>> documents,
+) {
+  return documents.map((entry) {
+    final data = Map<String, dynamic>.from(
+      entry['data'] as Map<dynamic, dynamic>,
+    );
+    data['id'] = entry['id'];
+    data['updatedAt'] = _normalizeDate(data['updatedAt'] ?? data['lastModified']);
+    data['lastModified'] = _normalizeDate(
+      data['lastModified'] ?? data['updatedAt'],
+    );
+    data['lastSynced'] = _normalizeDate(data['lastSynced']);
+    data['createdAt'] = _normalizeDate(data['createdAt']);
+    data['deletedAt'] = _normalizeDate(data['deletedAt']);
+    return data;
+  }).toList(growable: false);
+}
+
+List<Map<String, dynamic>> _normalizeStockMovementPayload(
+  List<Map<String, dynamic>> documents,
+) {
+  return documents.map((entry) {
+    final data = Map<String, dynamic>.from(
+      entry['data'] as Map<dynamic, dynamic>,
+    );
+    data['id'] = entry['id'];
+    data['timestamp'] = _normalizeDate(
+      data['timestamp'] ?? data['occurredAt'] ?? data['lastModified'],
+    );
+    data['occurredAt'] = _normalizeDate(
+      data['occurredAt'] ?? data['timestamp'] ?? data['lastModified'],
+    );
+    data['updatedAt'] = _normalizeDate(
+      data['updatedAt'] ?? data['lastModified'] ?? data['timestamp'],
+    );
+    data['lastModified'] = _normalizeDate(
+      data['lastModified'] ?? data['updatedAt'] ?? data['timestamp'],
+    );
+    data['lastSynced'] = _normalizeDate(data['lastSynced']);
+    data['deletedAt'] = _normalizeDate(data['deletedAt']);
+    return data;
+  }).toList(growable: false);
 }
 
 String? _normalizeDate(dynamic value) {

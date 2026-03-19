@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:isar/isar.dart';
-import '../base_entity.dart';
 import 'package:flutter_app/models/types/sales_types.dart';
+
+import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'sale_entity.g.dart';
 
@@ -67,8 +71,148 @@ class SaleEntity extends BaseEntity {
   String? cancelledAt;
   double? commissionAmount;
   String? commissionType;
-  
   String? sourceWarehouseId;
+
+  /// Converts this entity into a sync-safe json map.
+  Map<String, dynamic> toJson() {
+    final serializedItems = items
+            ?.map((item) => item.toJson())
+            .toList(growable: false) ??
+        const <Map<String, dynamic>>[];
+    return <String, dynamic>{
+      'id': id,
+      'humanReadableId': humanReadableId,
+      'recipientType': recipientType,
+      'recipientId': recipientId,
+      'recipientName': recipientName,
+      'items': serializedItems,
+      'itemsJson': jsonEncode(serializedItems),
+      'itemProductIds': itemProductIds,
+      'subtotal': subtotal,
+      'itemDiscountAmount': itemDiscountAmount,
+      'discountPercentage': discountPercentage,
+      'discountAmount': discountAmount,
+      'additionalDiscountPercentage': additionalDiscountPercentage,
+      'additionalDiscountAmount': additionalDiscountAmount,
+      'taxableAmount': taxableAmount,
+      'gstType': gstType,
+      'gstPercentage': gstPercentage,
+      'cgstAmount': cgstAmount,
+      'sgstAmount': sgstAmount,
+      'igstAmount': igstAmount,
+      'totalAmount': totalAmount,
+      'roundOff': roundOff,
+      'tripId': tripId,
+      'saleType': saleType,
+      'createdByRole': createdByRole,
+      'status': status,
+      'dispatchRequired': dispatchRequired,
+      'vehicleNumber': vehicleNumber,
+      'route': route,
+      'salesmanId': salesmanId,
+      'salesmanName': salesmanName,
+      'createdAt': createdAt,
+      'paidAmount': paidAmount,
+      'paymentStatus': paymentStatus,
+      'month': month,
+      'year': year,
+      'cancelReason': cancelReason,
+      'cancelledBy': cancelledBy,
+      'cancelledAt': cancelledAt,
+      'commissionAmount': commissionAmount,
+      'commissionType': commissionType,
+      'sourceWarehouseId': sourceWarehouseId,
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
+  /// Builds an entity from a sync-safe json map.
+  static SaleEntity fromJson(Map<String, dynamic> json) {
+    final sale = SaleEntity()
+      ..id = parseString(json['id'])
+      ..humanReadableId = json['humanReadableId']?.toString()
+      ..recipientType = parseString(json['recipientType'])
+      ..recipientId = parseString(json['recipientId'])
+      ..recipientName = parseString(json['recipientName'])
+      ..items = _decodeItems(json)
+      ..itemProductIds = parseStringList(json['itemProductIds'])
+      ..subtotal = json['subtotal'] == null ? null : parseDouble(json['subtotal'])
+      ..itemDiscountAmount = json['itemDiscountAmount'] == null
+          ? null
+          : parseDouble(json['itemDiscountAmount'])
+      ..discountPercentage = json['discountPercentage'] == null
+          ? null
+          : parseDouble(json['discountPercentage'])
+      ..discountAmount =
+          json['discountAmount'] == null ? null : parseDouble(json['discountAmount'])
+      ..additionalDiscountPercentage =
+          json['additionalDiscountPercentage'] == null
+              ? null
+              : parseDouble(json['additionalDiscountPercentage'])
+      ..additionalDiscountAmount = json['additionalDiscountAmount'] == null
+          ? null
+          : parseDouble(json['additionalDiscountAmount'])
+      ..taxableAmount = json['taxableAmount'] == null
+          ? null
+          : parseDouble(json['taxableAmount'])
+      ..gstType = json['gstType']?.toString()
+      ..gstPercentage =
+          json['gstPercentage'] == null ? null : parseDouble(json['gstPercentage'])
+      ..cgstAmount = json['cgstAmount'] == null ? null : parseDouble(json['cgstAmount'])
+      ..sgstAmount = json['sgstAmount'] == null ? null : parseDouble(json['sgstAmount'])
+      ..igstAmount = json['igstAmount'] == null ? null : parseDouble(json['igstAmount'])
+      ..totalAmount =
+          json['totalAmount'] == null ? null : parseDouble(json['totalAmount'])
+      ..roundOff = json['roundOff'] == null ? null : parseDouble(json['roundOff'])
+      ..tripId = json['tripId']?.toString()
+      ..saleType = json['saleType']?.toString()
+      ..createdByRole = json['createdByRole']?.toString()
+      ..status = json['status']?.toString()
+      ..dispatchRequired = json['dispatchRequired'] == null
+          ? null
+          : parseBool(json['dispatchRequired'])
+      ..vehicleNumber = json['vehicleNumber']?.toString()
+      ..route = json['route']?.toString()
+      ..salesmanId = parseString(json['salesmanId'])
+      ..salesmanName = parseString(json['salesmanName'])
+      ..createdAt = parseString(
+        json['createdAt'],
+        fallback: DateTime.now().toIso8601String(),
+      )
+      ..paidAmount = json['paidAmount'] == null ? null : parseDouble(json['paidAmount'])
+      ..paymentStatus = json['paymentStatus']?.toString()
+      ..month = json['month'] == null ? null : parseInt(json['month'])
+      ..year = json['year'] == null ? null : parseInt(json['year'])
+      ..cancelReason = json['cancelReason']?.toString()
+      ..cancelledBy = json['cancelledBy']?.toString()
+      ..cancelledAt = json['cancelledAt']?.toString()
+      ..commissionAmount = json['commissionAmount'] == null
+          ? null
+          : parseDouble(json['commissionAmount'])
+      ..commissionType = json['commissionType']?.toString()
+      ..sourceWarehouseId = json['sourceWarehouseId']?.toString()
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId'], fallback: '');
+
+    final createdAtDate = DateTime.tryParse(sale.createdAt);
+    sale.month ??= createdAtDate?.month;
+    sale.year ??= createdAtDate?.year;
+    return sale;
+  }
 
   Sale toDomain() {
     return Sale(
@@ -160,6 +304,29 @@ class SaleEntity extends BaseEntity {
       ..commissionType = sale.commissionType
       ..sourceWarehouseId = sale.sourceWarehouseId;
   }
+
+  static List<SaleItemEntity>? _decodeItems(Map<String, dynamic> json) {
+    dynamic rawItems = json['items'];
+    if (rawItems == null && json['itemsJson'] is String) {
+      final encoded = json['itemsJson']?.toString() ?? '';
+      if (encoded.isNotEmpty) {
+        try {
+          rawItems = jsonDecode(encoded);
+        } catch (_) {
+          rawItems = const <dynamic>[];
+        }
+      }
+    }
+    if (rawItems is! List) {
+      return const <SaleItemEntity>[];
+    }
+    return rawItems
+        .whereType<Object?>()
+        .map((item) => SaleItemEntity.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ))
+        .toList(growable: false);
+  }
 }
 
 @Embedded()
@@ -236,5 +403,77 @@ class SaleItemEntity {
       lineTotalAmount: lineTotalAmount,
       finalBaseQuantity: finalBaseQuantity ?? quantity,
     );
+  }
+
+  /// Converts this embedded item into json.
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'productId': productId,
+      'name': name,
+      'quantity': quantity,
+      'price': price,
+      'isFree': isFree,
+      'discount': discount,
+      'secondaryPrice': secondaryPrice,
+      'conversionFactor': conversionFactor,
+      'baseUnit': baseUnit,
+      'secondaryUnit': secondaryUnit,
+      'schemeName': schemeName,
+      'returnedQuantity': returnedQuantity,
+      'lineSubtotal': lineSubtotal,
+      'lineItemDiscountAmount': lineItemDiscountAmount,
+      'linePrimaryDiscountShare': linePrimaryDiscountShare,
+      'lineAdditionalDiscountShare': lineAdditionalDiscountShare,
+      'lineNetAmount': lineNetAmount,
+      'lineTaxAmount': lineTaxAmount,
+      'lineTotalAmount': lineTotalAmount,
+      'finalBaseQuantity': finalBaseQuantity,
+    };
+  }
+
+  /// Builds an embedded item from json.
+  static SaleItemEntity fromJson(Map<String, dynamic> json) {
+    return SaleItemEntity()
+      ..productId = json['productId']?.toString()
+      ..name = json['name']?.toString()
+      ..quantity = json['quantity'] == null ? null : parseInt(json['quantity'])
+      ..price = json['price'] == null ? null : parseDouble(json['price'])
+      ..isFree = json['isFree'] == null ? null : parseBool(json['isFree'])
+      ..discount = json['discount'] == null ? null : parseDouble(json['discount'])
+      ..secondaryPrice = json['secondaryPrice'] == null
+          ? null
+          : parseDouble(json['secondaryPrice'])
+      ..conversionFactor = json['conversionFactor'] == null
+          ? null
+          : parseDouble(json['conversionFactor'])
+      ..baseUnit = json['baseUnit']?.toString()
+      ..secondaryUnit = json['secondaryUnit']?.toString()
+      ..schemeName = json['schemeName']?.toString()
+      ..returnedQuantity = json['returnedQuantity'] == null
+          ? null
+          : parseInt(json['returnedQuantity'])
+      ..lineSubtotal = json['lineSubtotal'] == null
+          ? null
+          : parseDouble(json['lineSubtotal'])
+      ..lineItemDiscountAmount = json['lineItemDiscountAmount'] == null
+          ? null
+          : parseDouble(json['lineItemDiscountAmount'])
+      ..linePrimaryDiscountShare = json['linePrimaryDiscountShare'] == null
+          ? null
+          : parseDouble(json['linePrimaryDiscountShare'])
+      ..lineAdditionalDiscountShare =
+          json['lineAdditionalDiscountShare'] == null
+              ? null
+              : parseDouble(json['lineAdditionalDiscountShare'])
+      ..lineNetAmount =
+          json['lineNetAmount'] == null ? null : parseDouble(json['lineNetAmount'])
+      ..lineTaxAmount =
+          json['lineTaxAmount'] == null ? null : parseDouble(json['lineTaxAmount'])
+      ..lineTotalAmount = json['lineTotalAmount'] == null
+          ? null
+          : parseDouble(json['lineTotalAmount'])
+      ..finalBaseQuantity = json['finalBaseQuantity'] == null
+          ? null
+          : parseInt(json['finalBaseQuantity']);
   }
 }

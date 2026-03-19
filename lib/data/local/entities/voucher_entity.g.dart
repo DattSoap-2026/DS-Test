@@ -27,110 +27,220 @@ const VoucherEntitySchema = CollectionSchema(
       name: r'amount',
       type: IsarType.double,
     ),
-    r'date': PropertySchema(
+    r'cancelReason': PropertySchema(
       id: 2,
+      name: r'cancelReason',
+      type: IsarType.string,
+    ),
+    r'cancelledAt': PropertySchema(
+      id: 3,
+      name: r'cancelledAt',
+      type: IsarType.dateTime,
+    ),
+    r'createdAt': PropertySchema(
+      id: 4,
+      name: r'createdAt',
+      type: IsarType.dateTime,
+    ),
+    r'createdBy': PropertySchema(
+      id: 5,
+      name: r'createdBy',
+      type: IsarType.string,
+    ),
+    r'createdByName': PropertySchema(
+      id: 6,
+      name: r'createdByName',
+      type: IsarType.string,
+    ),
+    r'date': PropertySchema(
+      id: 7,
       name: r'date',
       type: IsarType.dateTime,
     ),
     r'dealerId': PropertySchema(
-      id: 3,
+      id: 8,
       name: r'dealerId',
       type: IsarType.string,
     ),
     r'dealerName': PropertySchema(
-      id: 4,
+      id: 9,
       name: r'dealerName',
       type: IsarType.string,
     ),
     r'deletedAt': PropertySchema(
-      id: 5,
+      id: 10,
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
+    r'deviceId': PropertySchema(
+      id: 11,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
     r'dimensionVersion': PropertySchema(
-      id: 6,
+      id: 12,
       name: r'dimensionVersion',
       type: IsarType.long,
     ),
     r'district': PropertySchema(
-      id: 7,
+      id: 13,
       name: r'district',
       type: IsarType.string,
     ),
     r'division': PropertySchema(
-      id: 8,
+      id: 14,
       name: r'division',
       type: IsarType.string,
     ),
+    r'entryCount': PropertySchema(
+      id: 15,
+      name: r'entryCount',
+      type: IsarType.long,
+    ),
+    r'financialYearId': PropertySchema(
+      id: 16,
+      name: r'financialYearId',
+      type: IsarType.string,
+    ),
     r'id': PropertySchema(
-      id: 9,
+      id: 17,
       name: r'id',
       type: IsarType.string,
     ),
+    r'isBalanced': PropertySchema(
+      id: 18,
+      name: r'isBalanced',
+      type: IsarType.bool,
+    ),
     r'isDeleted': PropertySchema(
-      id: 10,
+      id: 19,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 20,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 21,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'linkedId': PropertySchema(
-      id: 11,
+      id: 22,
       name: r'linkedId',
       type: IsarType.string,
     ),
     r'narration': PropertySchema(
-      id: 12,
+      id: 23,
       name: r'narration',
       type: IsarType.string,
     ),
+    r'partyId': PropertySchema(
+      id: 24,
+      name: r'partyId',
+      type: IsarType.string,
+    ),
     r'partyName': PropertySchema(
-      id: 13,
+      id: 25,
       name: r'partyName',
       type: IsarType.string,
     ),
+    r'reversalOfVoucherId': PropertySchema(
+      id: 26,
+      name: r'reversalOfVoucherId',
+      type: IsarType.string,
+    ),
+    r'reversalReason': PropertySchema(
+      id: 27,
+      name: r'reversalReason',
+      type: IsarType.string,
+    ),
     r'route': PropertySchema(
-      id: 14,
+      id: 28,
       name: r'route',
       type: IsarType.string,
     ),
     r'saleDate': PropertySchema(
-      id: 15,
+      id: 29,
       name: r'saleDate',
       type: IsarType.string,
     ),
     r'salesmanId': PropertySchema(
-      id: 16,
+      id: 30,
       name: r'salesmanId',
       type: IsarType.string,
     ),
     r'salesmanName': PropertySchema(
-      id: 17,
+      id: 31,
       name: r'salesmanName',
       type: IsarType.string,
     ),
+    r'sourceId': PropertySchema(
+      id: 32,
+      name: r'sourceId',
+      type: IsarType.string,
+    ),
+    r'sourceModule': PropertySchema(
+      id: 33,
+      name: r'sourceModule',
+      type: IsarType.string,
+    ),
+    r'sourceNumber': PropertySchema(
+      id: 34,
+      name: r'sourceNumber',
+      type: IsarType.string,
+    ),
+    r'status': PropertySchema(
+      id: 35,
+      name: r'status',
+      type: IsarType.string,
+    ),
     r'syncStatus': PropertySchema(
-      id: 18,
+      id: 36,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _VoucherEntitysyncStatusEnumValueMap,
     ),
+    r'totalCredit': PropertySchema(
+      id: 37,
+      name: r'totalCredit',
+      type: IsarType.double,
+    ),
+    r'totalDebit': PropertySchema(
+      id: 38,
+      name: r'totalDebit',
+      type: IsarType.double,
+    ),
     r'transactionRefId': PropertySchema(
-      id: 19,
+      id: 39,
       name: r'transactionRefId',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 20,
+      id: 40,
       name: r'type',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 21,
+      id: 41,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
+    r'version': PropertySchema(
+      id: 42,
+      name: r'version',
+      type: IsarType.long,
+    ),
     r'voucherNumber': PropertySchema(
-      id: 22,
+      id: 43,
       name: r'voucherNumber',
+      type: IsarType.string,
+    ),
+    r'voucherType': PropertySchema(
+      id: 44,
+      name: r'voucherType',
       type: IsarType.string,
     )
   },
@@ -318,6 +428,24 @@ int _voucherEntityEstimateSize(
     }
   }
   {
+    final value = object.cancelReason;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.createdBy;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.createdByName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.dealerId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -329,6 +457,7 @@ int _voucherEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.district;
     if (value != null) {
@@ -337,6 +466,12 @@ int _voucherEntityEstimateSize(
   }
   {
     final value = object.division;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.financialYearId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -350,7 +485,25 @@ int _voucherEntityEstimateSize(
   }
   bytesCount += 3 + object.narration.length * 3;
   {
+    final value = object.partyId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.partyName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.reversalOfVoucherId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.reversalReason;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -379,10 +532,35 @@ int _voucherEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.sourceId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.sourceModule;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.sourceNumber;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.status.length * 3;
   bytesCount += 3 + object.transactionRefId.length * 3;
   bytesCount += 3 + object.type.length * 3;
   {
     final value = object.voucherNumber;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.voucherType;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -398,27 +576,49 @@ void _voucherEntitySerialize(
 ) {
   writer.writeString(offsets[0], object.accountingDimensionsJson);
   writer.writeDouble(offsets[1], object.amount);
-  writer.writeDateTime(offsets[2], object.date);
-  writer.writeString(offsets[3], object.dealerId);
-  writer.writeString(offsets[4], object.dealerName);
-  writer.writeDateTime(offsets[5], object.deletedAt);
-  writer.writeLong(offsets[6], object.dimensionVersion);
-  writer.writeString(offsets[7], object.district);
-  writer.writeString(offsets[8], object.division);
-  writer.writeString(offsets[9], object.id);
-  writer.writeBool(offsets[10], object.isDeleted);
-  writer.writeString(offsets[11], object.linkedId);
-  writer.writeString(offsets[12], object.narration);
-  writer.writeString(offsets[13], object.partyName);
-  writer.writeString(offsets[14], object.route);
-  writer.writeString(offsets[15], object.saleDate);
-  writer.writeString(offsets[16], object.salesmanId);
-  writer.writeString(offsets[17], object.salesmanName);
-  writer.writeByte(offsets[18], object.syncStatus.index);
-  writer.writeString(offsets[19], object.transactionRefId);
-  writer.writeString(offsets[20], object.type);
-  writer.writeDateTime(offsets[21], object.updatedAt);
-  writer.writeString(offsets[22], object.voucherNumber);
+  writer.writeString(offsets[2], object.cancelReason);
+  writer.writeDateTime(offsets[3], object.cancelledAt);
+  writer.writeDateTime(offsets[4], object.createdAt);
+  writer.writeString(offsets[5], object.createdBy);
+  writer.writeString(offsets[6], object.createdByName);
+  writer.writeDateTime(offsets[7], object.date);
+  writer.writeString(offsets[8], object.dealerId);
+  writer.writeString(offsets[9], object.dealerName);
+  writer.writeDateTime(offsets[10], object.deletedAt);
+  writer.writeString(offsets[11], object.deviceId);
+  writer.writeLong(offsets[12], object.dimensionVersion);
+  writer.writeString(offsets[13], object.district);
+  writer.writeString(offsets[14], object.division);
+  writer.writeLong(offsets[15], object.entryCount);
+  writer.writeString(offsets[16], object.financialYearId);
+  writer.writeString(offsets[17], object.id);
+  writer.writeBool(offsets[18], object.isBalanced);
+  writer.writeBool(offsets[19], object.isDeleted);
+  writer.writeBool(offsets[20], object.isSynced);
+  writer.writeDateTime(offsets[21], object.lastSynced);
+  writer.writeString(offsets[22], object.linkedId);
+  writer.writeString(offsets[23], object.narration);
+  writer.writeString(offsets[24], object.partyId);
+  writer.writeString(offsets[25], object.partyName);
+  writer.writeString(offsets[26], object.reversalOfVoucherId);
+  writer.writeString(offsets[27], object.reversalReason);
+  writer.writeString(offsets[28], object.route);
+  writer.writeString(offsets[29], object.saleDate);
+  writer.writeString(offsets[30], object.salesmanId);
+  writer.writeString(offsets[31], object.salesmanName);
+  writer.writeString(offsets[32], object.sourceId);
+  writer.writeString(offsets[33], object.sourceModule);
+  writer.writeString(offsets[34], object.sourceNumber);
+  writer.writeString(offsets[35], object.status);
+  writer.writeByte(offsets[36], object.syncStatus.index);
+  writer.writeDouble(offsets[37], object.totalCredit);
+  writer.writeDouble(offsets[38], object.totalDebit);
+  writer.writeString(offsets[39], object.transactionRefId);
+  writer.writeString(offsets[40], object.type);
+  writer.writeDateTime(offsets[41], object.updatedAt);
+  writer.writeLong(offsets[42], object.version);
+  writer.writeString(offsets[43], object.voucherNumber);
+  writer.writeString(offsets[44], object.voucherType);
 }
 
 VoucherEntity _voucherEntityDeserialize(
@@ -430,29 +630,51 @@ VoucherEntity _voucherEntityDeserialize(
   final object = VoucherEntity();
   object.accountingDimensionsJson = reader.readStringOrNull(offsets[0]);
   object.amount = reader.readDouble(offsets[1]);
-  object.date = reader.readDateTime(offsets[2]);
-  object.dealerId = reader.readStringOrNull(offsets[3]);
-  object.dealerName = reader.readStringOrNull(offsets[4]);
-  object.deletedAt = reader.readDateTimeOrNull(offsets[5]);
-  object.dimensionVersion = reader.readLongOrNull(offsets[6]);
-  object.district = reader.readStringOrNull(offsets[7]);
-  object.division = reader.readStringOrNull(offsets[8]);
-  object.id = reader.readString(offsets[9]);
-  object.isDeleted = reader.readBool(offsets[10]);
-  object.linkedId = reader.readStringOrNull(offsets[11]);
-  object.narration = reader.readString(offsets[12]);
-  object.partyName = reader.readStringOrNull(offsets[13]);
-  object.route = reader.readStringOrNull(offsets[14]);
-  object.saleDate = reader.readStringOrNull(offsets[15]);
-  object.salesmanId = reader.readStringOrNull(offsets[16]);
-  object.salesmanName = reader.readStringOrNull(offsets[17]);
+  object.cancelReason = reader.readStringOrNull(offsets[2]);
+  object.cancelledAt = reader.readDateTimeOrNull(offsets[3]);
+  object.createdAt = reader.readDateTimeOrNull(offsets[4]);
+  object.createdBy = reader.readStringOrNull(offsets[5]);
+  object.createdByName = reader.readStringOrNull(offsets[6]);
+  object.date = reader.readDateTime(offsets[7]);
+  object.dealerId = reader.readStringOrNull(offsets[8]);
+  object.dealerName = reader.readStringOrNull(offsets[9]);
+  object.deletedAt = reader.readDateTimeOrNull(offsets[10]);
+  object.deviceId = reader.readString(offsets[11]);
+  object.dimensionVersion = reader.readLongOrNull(offsets[12]);
+  object.district = reader.readStringOrNull(offsets[13]);
+  object.division = reader.readStringOrNull(offsets[14]);
+  object.entryCount = reader.readLong(offsets[15]);
+  object.financialYearId = reader.readStringOrNull(offsets[16]);
+  object.id = reader.readString(offsets[17]);
+  object.isBalanced = reader.readBool(offsets[18]);
+  object.isDeleted = reader.readBool(offsets[19]);
+  object.isSynced = reader.readBool(offsets[20]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[21]);
+  object.linkedId = reader.readStringOrNull(offsets[22]);
+  object.narration = reader.readString(offsets[23]);
+  object.partyId = reader.readStringOrNull(offsets[24]);
+  object.partyName = reader.readStringOrNull(offsets[25]);
+  object.reversalOfVoucherId = reader.readStringOrNull(offsets[26]);
+  object.reversalReason = reader.readStringOrNull(offsets[27]);
+  object.route = reader.readStringOrNull(offsets[28]);
+  object.saleDate = reader.readStringOrNull(offsets[29]);
+  object.salesmanId = reader.readStringOrNull(offsets[30]);
+  object.salesmanName = reader.readStringOrNull(offsets[31]);
+  object.sourceId = reader.readStringOrNull(offsets[32]);
+  object.sourceModule = reader.readStringOrNull(offsets[33]);
+  object.sourceNumber = reader.readStringOrNull(offsets[34]);
+  object.status = reader.readString(offsets[35]);
   object.syncStatus = _VoucherEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[18])] ??
+          reader.readByteOrNull(offsets[36])] ??
       SyncStatus.pending;
-  object.transactionRefId = reader.readString(offsets[19]);
-  object.type = reader.readString(offsets[20]);
-  object.updatedAt = reader.readDateTime(offsets[21]);
-  object.voucherNumber = reader.readStringOrNull(offsets[22]);
+  object.totalCredit = reader.readDouble(offsets[37]);
+  object.totalDebit = reader.readDouble(offsets[38]);
+  object.transactionRefId = reader.readString(offsets[39]);
+  object.type = reader.readString(offsets[40]);
+  object.updatedAt = reader.readDateTime(offsets[41]);
+  object.version = reader.readLong(offsets[42]);
+  object.voucherNumber = reader.readStringOrNull(offsets[43]);
+  object.voucherType = reader.readStringOrNull(offsets[44]);
   return object;
 }
 
@@ -468,48 +690,92 @@ P _voucherEntityDeserializeProp<P>(
     case 1:
       return (reader.readDouble(offset)) as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readStringOrNull(offset)) as P;
-    case 4:
-      return (reader.readStringOrNull(offset)) as P;
-    case 5:
       return (reader.readDateTimeOrNull(offset)) as P;
-    case 6:
-      return (reader.readLongOrNull(offset)) as P;
-    case 7:
+    case 4:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 5:
       return (reader.readStringOrNull(offset)) as P;
+    case 6:
+      return (reader.readStringOrNull(offset)) as P;
+    case 7:
+      return (reader.readDateTime(offset)) as P;
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
-    case 10:
-      return (reader.readBool(offset)) as P;
-    case 11:
       return (reader.readStringOrNull(offset)) as P;
-    case 12:
+    case 10:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 11:
       return (reader.readString(offset)) as P;
+    case 12:
+      return (reader.readLongOrNull(offset)) as P;
     case 13:
       return (reader.readStringOrNull(offset)) as P;
     case 14:
       return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 16:
       return (reader.readStringOrNull(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 18:
+      return (reader.readBool(offset)) as P;
+    case 19:
+      return (reader.readBool(offset)) as P;
+    case 20:
+      return (reader.readBool(offset)) as P;
+    case 21:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 22:
+      return (reader.readStringOrNull(offset)) as P;
+    case 23:
+      return (reader.readString(offset)) as P;
+    case 24:
+      return (reader.readStringOrNull(offset)) as P;
+    case 25:
+      return (reader.readStringOrNull(offset)) as P;
+    case 26:
+      return (reader.readStringOrNull(offset)) as P;
+    case 27:
+      return (reader.readStringOrNull(offset)) as P;
+    case 28:
+      return (reader.readStringOrNull(offset)) as P;
+    case 29:
+      return (reader.readStringOrNull(offset)) as P;
+    case 30:
+      return (reader.readStringOrNull(offset)) as P;
+    case 31:
+      return (reader.readStringOrNull(offset)) as P;
+    case 32:
+      return (reader.readStringOrNull(offset)) as P;
+    case 33:
+      return (reader.readStringOrNull(offset)) as P;
+    case 34:
+      return (reader.readStringOrNull(offset)) as P;
+    case 35:
+      return (reader.readString(offset)) as P;
+    case 36:
       return (_VoucherEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 19:
+    case 37:
+      return (reader.readDouble(offset)) as P;
+    case 38:
+      return (reader.readDouble(offset)) as P;
+    case 39:
       return (reader.readString(offset)) as P;
-    case 20:
+    case 40:
       return (reader.readString(offset)) as P;
-    case 21:
+    case 41:
       return (reader.readDateTime(offset)) as P;
-    case 22:
+    case 42:
+      return (reader.readLong(offset)) as P;
+    case 43:
+      return (reader.readStringOrNull(offset)) as P;
+    case 44:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1721,6 +1987,616 @@ extension VoucherEntityQueryFilter
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'cancelReason',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'cancelReason',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cancelReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cancelReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cancelReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cancelReason',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'cancelReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'cancelReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'cancelReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'cancelReason',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cancelReason',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelReasonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'cancelReason',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelledAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'cancelledAt',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelledAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'cancelledAt',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelledAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cancelledAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelledAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cancelledAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelledAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cancelledAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      cancelledAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cancelledAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'createdAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'createdBy',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'createdBy',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'createdBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'createdBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'createdBy',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'createdBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'createdBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'createdBy',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'createdBy',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdBy',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'createdBy',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'createdByName',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'createdByName',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdByName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'createdByName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'createdByName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'createdByName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'createdByName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'createdByName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'createdByName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'createdByName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdByName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      createdByNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'createdByName',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition> dateEqualTo(
       DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -2159,6 +3035,142 @@ extension VoucherEntityQueryFilter
   }
 
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
       dimensionVersionIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2540,6 +3552,216 @@ extension VoucherEntityQueryFilter
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      entryCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'entryCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      entryCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'entryCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      entryCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'entryCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      entryCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'entryCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'financialYearId',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'financialYearId',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'financialYearId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'financialYearId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'financialYearId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'financialYearId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'financialYearId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'financialYearId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'financialYearId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'financialYearId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'financialYearId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      financialYearIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'financialYearId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition> idEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -2675,10 +3897,30 @@ extension VoucherEntityQueryFilter
   }
 
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      isBalancedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isBalanced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
       isDeletedEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isDeleted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
         value: value,
       ));
     });
@@ -2732,6 +3974,80 @@ extension VoucherEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -3031,6 +4347,160 @@ extension VoucherEntityQueryFilter
   }
 
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'partyId',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'partyId',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'partyId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'partyId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'partyId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'partyId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'partyId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'partyId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'partyId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'partyId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'partyId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      partyIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'partyId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
       partyNameIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -3179,6 +4649,314 @@ extension VoucherEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'partyName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'reversalOfVoucherId',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'reversalOfVoucherId',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'reversalOfVoucherId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'reversalOfVoucherId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'reversalOfVoucherId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'reversalOfVoucherId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'reversalOfVoucherId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'reversalOfVoucherId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'reversalOfVoucherId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'reversalOfVoucherId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'reversalOfVoucherId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalOfVoucherIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'reversalOfVoucherId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'reversalReason',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'reversalReason',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'reversalReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'reversalReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'reversalReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'reversalReason',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'reversalReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'reversalReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'reversalReason',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'reversalReason',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'reversalReason',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      reversalReasonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'reversalReason',
         value: '',
       ));
     });
@@ -3801,6 +5579,604 @@ extension VoucherEntityQueryFilter
   }
 
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'sourceId',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'sourceId',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sourceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sourceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sourceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'sourceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'sourceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'sourceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'sourceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'sourceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'sourceModule',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'sourceModule',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceModule',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sourceModule',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sourceModule',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sourceModule',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'sourceModule',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'sourceModule',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'sourceModule',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'sourceModule',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceModule',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceModuleIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'sourceModule',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'sourceNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'sourceNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sourceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sourceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sourceNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'sourceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'sourceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'sourceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'sourceNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      sourceNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'sourceNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      statusEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      statusGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      statusLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      statusBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'status',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      statusStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      statusEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      statusContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      statusMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'status',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      statusIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'status',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      statusIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'status',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
       syncStatusEqualTo(SyncStatus value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -3852,6 +6228,138 @@ extension VoucherEntityQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      totalCreditEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'totalCredit',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      totalCreditGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'totalCredit',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      totalCreditLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'totalCredit',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      totalCreditBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'totalCredit',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      totalDebitEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'totalDebit',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      totalDebitGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'totalDebit',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      totalDebitLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'totalDebit',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      totalDebitBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'totalDebit',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
       ));
     });
   }
@@ -4184,6 +6692,62 @@ extension VoucherEntityQueryFilter
   }
 
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
       voucherNumberIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -4336,6 +6900,160 @@ extension VoucherEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'voucherType',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'voucherType',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'voucherType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'voucherType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'voucherType',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'voucherType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterFilterCondition>
+      voucherTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'voucherType',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension VoucherEntityQueryObject
@@ -4369,6 +7087,73 @@ extension VoucherEntityQuerySortBy
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByCancelReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cancelReason', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByCancelReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cancelReason', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByCancelledAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cancelledAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByCancelledAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cancelledAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByCreatedBy() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdBy', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByCreatedByDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdBy', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByCreatedByName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByCreatedByNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByName', Sort.desc);
     });
   }
 
@@ -4423,6 +7208,19 @@ extension VoucherEntityQuerySortBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
       sortByDimensionVersion() {
     return QueryBuilder.apply(this, (query) {
@@ -4463,6 +7261,33 @@ extension VoucherEntityQuerySortBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByEntryCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'entryCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByEntryCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'entryCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByFinancialYearId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'financialYearId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByFinancialYearIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'financialYearId', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -4472,6 +7297,19 @@ extension VoucherEntityQuerySortBy
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByIsBalanced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isBalanced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByIsBalancedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isBalanced', Sort.desc);
     });
   }
 
@@ -4485,6 +7323,32 @@ extension VoucherEntityQuerySortBy
       sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -4514,6 +7378,18 @@ extension VoucherEntityQuerySortBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByPartyId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'partyId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByPartyIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'partyId', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByPartyName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'partyName', Sort.asc);
@@ -4524,6 +7400,34 @@ extension VoucherEntityQuerySortBy
       sortByPartyNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'partyName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByReversalOfVoucherId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reversalOfVoucherId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByReversalOfVoucherIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reversalOfVoucherId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByReversalReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reversalReason', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByReversalReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reversalReason', Sort.desc);
     });
   }
 
@@ -4579,6 +7483,59 @@ extension VoucherEntityQuerySortBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortBySourceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortBySourceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortBySourceModule() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceModule', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortBySourceModuleDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceModule', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortBySourceNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortBySourceNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortBySyncStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncStatus', Sort.asc);
@@ -4589,6 +7546,32 @@ extension VoucherEntityQuerySortBy
       sortBySyncStatusDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncStatus', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByTotalCredit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalCredit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByTotalCreditDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalCredit', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByTotalDebit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalDebit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByTotalDebitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalDebit', Sort.desc);
     });
   }
 
@@ -4631,6 +7614,18 @@ extension VoucherEntityQuerySortBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
       sortByVoucherNumber() {
     return QueryBuilder.apply(this, (query) {
@@ -4642,6 +7637,19 @@ extension VoucherEntityQuerySortBy
       sortByVoucherNumberDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'voucherNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> sortByVoucherType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voucherType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      sortByVoucherTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voucherType', Sort.desc);
     });
   }
 }
@@ -4671,6 +7679,73 @@ extension VoucherEntityQuerySortThenBy
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByCancelReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cancelReason', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByCancelReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cancelReason', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByCancelledAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cancelledAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByCancelledAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cancelledAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByCreatedBy() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdBy', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByCreatedByDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdBy', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByCreatedByName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByCreatedByNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdByName', Sort.desc);
     });
   }
 
@@ -4725,6 +7800,19 @@ extension VoucherEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
       thenByDimensionVersion() {
     return QueryBuilder.apply(this, (query) {
@@ -4765,6 +7853,33 @@ extension VoucherEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByEntryCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'entryCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByEntryCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'entryCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByFinancialYearId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'financialYearId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByFinancialYearIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'financialYearId', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -4774,6 +7889,19 @@ extension VoucherEntityQuerySortThenBy
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByIsBalanced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isBalanced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByIsBalancedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isBalanced', Sort.desc);
     });
   }
 
@@ -4790,6 +7918,19 @@ extension VoucherEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -4799,6 +7940,19 @@ extension VoucherEntityQuerySortThenBy
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -4828,6 +7982,18 @@ extension VoucherEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByPartyId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'partyId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByPartyIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'partyId', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByPartyName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'partyName', Sort.asc);
@@ -4838,6 +8004,34 @@ extension VoucherEntityQuerySortThenBy
       thenByPartyNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'partyName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByReversalOfVoucherId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reversalOfVoucherId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByReversalOfVoucherIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reversalOfVoucherId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByReversalReason() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reversalReason', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByReversalReasonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'reversalReason', Sort.desc);
     });
   }
 
@@ -4893,6 +8087,59 @@ extension VoucherEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenBySourceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenBySourceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenBySourceModule() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceModule', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenBySourceModuleDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceModule', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenBySourceNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenBySourceNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenBySyncStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncStatus', Sort.asc);
@@ -4903,6 +8150,32 @@ extension VoucherEntityQuerySortThenBy
       thenBySyncStatusDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncStatus', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByTotalCredit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalCredit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByTotalCreditDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalCredit', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByTotalDebit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalDebit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByTotalDebitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'totalDebit', Sort.desc);
     });
   }
 
@@ -4945,6 +8218,18 @@ extension VoucherEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
       thenByVoucherNumber() {
     return QueryBuilder.apply(this, (query) {
@@ -4956,6 +8241,19 @@ extension VoucherEntityQuerySortThenBy
       thenByVoucherNumberDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'voucherNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy> thenByVoucherType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voucherType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QAfterSortBy>
+      thenByVoucherTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'voucherType', Sort.desc);
     });
   }
 }
@@ -4973,6 +8271,41 @@ extension VoucherEntityQueryWhereDistinct
   QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'amount');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByCancelReason(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'cancelReason', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct>
+      distinctByCancelledAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'cancelledAt');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdAt');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByCreatedBy(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdBy', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByCreatedByName(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdByName',
+          caseSensitive: caseSensitive);
     });
   }
 
@@ -5002,6 +8335,13 @@ extension VoucherEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QDistinct>
       distinctByDimensionVersion() {
     return QueryBuilder.apply(this, (query) {
@@ -5023,6 +8363,20 @@ extension VoucherEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByEntryCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'entryCount');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct>
+      distinctByFinancialYearId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'financialYearId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctById(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -5030,9 +8384,27 @@ extension VoucherEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByIsBalanced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isBalanced');
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -5050,10 +8422,33 @@ extension VoucherEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByPartyId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'partyId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByPartyName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'partyName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct>
+      distinctByReversalOfVoucherId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'reversalOfVoucherId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct>
+      distinctByReversalReason({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'reversalReason',
+          caseSensitive: caseSensitive);
     });
   }
 
@@ -5085,9 +8480,50 @@ extension VoucherEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctBySourceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sourceId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctBySourceModule(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sourceModule', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctBySourceNumber(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sourceNumber', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByStatus(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'status', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctBySyncStatus() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'syncStatus');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct>
+      distinctByTotalCredit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'totalCredit');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByTotalDebit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'totalDebit');
     });
   }
 
@@ -5112,11 +8548,24 @@ extension VoucherEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
+
   QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByVoucherNumber(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'voucherNumber',
           caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<VoucherEntity, VoucherEntity, QDistinct> distinctByVoucherType(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'voucherType', caseSensitive: caseSensitive);
     });
   }
 }
@@ -5139,6 +8588,39 @@ extension VoucherEntityQueryProperty
   QueryBuilder<VoucherEntity, double, QQueryOperations> amountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'amount');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, String?, QQueryOperations>
+      cancelReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cancelReason');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, DateTime?, QQueryOperations>
+      cancelledAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cancelledAt');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, DateTime?, QQueryOperations> createdAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, String?, QQueryOperations> createdByProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdBy');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, String?, QQueryOperations>
+      createdByNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdByName');
     });
   }
 
@@ -5166,6 +8648,12 @@ extension VoucherEntityQueryProperty
     });
   }
 
+  QueryBuilder<VoucherEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<VoucherEntity, int?, QQueryOperations>
       dimensionVersionProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -5185,15 +8673,47 @@ extension VoucherEntityQueryProperty
     });
   }
 
+  QueryBuilder<VoucherEntity, int, QQueryOperations> entryCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'entryCount');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, String?, QQueryOperations>
+      financialYearIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'financialYearId');
+    });
+  }
+
   QueryBuilder<VoucherEntity, String, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
     });
   }
 
+  QueryBuilder<VoucherEntity, bool, QQueryOperations> isBalancedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isBalanced');
+    });
+  }
+
   QueryBuilder<VoucherEntity, bool, QQueryOperations> isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -5209,9 +8729,29 @@ extension VoucherEntityQueryProperty
     });
   }
 
+  QueryBuilder<VoucherEntity, String?, QQueryOperations> partyIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'partyId');
+    });
+  }
+
   QueryBuilder<VoucherEntity, String?, QQueryOperations> partyNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'partyName');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, String?, QQueryOperations>
+      reversalOfVoucherIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'reversalOfVoucherId');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, String?, QQueryOperations>
+      reversalReasonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'reversalReason');
     });
   }
 
@@ -5240,10 +8780,48 @@ extension VoucherEntityQueryProperty
     });
   }
 
+  QueryBuilder<VoucherEntity, String?, QQueryOperations> sourceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sourceId');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, String?, QQueryOperations>
+      sourceModuleProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sourceModule');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, String?, QQueryOperations>
+      sourceNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sourceNumber');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, String, QQueryOperations> statusProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'status');
+    });
+  }
+
   QueryBuilder<VoucherEntity, SyncStatus, QQueryOperations>
       syncStatusProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'syncStatus');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, double, QQueryOperations> totalCreditProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'totalCredit');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, double, QQueryOperations> totalDebitProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'totalDebit');
     });
   }
 
@@ -5266,10 +8844,22 @@ extension VoucherEntityQueryProperty
     });
   }
 
+  QueryBuilder<VoucherEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
+    });
+  }
+
   QueryBuilder<VoucherEntity, String?, QQueryOperations>
       voucherNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'voucherNumber');
+    });
+  }
+
+  QueryBuilder<VoucherEntity, String?, QQueryOperations> voucherTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'voucherType');
     });
   }
 }

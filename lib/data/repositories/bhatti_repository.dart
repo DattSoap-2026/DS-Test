@@ -1,31 +1,75 @@
 import 'package:isar/isar.dart';
-import '../local/entities/bhatti_entry_entity.dart';
-import '../local/base_entity.dart';
-import '../local/entities/product_entity.dart';
-import '../local/entities/stock_balance_entity.dart';
-import '../../services/database_service.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../core/firebase/firebase_config.dart';
+import '../../core/network/connectivity_service.dart';
+import '../../core/sync/collection_registry.dart';
+import '../../core/sync/sync_queue_service.dart';
+import '../../core/sync/sync_service.dart';
+import '../../core/utils/device_id_service.dart';
 import '../../services/bhatti_service.dart';
-import '../../services/tank_service.dart';
-import '../../services/inventory_service.dart';
+import '../../services/database_service.dart';
 import '../../services/inventory_movement_engine.dart';
 import '../../services/inventory_projection_service.dart';
-import '../../core/firebase/firebase_config.dart';
-import 'dart:developer' as developer;
+import '../../services/inventory_service.dart';
+import '../../services/tank_service.dart';
+import '../local/base_entity.dart';
+import '../local/entities/bhatti_batch_entity.dart';
+import '../local/entities/bhatti_entry_entity.dart';
+import '../local/entities/cutting_batch_entity.dart';
+import '../local/entities/product_entity.dart';
+import '../local/entities/stock_balance_entity.dart';
+import '../local/entities/wastage_log_entity.dart';
 
-/// Repository for Bhatti Daily Entries.
-///
-/// This repository acts as a bridge for production reporting, providing:
-/// - Online-first write operations for high-integrity daily logs.
-/// - Offline-first read operations using the local Isar cache.
-/// - Automatic reconciliation between Firestore and Isar during full sync.
+/// Isar-first repository for Bhatti, cutting, and wastage operations.
 class BhattiRepository {
+  BhattiRepository(
+    this._dbService, {
+    FirebaseServices? firebaseServices,
+    InventoryProjectionService? inventoryProjectionService,
+    InventoryMovementEngine? inventoryMovementEngine,
+    SyncQueueService? syncQueueService,
+    SyncService? syncService,
+    ConnectivityService? connectivityService,
+    DeviceIdService? deviceIdService,
+  }) : _inventoryProjectionService =
+           inventoryProjectionService ?? InventoryProjectionService(_dbService),
+       _inventoryMovementEngine = inventoryMovementEngine ??
+           InventoryMovementEngine(
+             _dbService,
+             inventoryProjectionService ?? InventoryProjectionService(_dbService),
+           ),
+       _syncQueueService = syncQueueService ?? SyncQueueService.instance,
+       _syncService = syncService ?? SyncService.instance,
+       _connectivityService = connectivityService ?? ConnectivityService.instance,
+       _deviceIdService = deviceIdService ?? DeviceIdService.instance,
+       _bhattiService = firebaseServices == null
+           ? null
+           : BhattiService(
+               firebaseServices,
+               _dbService,
+               TankService(firebaseServices, _dbService),
+               InventoryService(firebaseServices, _dbService),
+               inventoryMovementEngine ??
+                   InventoryMovementEngine(
+                     _dbService,
+                     inventoryProjectionService ??
+                         InventoryProjectionService(_dbService),
+                   ),
+             );
+
+  static const Uuid _uuid = Uuid();
+
   final DatabaseService _dbService;
-  final BhattiService _bhattiService;
   final InventoryProjectionService _inventoryProjectionService;
   final InventoryMovementEngine _inventoryMovementEngine;
+  final SyncQueueService _syncQueueService;
+  final SyncService _syncService;
+  final ConnectivityService _connectivityService;
+  final DeviceIdService _deviceIdService;
+  final BhattiService? _bhattiService;
 
-  DateTime _dateOnly(DateTime value) =>
-      DateTime(value.year, value.month, value.day);
+  DateTime _dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
 
   String _normalizedToken(String value) {
     return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
@@ -51,13 +95,10 @@ class BhattiRepository {
     if (normalizedName == normalizedKey) score += 1000;
     if (name == key) score += 900;
     if (normalizedName.startsWith(normalizedKey)) score += 500;
-    if (name.startsWith('$key ') ||
-        name.endsWith(' $key') ||
-        name.contains(' $key ')) {
+    if (name.startsWith('$key ') || name.endsWith(' $key') || name.contains(' $key ')) {
       score += 250;
     }
-    if (normalizedSku == normalizedKey ||
-        normalizedSku.startsWith(normalizedKey)) {
+    if (normalizedSku == normalizedKey || normalizedSku.startsWith(normalizedKey)) {
       score += 180;
     } else if (normalizedSku.contains(normalizedKey)) {
       score += 120;
@@ -73,138 +114,30 @@ class BhattiRepository {
     required String bhattiName,
   }) async {
     final bhattiKey = _resolveBhattiKey(bhattiId, bhattiName);
-    if (bhattiKey.isEmpty) return null;
+    if (bhattiKey.isEmpty) {
+      return null;
+    }
 
     final allProducts = await _dbService.products.where().findAll();
     final semiProducts = allProducts
-        .where((p) => !p.isDeleted && p.itemType == 'Semi-Finished Good')
+        .where((product) => !product.isDeleted && product.itemType == 'Semi-Finished Good')
         .toList();
-    if (semiProducts.isEmpty) return null;
+    if (semiProducts.isEmpty) {
+      return null;
+    }
 
-    semiProducts.sort((a, b) {
+    semiProducts.sort((left, right) {
       final scoreDiff =
-          _scoreSemiProductMatch(b, bhattiKey) -
-          _scoreSemiProductMatch(a, bhattiKey);
-      if (scoreDiff != 0) return scoreDiff;
-      return a.name.compareTo(b.name);
+          _scoreSemiProductMatch(right, bhattiKey) - _scoreSemiProductMatch(left, bhattiKey);
+      if (scoreDiff != 0) {
+        return scoreDiff;
+      }
+      return left.name.compareTo(right.name);
     });
 
     final best = semiProducts.first;
     return _scoreSemiProductMatch(best, bhattiKey) > 0 ? best : null;
   }
-
-  Future<void> _applySemiStockAdjustmentForEntry({
-    required String bhattiId,
-    required String bhattiName,
-    required String entryId,
-    required int deltaOutputBoxes,
-    required String actorUid,
-    required DateTime updatedAt,
-  }) async {
-    final semiProduct = await _findSemiProductForBhatti(
-      bhattiId: bhattiId,
-      bhattiName: bhattiName,
-    );
-    if (semiProduct == null) {
-      developer.log(
-        'No matching semi-finished product found for $bhattiName ($bhattiId)',
-        name: 'BhattiRepo',
-      );
-      return;
-    }
-
-    final currentStock = semiProduct.stock ?? 0.0;
-    final updatedStock = currentStock + deltaOutputBoxes;
-    if (updatedStock < -1e-9) {
-      throw Exception(
-        'Semi stock cannot go negative for ${semiProduct.name}. '
-        'Current: ${currentStock.toStringAsFixed(2)}, '
-        'Requested delta: $deltaOutputBoxes',
-      );
-    }
-
-    final quantity = deltaOutputBoxes.abs().toDouble();
-    if (quantity < 1e-9) {
-      return;
-    }
-    if (deltaOutputBoxes < 0) {
-      await _seedWarehouseBalanceInTxn(
-        productId: semiProduct.id,
-        occurredAt: updatedAt,
-      );
-    }
-
-    final virtualBhattiLocationId = _semiFinishedVirtualLocationId(bhattiId);
-    final command = deltaOutputBoxes > 0
-        ? InventoryCommand.internalTransfer(
-            sourceLocationId: virtualBhattiLocationId,
-            destinationLocationId:
-                InventoryProjectionService.warehouseMainLocationId,
-            referenceId: entryId,
-            productId: semiProduct.id,
-            quantityBase: quantity,
-            actorUid: actorUid,
-            reasonCode: 'bhatti_semi_output',
-            referenceType: 'bhatti_entry',
-            createdAt: updatedAt,
-          )
-        : InventoryCommand.internalTransfer(
-            sourceLocationId:
-                InventoryProjectionService.warehouseMainLocationId,
-            destinationLocationId: virtualBhattiLocationId,
-            referenceId: entryId,
-            productId: semiProduct.id,
-            quantityBase: quantity,
-            actorUid: actorUid,
-            reasonCode: 'bhatti_semi_adjustment',
-            referenceType: 'bhatti_entry',
-            createdAt: updatedAt,
-          );
-    await _inventoryMovementEngine.applyCommandInTxn(command);
-
-    final updatedProduct = await _dbService.products.getById(semiProduct.id);
-    final projectedStock = updatedProduct?.stock ?? updatedStock;
-
-    // T9-P4 REMOVED: direct local products.stock mutation is replaced by the
-    // InventoryMovementEngine internal_transfer command above.
-    // semiProduct.stock = updatedStock;
-    // semiProduct.updatedAt = updatedAt;
-    // semiProduct.syncStatus = SyncStatus.pending;
-    // await _dbService.products.put(semiProduct);
-
-    developer.log(
-      'Adjusted semi stock: ${semiProduct.name} '
-      'delta=$deltaOutputBoxes new=${projectedStock.toStringAsFixed(2)}',
-      name: 'BhattiRepo',
-    );
-  }
-
-  BhattiRepository(
-    this._dbService,
-    FirebaseServices firebase, {
-    InventoryProjectionService? inventoryProjectionService,
-    InventoryMovementEngine? inventoryMovementEngine,
-  }) : _inventoryProjectionService =
-           inventoryProjectionService ?? InventoryProjectionService(_dbService),
-       _inventoryMovementEngine =
-           inventoryMovementEngine ??
-           InventoryMovementEngine(
-             _dbService,
-             inventoryProjectionService ??
-                 InventoryProjectionService(_dbService),
-           ),
-       _bhattiService = BhattiService(
-         firebase,
-         _dbService,
-         TankService(firebase, _dbService),
-         InventoryService(firebase, _dbService),
-         inventoryMovementEngine ??
-             InventoryMovementEngine(
-               _dbService,
-               inventoryProjectionService ??
-                   InventoryProjectionService(_dbService),
-             ),
-       );
 
   String _semiFinishedVirtualLocationId(String bhattiId) {
     final token = _normalizedToken(bhattiId);
@@ -245,12 +178,60 @@ class BhattiRepository {
     await _dbService.stockBalances.put(balance);
   }
 
-  // ===== WRITE OPERATIONS (Online-First) =====
+  Future<void> _applySemiStockAdjustmentForEntry({
+    required String bhattiId,
+    required String bhattiName,
+    required String entryId,
+    required int deltaOutputBoxes,
+    required String actorUid,
+    required DateTime updatedAt,
+  }) async {
+    final semiProduct = await _findSemiProductForBhatti(
+      bhattiId: bhattiId,
+      bhattiName: bhattiName,
+    );
+    if (semiProduct == null) {
+      return;
+    }
 
-  /// Save bhatti entry to Firebase, then auto-cache locally
-  /// Returns the entry ID on success, null on failure
-  /// Save bhatti entry to Local Isar first, then attempt background sync.
-  /// Returns the entry ID on success (local persistence), null on failure.
+    final quantity = deltaOutputBoxes.abs().toDouble();
+    if (quantity < 1e-9) {
+      return;
+    }
+    if (deltaOutputBoxes < 0) {
+      await _seedWarehouseBalanceInTxn(
+        productId: semiProduct.id,
+        occurredAt: updatedAt,
+      );
+    }
+
+    final virtualBhattiLocationId = _semiFinishedVirtualLocationId(bhattiId);
+    final command = deltaOutputBoxes > 0
+        ? InventoryCommand.internalTransfer(
+            sourceLocationId: virtualBhattiLocationId,
+            destinationLocationId: InventoryProjectionService.warehouseMainLocationId,
+            referenceId: entryId,
+            productId: semiProduct.id,
+            quantityBase: quantity,
+            actorUid: actorUid,
+            reasonCode: 'bhatti_semi_output',
+            referenceType: 'bhatti_entry',
+            createdAt: updatedAt,
+          )
+        : InventoryCommand.internalTransfer(
+            sourceLocationId: InventoryProjectionService.warehouseMainLocationId,
+            destinationLocationId: virtualBhattiLocationId,
+            referenceId: entryId,
+            productId: semiProduct.id,
+            quantityBase: quantity,
+            actorUid: actorUid,
+            reasonCode: 'bhatti_semi_adjustment',
+            referenceType: 'bhatti_entry',
+            createdAt: updatedAt,
+          );
+    await _inventoryMovementEngine.applyCommandInTxn(command);
+  }
+
   Future<String?> saveBhattiEntry({
     required DateTime date,
     required String bhattiId,
@@ -263,214 +244,400 @@ class BhattiRepository {
     required String createdByName,
     String? notes,
   }) async {
-    try {
-      final now = DateTime.now();
-      final normalizedDate = _dateOnly(date);
-      final entryId =
-          '${bhattiId}_${normalizedDate.toIso8601String().split('T')[0]}';
+    final normalizedDate = _dateOnly(date);
+    final entryId = '${bhattiId}_${normalizedDate.toIso8601String().split('T').first}';
+    final entity = BhattiDailyEntryEntity()
+      ..id = entryId
+      ..date = normalizedDate
+      ..bhattiId = bhattiId
+      ..bhattiName = bhattiName
+      ..teamCode = teamCode
+      ..batchCount = batchCount
+      ..outputBoxes = outputBoxes
+      ..fuelConsumption = fuelConsumption
+      ..createdBy = createdBy
+      ..createdByName = createdByName
+      ..createdAt = DateTime.now()
+      ..notes = notes;
 
-      // 1. Create Entity (Pending Sync)
-      final entity = BhattiDailyEntryEntity()
-        ..id = entryId
-        ..date = normalizedDate
-        ..bhattiId = bhattiId
-        ..bhattiName = bhattiName
-        ..teamCode = teamCode
-        ..batchCount = batchCount
-        ..outputBoxes = outputBoxes
-        ..fuelConsumption = fuelConsumption
-        ..createdBy = createdBy
-        ..createdByName = createdByName
-        ..createdAt = now
-        ..updatedAt = now
-        ..notes = notes
-        ..syncStatus = SyncStatus.pending
-        ..isDeleted = false;
+    await saveBhattiDailyEntry(entity);
+    return entryId;
+  }
 
-      // 2. Save entry + adjust semi stock in one local transaction
-      await _ensureWarehouseLocationReady();
-      await _dbService.db.writeTxn(() async {
-        final existingEntry = await _dbService.bhattiEntries.get(
-          fastHash(entryId),
+  Future<void> saveBhattiDailyEntry(BhattiDailyEntryEntity entry) async {
+    final id = _ensureBhattiEntryId(entry);
+    final existing = await _dbService.bhattiEntries.getById(id);
+    entry
+      ..id = id
+      ..date = _dateOnly(entry.date)
+      ..createdAt = _ensureDate(() => entry.createdAt, existing?.createdAt)
+      ..bhattiName = _safeString(() => entry.bhattiName)
+      ..bhattiId = _safeString(() => entry.bhattiId)
+      ..createdBy = _safeString(() => entry.createdBy)
+      ..createdByName = _safeString(() => entry.createdByName)
+      ..batchCount = entry.batchCount
+      ..outputBoxes = entry.outputBoxes;
+
+    await _ensureWarehouseLocationReady();
+    await _stampForSync(entry, existing);
+    await _dbService.db.writeTxn(() async {
+      final previousOutputBoxes = existing?.outputBoxes ?? 0;
+      await _dbService.bhattiEntries.put(entry);
+      final deltaOutputBoxes = entry.outputBoxes - previousOutputBoxes;
+      if (deltaOutputBoxes != 0) {
+        await _applySemiStockAdjustmentForEntry(
+          bhattiId: entry.bhattiId,
+          bhattiName: entry.bhattiName,
+          entryId: entry.id,
+          deltaOutputBoxes: deltaOutputBoxes,
+          actorUid: entry.createdBy.trim().isEmpty ? 'system' : entry.createdBy.trim(),
+          updatedAt: entry.date,
         );
-        final previousOutputBoxes = existingEntry?.outputBoxes ?? 0;
+      }
+    });
 
-        await _dbService.bhattiEntries.put(entity);
+    await _syncQueueService.addToQueue(
+      collectionName: CollectionRegistry.bhattiDailyEntries,
+      documentId: entry.id,
+      operation: existing == null ? 'create' : 'update',
+      payload: entry.toJson(),
+    );
 
-        final deltaOutputBoxes = outputBoxes - previousOutputBoxes;
-        if (deltaOutputBoxes != 0) {
-          await _applySemiStockAdjustmentForEntry(
-            bhattiId: bhattiId,
-            bhattiName: bhattiName,
-            entryId: entryId,
-            deltaOutputBoxes: deltaOutputBoxes,
-            actorUid: createdBy.trim().isEmpty ? 'system' : createdBy.trim(),
-            updatedAt: normalizedDate,
-          );
-        }
-      });
-      developer.log('Bhatti entry locally saved: $entryId', name: 'BhattiRepo');
-
-      // 3. Attempt Immediate Sync (Best Effort)
-      _tryImmediateSync(entity);
-
-      return entryId;
-    } catch (e) {
-      developer.log(
-        'Failed to save Bhatti entry locally: $e',
-        name: 'BhattiRepo',
-      );
-      return null;
-    }
+    await _syncIfOnline();
   }
 
-  /// Helper to attempt immediate sync without blocking UI return
-  Future<void> _tryImmediateSync(BhattiDailyEntryEntity entity) async {
-    try {
-      final firebaseData = entity.toFirebaseJson();
-      await _bhattiService.saveDailyEntry(firebaseData);
+  Future<void> saveBhattiBatch(BhattiBatchEntity batch) async {
+    final id = _ensureId(batch);
+    final existing = await _dbService.bhattiBatches.getById(id);
+    batch
+      ..id = id
+      ..createdAt = _ensureDate(() => batch.createdAt, existing?.createdAt)
+      ..status = _safeString(() => batch.status, fallback: 'cooking');
 
-      // If successful, mark as synced locally
-      await _dbService.db.writeTxn(() async {
-        entity.syncStatus = SyncStatus.synced;
-        await _dbService.bhattiEntries.put(entity);
-      });
-      developer.log(
-        'Bhatti entry immediately synced: ${entity.id}',
-        name: 'BhattiRepo',
-      );
-    } catch (e) {
-      developer.log('Immediate sync failed (offline?): $e', name: 'BhattiRepo');
-      // Entity remains SyncStatus.pending for SyncManager to pick up later
-    }
+    await _stampForSync(batch, existing);
+    await _dbService.db.writeTxn(() async {
+      await _dbService.bhattiBatches.put(batch);
+    });
+
+    await _syncQueueService.addToQueue(
+      collectionName: CollectionRegistry.bhattiBatches,
+      documentId: batch.id,
+      operation: existing == null ? 'create' : 'update',
+      payload: batch.toJson(),
+    );
+
+    await _syncIfOnline();
   }
 
-  // ===== READ OPERATIONS (Cache-First, Local Only) =====
+  Future<void> saveCuttingBatch(CuttingBatchEntity batch) async {
+    final id = _ensureId(batch);
+    final existing = await _dbService.cuttingBatches.getById(id);
+    batch
+      ..id = id
+      ..createdAt = _ensureDate(() => batch.createdAt, existing?.createdAt)
+      ..stage = _safeString(() => batch.stage, fallback: 'COMPLETED');
 
-  /// Get bhatti entries by date range (local only)
+    await _stampForSync(batch, existing);
+    await _dbService.db.writeTxn(() async {
+      await _dbService.cuttingBatches.put(batch);
+    });
+
+    await _syncQueueService.addToQueue(
+      collectionName: CollectionRegistry.cuttingBatches,
+      documentId: batch.id,
+      operation: existing == null ? 'create' : 'update',
+      payload: batch.toJson(),
+    );
+
+    await _syncIfOnline();
+  }
+
+  Future<void> saveWastageLog(WastageLogEntity log) async {
+    final id = _ensureId(log);
+    final existing = await _dbService.wastageLogs.getById(id);
+    log
+      ..id = id
+      ..createdAt = _ensureDate(() => log.createdAt, existing?.createdAt);
+
+    await _stampForSync(log, existing);
+    await _dbService.db.writeTxn(() async {
+      await _dbService.wastageLogs.put(log);
+    });
+
+    await _syncQueueService.addToQueue(
+      collectionName: CollectionRegistry.wastageLogs,
+      documentId: log.id,
+      operation: existing == null ? 'create' : 'update',
+      payload: log.toJson(),
+    );
+
+    await _syncIfOnline();
+  }
+
+  Future<void> updateBatchStatus(String id, String status) async {
+    final batch = await _dbService.bhattiBatches.getById(id);
+    if (batch == null || batch.isDeleted) {
+      return;
+    }
+
+    batch.status = status;
+    await _stampForSync(batch, batch);
+    await _dbService.db.writeTxn(() async {
+      await _dbService.bhattiBatches.put(batch);
+    });
+
+    await _syncQueueService.addToQueue(
+      collectionName: CollectionRegistry.bhattiBatches,
+      documentId: batch.id,
+      operation: 'update',
+      payload: batch.toJson(),
+    );
+
+    await _syncIfOnline();
+  }
+
+  Future<void> completeBatch(String batchId, int outputBoxes) async {
+    final batch = await _dbService.bhattiBatches.getById(batchId);
+    if (batch == null || batch.isDeleted) {
+      return;
+    }
+
+    batch
+      ..status = 'completed'
+      ..outputBoxes = outputBoxes;
+
+    await _stampForSync(batch, batch);
+    await _dbService.db.writeTxn(() async {
+      await _dbService.bhattiBatches.put(batch);
+    });
+
+    await _syncQueueService.addToQueue(
+      collectionName: CollectionRegistry.bhattiBatches,
+      documentId: batch.id,
+      operation: 'update',
+      payload: batch.toJson(),
+    );
+
+    await _syncIfOnline();
+  }
+
+  Future<List<BhattiBatchEntity>> getAllBhattiBatches() {
+    return _dbService.bhattiBatches
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  Future<List<BhattiBatchEntity>> getBatchesByStatus(String status) {
+    return _dbService.bhattiBatches
+        .filter()
+        .statusEqualTo(status)
+        .and()
+        .isDeletedEqualTo(false)
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  Future<List<BhattiBatchEntity>> getBatchesByBhatti(String bhattiName) {
+    return _dbService.bhattiBatches
+        .filter()
+        .bhattiNameEqualTo(bhattiName)
+        .and()
+        .isDeletedEqualTo(false)
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  Future<List<BhattiDailyEntryEntity>> getAllDailyEntries() {
+    return _dbService.bhattiEntries
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByDateDesc()
+        .findAll();
+  }
+
+  Future<List<BhattiDailyEntryEntity>> getEntriesByDate(DateTime date) {
+    final start = _dateOnly(date);
+    final end = start.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+    return _dbService.bhattiEntries
+        .filter()
+        .dateBetween(start, end, includeUpper: true)
+        .and()
+        .isDeletedEqualTo(false)
+        .sortByDateDesc()
+        .findAll();
+  }
+
+  Future<List<CuttingBatchEntity>> getAllCuttingBatches() {
+    return _dbService.cuttingBatches
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  Future<List<CuttingBatchEntity>> getCuttingBatchesByStatus(String status) {
+    return _dbService.cuttingBatches
+        .filter()
+        .stageEqualTo(status)
+        .and()
+        .isDeletedEqualTo(false)
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  Future<List<WastageLogEntity>> getAllWastageLogs() {
+    return _dbService.wastageLogs
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  Stream<List<BhattiBatchEntity>> watchAllBhattiBatches() {
+    return _dbService.bhattiBatches
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByCreatedAtDesc()
+        .watch(fireImmediately: true);
+  }
+
+  Stream<List<CuttingBatchEntity>> watchAllCuttingBatches() {
+    return _dbService.cuttingBatches
+        .filter()
+        .isDeletedEqualTo(false)
+        .sortByCreatedAtDesc()
+        .watch(fireImmediately: true);
+  }
+
   Future<List<BhattiDailyEntryEntity>> getBhattiEntriesByDateRange({
     required DateTime startDate,
     required DateTime endDate,
     String? bhattiId,
   }) async {
-    try {
-      final db = _dbService.db;
-      final startOfDay = _dateOnly(startDate);
-      final endOfDay = DateTime(
-        endDate.year,
-        endDate.month,
-        endDate.day,
-        23,
-        59,
-        59,
-        999,
-      );
-
-      var query = db.bhattiDailyEntryEntitys
-          .filter()
-          .dateBetween(startOfDay, endOfDay, includeUpper: true)
-          .isDeletedEqualTo(false);
-
-      if (bhattiId != null) {
-        query = query.bhattiIdEqualTo(bhattiId);
-      }
-
-      final results = await query.sortByDateDesc().findAll();
-      developer.log('Loaded ${results.length} bhatti entries from cache');
-      return results;
-    } catch (e) {
-      developer.log('Failed to read bhatti entries: $e');
-      return [];
+    var query = _dbService.bhattiEntries
+        .filter()
+        .dateBetween(startDate, endDate, includeUpper: true)
+        .and()
+        .isDeletedEqualTo(false);
+    if (bhattiId != null && bhattiId.trim().isNotEmpty) {
+      query = query.bhattiIdEqualTo(bhattiId.trim());
     }
+    return query.sortByDateDesc().findAll();
   }
 
-  /// Get latest bhatti entry for a specific bhatti (local only)
-  Future<BhattiDailyEntryEntity?> getLatestBhattiEntry(String bhattiId) async {
-    try {
-      final db = _dbService.db;
-
-      final result = await db.bhattiDailyEntryEntitys
-          .filter()
-          .bhattiIdEqualTo(bhattiId)
-          .isDeletedEqualTo(false)
-          .sortByDateDesc()
-          .findFirst();
-
-      return result;
-    } catch (e) {
-      developer.log('Failed to read latest bhatti entry: $e');
-      return null;
-    }
+  Future<BhattiDailyEntryEntity?> getLatestBhattiEntry(String bhattiId) {
+    return _dbService.bhattiEntries
+        .filter()
+        .bhattiIdEqualTo(bhattiId)
+        .and()
+        .isDeletedEqualTo(false)
+        .sortByDateDesc()
+        .findFirst();
   }
 
-  /// Get bhatti entry by date (local only)
   Future<BhattiDailyEntryEntity?> getBhattiEntryByDate({
     required DateTime date,
     required String bhattiId,
-  }) async {
-    try {
-      final db = _dbService.db;
-      final normalizedDate = _dateOnly(date);
-      final dayEnd = DateTime(
-        normalizedDate.year,
-        normalizedDate.month,
-        normalizedDate.day,
-        23,
-        59,
-        59,
-        999,
-      );
-
-      final result = await db.bhattiDailyEntryEntitys
-          .filter()
-          .bhattiIdEqualTo(bhattiId)
-          .dateBetween(normalizedDate, dayEnd, includeUpper: true)
-          .isDeletedEqualTo(false)
-          .findFirst();
-
-      return result;
-    } catch (e) {
-      developer.log('Failed to read bhatti entry: $e');
-      return null;
-    }
+  }) {
+    final start = _dateOnly(date);
+    final end = start.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+    return _dbService.bhattiEntries
+        .filter()
+        .bhattiIdEqualTo(bhattiId)
+        .and()
+        .dateBetween(start, end, includeUpper: true)
+        .and()
+        .isDeletedEqualTo(false)
+        .findFirst();
   }
 
-  // ===== AUTO-FETCH OPERATIONS =====
-
-  /// Fetch bhatti entries from Firebase and cache locally
-  /// Used for background sync and initial data loading
   Future<void> fetchAndCacheBhattiEntries({
     required DateTime startDate,
     required DateTime endDate,
     String? bhattiId,
   }) async {
+    final service = _bhattiService;
+    if (service == null) {
+      return;
+    }
+    final remoteEntries = await service.getDailyEntries(
+      startDate: startDate,
+      endDate: endDate,
+      bhattiName: bhattiId,
+    );
+    if (remoteEntries.isEmpty) {
+      return;
+    }
+    final entities = remoteEntries
+        .map(BhattiDailyEntryEntity.fromFirebaseJson)
+        .toList(growable: false);
+    await _dbService.db.writeTxn(() async {
+      await _dbService.bhattiEntries.putAll(entities);
+    });
+  }
+
+  Future<void> _stampForSync(BaseEntity entity, BaseEntity? existing) async {
+    entity
+      ..updatedAt = DateTime.now()
+      ..deletedAt = null
+      ..syncStatus = SyncStatus.pending
+      ..isSynced = false
+      ..isDeleted = false
+      ..lastSynced = null
+      ..version = existing == null ? 1 : existing.version + 1
+      ..deviceId = await _deviceIdService.getDeviceId();
+  }
+
+  String _ensureId(BaseEntity entity) {
     try {
-      // Fetch from Firebase
-      final firebaseEntries = await _bhattiService.getDailyEntries(
-        startDate: startDate,
-        endDate: endDate,
-        bhattiName: bhattiId,
-      );
-
-      if (firebaseEntries.isEmpty) {
-        developer.log(' No bhatti entries to cache');
-        return;
+      final id = entity.id.trim();
+      if (id.isNotEmpty) {
+        return id;
       }
+    } catch (_) {
+      // Late init fallback.
+    }
+    final generated = _uuid.v4();
+    entity.id = generated;
+    return generated;
+  }
 
-      // Convert to entities
-      final entities = firebaseEntries
-          .map((json) => BhattiDailyEntryEntity.fromFirebaseJson(json))
-          .toList();
+  String _ensureBhattiEntryId(BhattiDailyEntryEntity entry) {
+    try {
+      final id = entry.id.trim();
+      if (id.isNotEmpty) {
+        return id;
+      }
+    } catch (_) {
+      // Late init fallback.
+    }
+    final generated = '${entry.bhattiId}_${_dateOnly(entry.date).toIso8601String().split('T').first}';
+    entry.id = generated;
+    return generated;
+  }
 
-      // Cache locally
-      await _dbService.db.writeTxn(() async {
-        await _dbService.bhattiEntries.putAll(entities);
-      });
+  DateTime _ensureDate(DateTime Function() reader, DateTime? fallback) {
+    try {
+      return reader();
+    } catch (_) {
+      return fallback ?? DateTime.now();
+    }
+  }
 
-      developer.log('Cached ${entities.length} bhatti entries');
-    } catch (e) {
-      developer.log('Failed to fetch bhatti entries: $e');
-      // Don't throw - offline is acceptable
+  String _safeString(String Function() reader, {String fallback = ''}) {
+    try {
+      final value = reader().trim();
+      return value.isEmpty ? fallback : value;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  Future<void> _syncIfOnline() async {
+    if (_connectivityService.isOnline) {
+      await _syncService.syncAllPending();
     }
   }
 }

@@ -2,6 +2,9 @@ import 'package:isar/isar.dart';
 
 part 'product.g.dart';
 
+// DEPRECATED: Use ProductEntity from
+// lib/data/local/entities/product_entity.dart.
+
 /// Offline-first inventory product persisted in Isar.
 @Collection()
 class Product {

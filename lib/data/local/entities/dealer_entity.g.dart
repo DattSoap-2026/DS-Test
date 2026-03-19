@@ -67,86 +67,106 @@ const DealerEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'email': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 10,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'email': PropertySchema(
+      id: 11,
       name: r'email',
       type: IsarType.string,
     ),
     r'gstin': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'gstin',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 15,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 16,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'latitude': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'latitude',
       type: IsarType.double,
     ),
     r'longitude': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'longitude',
       type: IsarType.double,
     ),
     r'mobile': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'mobile',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'name',
       type: IsarType.string,
     ),
     r'pan': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'pan',
       type: IsarType.string,
     ),
     r'paymentTerms': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'paymentTerms',
       type: IsarType.string,
     ),
     r'pincode': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'pincode',
       type: IsarType.string,
     ),
     r'state': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'state',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 22,
+      id: 25,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 23,
+      id: 26,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _DealerEntitysyncStatusEnumValueMap,
     ),
     r'territory': PropertySchema(
-      id: 24,
+      id: 27,
       name: r'territory',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 25,
+      id: 28,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 29,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _dealerEntityEstimateSize,
@@ -281,6 +301,7 @@ int _dealerEntityEstimateSize(
   }
   bytesCount += 3 + object.contactPerson.length * 3;
   bytesCount += 3 + object.createdAt.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.email;
     if (value != null) {
@@ -351,22 +372,26 @@ void _dealerEntitySerialize(
   writer.writeString(offsets[7], object.contactPerson);
   writer.writeString(offsets[8], object.createdAt);
   writer.writeDateTime(offsets[9], object.deletedAt);
-  writer.writeString(offsets[10], object.email);
-  writer.writeString(offsets[11], object.gstin);
-  writer.writeString(offsets[12], object.id);
-  writer.writeBool(offsets[13], object.isDeleted);
-  writer.writeDouble(offsets[14], object.latitude);
-  writer.writeDouble(offsets[15], object.longitude);
-  writer.writeString(offsets[16], object.mobile);
-  writer.writeString(offsets[17], object.name);
-  writer.writeString(offsets[18], object.pan);
-  writer.writeString(offsets[19], object.paymentTerms);
-  writer.writeString(offsets[20], object.pincode);
-  writer.writeString(offsets[21], object.state);
-  writer.writeString(offsets[22], object.status);
-  writer.writeByte(offsets[23], object.syncStatus.index);
-  writer.writeString(offsets[24], object.territory);
-  writer.writeDateTime(offsets[25], object.updatedAt);
+  writer.writeString(offsets[10], object.deviceId);
+  writer.writeString(offsets[11], object.email);
+  writer.writeString(offsets[12], object.gstin);
+  writer.writeString(offsets[13], object.id);
+  writer.writeBool(offsets[14], object.isDeleted);
+  writer.writeBool(offsets[15], object.isSynced);
+  writer.writeDateTime(offsets[16], object.lastSynced);
+  writer.writeDouble(offsets[17], object.latitude);
+  writer.writeDouble(offsets[18], object.longitude);
+  writer.writeString(offsets[19], object.mobile);
+  writer.writeString(offsets[20], object.name);
+  writer.writeString(offsets[21], object.pan);
+  writer.writeString(offsets[22], object.paymentTerms);
+  writer.writeString(offsets[23], object.pincode);
+  writer.writeString(offsets[24], object.state);
+  writer.writeString(offsets[25], object.status);
+  writer.writeByte(offsets[26], object.syncStatus.index);
+  writer.writeString(offsets[27], object.territory);
+  writer.writeDateTime(offsets[28], object.updatedAt);
+  writer.writeLong(offsets[29], object.version);
 }
 
 DealerEntity _dealerEntityDeserialize(
@@ -386,24 +411,28 @@ DealerEntity _dealerEntityDeserialize(
   object.contactPerson = reader.readString(offsets[7]);
   object.createdAt = reader.readString(offsets[8]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[9]);
-  object.email = reader.readStringOrNull(offsets[10]);
-  object.gstin = reader.readStringOrNull(offsets[11]);
-  object.id = reader.readString(offsets[12]);
-  object.isDeleted = reader.readBool(offsets[13]);
-  object.latitude = reader.readDoubleOrNull(offsets[14]);
-  object.longitude = reader.readDoubleOrNull(offsets[15]);
-  object.mobile = reader.readString(offsets[16]);
-  object.name = reader.readString(offsets[17]);
-  object.pan = reader.readStringOrNull(offsets[18]);
-  object.paymentTerms = reader.readStringOrNull(offsets[19]);
-  object.pincode = reader.readStringOrNull(offsets[20]);
-  object.state = reader.readStringOrNull(offsets[21]);
-  object.status = reader.readStringOrNull(offsets[22]);
+  object.deviceId = reader.readString(offsets[10]);
+  object.email = reader.readStringOrNull(offsets[11]);
+  object.gstin = reader.readStringOrNull(offsets[12]);
+  object.id = reader.readString(offsets[13]);
+  object.isDeleted = reader.readBool(offsets[14]);
+  object.isSynced = reader.readBool(offsets[15]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[16]);
+  object.latitude = reader.readDoubleOrNull(offsets[17]);
+  object.longitude = reader.readDoubleOrNull(offsets[18]);
+  object.mobile = reader.readString(offsets[19]);
+  object.name = reader.readString(offsets[20]);
+  object.pan = reader.readStringOrNull(offsets[21]);
+  object.paymentTerms = reader.readStringOrNull(offsets[22]);
+  object.pincode = reader.readStringOrNull(offsets[23]);
+  object.state = reader.readStringOrNull(offsets[24]);
+  object.status = reader.readStringOrNull(offsets[25]);
   object.syncStatus =
-      _DealerEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[23])] ??
+      _DealerEntitysyncStatusValueEnumMap[reader.readByteOrNull(offsets[26])] ??
           SyncStatus.pending;
-  object.territory = reader.readStringOrNull(offsets[24]);
-  object.updatedAt = reader.readDateTime(offsets[25]);
+  object.territory = reader.readStringOrNull(offsets[27]);
+  object.updatedAt = reader.readDateTime(offsets[28]);
+  object.version = reader.readLong(offsets[29]);
   return object;
 }
 
@@ -435,39 +464,47 @@ P _dealerEntityDeserializeProp<P>(
     case 9:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 10:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 11:
       return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 14:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 15:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 16:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 17:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 18:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 19:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 20:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 21:
       return (reader.readStringOrNull(offset)) as P;
     case 22:
       return (reader.readStringOrNull(offset)) as P;
     case 23:
-      return (_DealerEntitysyncStatusValueEnumMap[
-              reader.readByteOrNull(offset)] ??
-          SyncStatus.pending) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 24:
       return (reader.readStringOrNull(offset)) as P;
     case 25:
+      return (reader.readStringOrNull(offset)) as P;
+    case 26:
+      return (_DealerEntitysyncStatusValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          SyncStatus.pending) as P;
+    case 27:
+      return (reader.readStringOrNull(offset)) as P;
+    case 28:
       return (reader.readDateTime(offset)) as P;
+    case 29:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -2301,6 +2338,142 @@ extension DealerEntityQueryFilter
   }
 
   QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
       emailIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2745,6 +2918,16 @@ extension DealerEntityQueryFilter
     });
   }
 
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition> isarIdEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -2792,6 +2975,80 @@ extension DealerEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -4264,6 +4521,62 @@ extension DealerEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension DealerEntityQueryObject
@@ -4404,6 +4717,18 @@ extension DealerEntityQuerySortBy
     });
   }
 
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> sortByEmail() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'email', Sort.asc);
@@ -4449,6 +4774,31 @@ extension DealerEntityQuerySortBy
   QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -4597,6 +4947,18 @@ extension DealerEntityQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension DealerEntityQuerySortThenBy
@@ -4731,6 +5093,18 @@ extension DealerEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> thenByEmail() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'email', Sort.asc);
@@ -4779,6 +5153,18 @@ extension DealerEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
   QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -4788,6 +5174,19 @@ extension DealerEntityQuerySortThenBy
   QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -4936,6 +5335,18 @@ extension DealerEntityQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QAfterSortBy> thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension DealerEntityQueryWhereDistinct
@@ -5013,6 +5424,13 @@ extension DealerEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DealerEntity, DealerEntity, QDistinct> distinctByDeviceId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<DealerEntity, DealerEntity, QDistinct> distinctByEmail(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -5037,6 +5455,18 @@ extension DealerEntityQueryWhereDistinct
   QueryBuilder<DealerEntity, DealerEntity, QDistinct> distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QDistinct> distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<DealerEntity, DealerEntity, QDistinct> distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -5119,6 +5549,12 @@ extension DealerEntityQueryWhereDistinct
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<DealerEntity, DealerEntity, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension DealerEntityQueryProperty
@@ -5193,6 +5629,12 @@ extension DealerEntityQueryProperty
     });
   }
 
+  QueryBuilder<DealerEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<DealerEntity, String?, QQueryOperations> emailProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'email');
@@ -5214,6 +5656,18 @@ extension DealerEntityQueryProperty
   QueryBuilder<DealerEntity, bool, QQueryOperations> isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<DealerEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<DealerEntity, DateTime?, QQueryOperations> lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -5287,6 +5741,12 @@ extension DealerEntityQueryProperty
   QueryBuilder<DealerEntity, DateTime, QQueryOperations> updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<DealerEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

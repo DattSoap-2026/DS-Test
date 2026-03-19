@@ -52,136 +52,156 @@ const DutySessionEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'dutyEndTime': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 7,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'dutyEndTime': PropertySchema(
+      id: 8,
       name: r'dutyEndTime',
       type: IsarType.string,
     ),
     r'employeeId': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'employeeId',
       type: IsarType.string,
     ),
     r'endOdometer': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'endOdometer',
       type: IsarType.double,
     ),
     r'gpsAutoOff': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'gpsAutoOff',
       type: IsarType.bool,
     ),
     r'gpsEnabled': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'gpsEnabled',
       type: IsarType.bool,
     ),
     r'id': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isOvertime': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'isOvertime',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 16,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 17,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'loginLatitude': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'loginLatitude',
       type: IsarType.double,
     ),
     r'loginLongitude': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'loginLongitude',
       type: IsarType.double,
     ),
     r'loginTime': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'loginTime',
       type: IsarType.string,
     ),
     r'logoutLatitude': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'logoutLatitude',
       type: IsarType.double,
     ),
     r'logoutLongitude': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'logoutLongitude',
       type: IsarType.double,
     ),
     r'logoutTime': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'logoutTime',
       type: IsarType.string,
     ),
     r'overtimeMinutes': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'overtimeMinutes',
       type: IsarType.long,
     ),
     r'routeName': PropertySchema(
-      id: 22,
+      id: 25,
       name: r'routeName',
       type: IsarType.string,
     ),
     r'startOdometer': PropertySchema(
-      id: 23,
+      id: 26,
       name: r'startOdometer',
       type: IsarType.double,
     ),
     r'status': PropertySchema(
-      id: 24,
+      id: 27,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 25,
+      id: 28,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _DutySessionEntitysyncStatusEnumValueMap,
     ),
     r'totalDistanceKm': PropertySchema(
-      id: 26,
+      id: 29,
       name: r'totalDistanceKm',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 27,
+      id: 30,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'userId': PropertySchema(
-      id: 28,
+      id: 31,
       name: r'userId',
       type: IsarType.string,
     ),
     r'userName': PropertySchema(
-      id: 29,
+      id: 32,
       name: r'userName',
       type: IsarType.string,
     ),
     r'userRole': PropertySchema(
-      id: 30,
+      id: 33,
       name: r'userRole',
       type: IsarType.string,
     ),
     r'vehicleId': PropertySchema(
-      id: 31,
+      id: 34,
       name: r'vehicleId',
       type: IsarType.string,
     ),
     r'vehicleNumber': PropertySchema(
-      id: 32,
+      id: 35,
       name: r'vehicleNumber',
       type: IsarType.string,
+    ),
+    r'version': PropertySchema(
+      id: 36,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _dutySessionEntityEstimateSize,
@@ -272,6 +292,7 @@ int _dutySessionEntityEstimateSize(
   }
   bytesCount += 3 + object.createdAt.length * 3;
   bytesCount += 3 + object.date.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   {
     final value = object.dutyEndTime;
     if (value != null) {
@@ -330,32 +351,36 @@ void _dutySessionEntitySerialize(
   writer.writeString(offsets[4], object.createdAt);
   writer.writeString(offsets[5], object.date);
   writer.writeDateTime(offsets[6], object.deletedAt);
-  writer.writeString(offsets[7], object.dutyEndTime);
-  writer.writeString(offsets[8], object.employeeId);
-  writer.writeDouble(offsets[9], object.endOdometer);
-  writer.writeBool(offsets[10], object.gpsAutoOff);
-  writer.writeBool(offsets[11], object.gpsEnabled);
-  writer.writeString(offsets[12], object.id);
-  writer.writeBool(offsets[13], object.isDeleted);
-  writer.writeBool(offsets[14], object.isOvertime);
-  writer.writeDouble(offsets[15], object.loginLatitude);
-  writer.writeDouble(offsets[16], object.loginLongitude);
-  writer.writeString(offsets[17], object.loginTime);
-  writer.writeDouble(offsets[18], object.logoutLatitude);
-  writer.writeDouble(offsets[19], object.logoutLongitude);
-  writer.writeString(offsets[20], object.logoutTime);
-  writer.writeLong(offsets[21], object.overtimeMinutes);
-  writer.writeString(offsets[22], object.routeName);
-  writer.writeDouble(offsets[23], object.startOdometer);
-  writer.writeString(offsets[24], object.status);
-  writer.writeByte(offsets[25], object.syncStatus.index);
-  writer.writeDouble(offsets[26], object.totalDistanceKm);
-  writer.writeDateTime(offsets[27], object.updatedAt);
-  writer.writeString(offsets[28], object.userId);
-  writer.writeString(offsets[29], object.userName);
-  writer.writeString(offsets[30], object.userRole);
-  writer.writeString(offsets[31], object.vehicleId);
-  writer.writeString(offsets[32], object.vehicleNumber);
+  writer.writeString(offsets[7], object.deviceId);
+  writer.writeString(offsets[8], object.dutyEndTime);
+  writer.writeString(offsets[9], object.employeeId);
+  writer.writeDouble(offsets[10], object.endOdometer);
+  writer.writeBool(offsets[11], object.gpsAutoOff);
+  writer.writeBool(offsets[12], object.gpsEnabled);
+  writer.writeString(offsets[13], object.id);
+  writer.writeBool(offsets[14], object.isDeleted);
+  writer.writeBool(offsets[15], object.isOvertime);
+  writer.writeBool(offsets[16], object.isSynced);
+  writer.writeDateTime(offsets[17], object.lastSynced);
+  writer.writeDouble(offsets[18], object.loginLatitude);
+  writer.writeDouble(offsets[19], object.loginLongitude);
+  writer.writeString(offsets[20], object.loginTime);
+  writer.writeDouble(offsets[21], object.logoutLatitude);
+  writer.writeDouble(offsets[22], object.logoutLongitude);
+  writer.writeString(offsets[23], object.logoutTime);
+  writer.writeLong(offsets[24], object.overtimeMinutes);
+  writer.writeString(offsets[25], object.routeName);
+  writer.writeDouble(offsets[26], object.startOdometer);
+  writer.writeString(offsets[27], object.status);
+  writer.writeByte(offsets[28], object.syncStatus.index);
+  writer.writeDouble(offsets[29], object.totalDistanceKm);
+  writer.writeDateTime(offsets[30], object.updatedAt);
+  writer.writeString(offsets[31], object.userId);
+  writer.writeString(offsets[32], object.userName);
+  writer.writeString(offsets[33], object.userRole);
+  writer.writeString(offsets[34], object.vehicleId);
+  writer.writeString(offsets[35], object.vehicleNumber);
+  writer.writeLong(offsets[36], object.version);
 }
 
 DutySessionEntity _dutySessionEntityDeserialize(
@@ -372,34 +397,38 @@ DutySessionEntity _dutySessionEntityDeserialize(
   object.createdAt = reader.readString(offsets[4]);
   object.date = reader.readString(offsets[5]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[6]);
-  object.dutyEndTime = reader.readStringOrNull(offsets[7]);
-  object.employeeId = reader.readStringOrNull(offsets[8]);
-  object.endOdometer = reader.readDoubleOrNull(offsets[9]);
-  object.gpsAutoOff = reader.readBoolOrNull(offsets[10]);
-  object.gpsEnabled = reader.readBool(offsets[11]);
-  object.id = reader.readString(offsets[12]);
-  object.isDeleted = reader.readBool(offsets[13]);
-  object.isOvertime = reader.readBoolOrNull(offsets[14]);
-  object.loginLatitude = reader.readDouble(offsets[15]);
-  object.loginLongitude = reader.readDouble(offsets[16]);
-  object.loginTime = reader.readString(offsets[17]);
-  object.logoutLatitude = reader.readDoubleOrNull(offsets[18]);
-  object.logoutLongitude = reader.readDoubleOrNull(offsets[19]);
-  object.logoutTime = reader.readStringOrNull(offsets[20]);
-  object.overtimeMinutes = reader.readLongOrNull(offsets[21]);
-  object.routeName = reader.readStringOrNull(offsets[22]);
-  object.startOdometer = reader.readDoubleOrNull(offsets[23]);
-  object.status = reader.readString(offsets[24]);
+  object.deviceId = reader.readString(offsets[7]);
+  object.dutyEndTime = reader.readStringOrNull(offsets[8]);
+  object.employeeId = reader.readStringOrNull(offsets[9]);
+  object.endOdometer = reader.readDoubleOrNull(offsets[10]);
+  object.gpsAutoOff = reader.readBoolOrNull(offsets[11]);
+  object.gpsEnabled = reader.readBool(offsets[12]);
+  object.id = reader.readString(offsets[13]);
+  object.isDeleted = reader.readBool(offsets[14]);
+  object.isOvertime = reader.readBoolOrNull(offsets[15]);
+  object.isSynced = reader.readBool(offsets[16]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[17]);
+  object.loginLatitude = reader.readDouble(offsets[18]);
+  object.loginLongitude = reader.readDouble(offsets[19]);
+  object.loginTime = reader.readString(offsets[20]);
+  object.logoutLatitude = reader.readDoubleOrNull(offsets[21]);
+  object.logoutLongitude = reader.readDoubleOrNull(offsets[22]);
+  object.logoutTime = reader.readStringOrNull(offsets[23]);
+  object.overtimeMinutes = reader.readLongOrNull(offsets[24]);
+  object.routeName = reader.readStringOrNull(offsets[25]);
+  object.startOdometer = reader.readDoubleOrNull(offsets[26]);
+  object.status = reader.readString(offsets[27]);
   object.syncStatus = _DutySessionEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[25])] ??
+          reader.readByteOrNull(offsets[28])] ??
       SyncStatus.pending;
-  object.totalDistanceKm = reader.readDoubleOrNull(offsets[26]);
-  object.updatedAt = reader.readDateTime(offsets[27]);
-  object.userId = reader.readString(offsets[28]);
-  object.userName = reader.readString(offsets[29]);
-  object.userRole = reader.readString(offsets[30]);
-  object.vehicleId = reader.readStringOrNull(offsets[31]);
-  object.vehicleNumber = reader.readStringOrNull(offsets[32]);
+  object.totalDistanceKm = reader.readDoubleOrNull(offsets[29]);
+  object.updatedAt = reader.readDateTime(offsets[30]);
+  object.userId = reader.readString(offsets[31]);
+  object.userName = reader.readString(offsets[32]);
+  object.userRole = reader.readString(offsets[33]);
+  object.vehicleId = reader.readStringOrNull(offsets[34]);
+  object.vehicleNumber = reader.readStringOrNull(offsets[35]);
+  object.version = reader.readLong(offsets[36]);
   return object;
 }
 
@@ -425,59 +454,67 @@ P _dutySessionEntityDeserializeProp<P>(
     case 6:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readBoolOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 11:
-      return (reader.readBool(offset)) as P;
-    case 12:
-      return (reader.readString(offset)) as P;
-    case 13:
-      return (reader.readBool(offset)) as P;
-    case 14:
       return (reader.readBoolOrNull(offset)) as P;
+    case 12:
+      return (reader.readBool(offset)) as P;
+    case 13:
+      return (reader.readString(offset)) as P;
+    case 14:
+      return (reader.readBool(offset)) as P;
     case 15:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readBoolOrNull(offset)) as P;
     case 16:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 17:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 18:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 19:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 20:
-      return (reader.readStringOrNull(offset)) as P;
-    case 21:
-      return (reader.readLongOrNull(offset)) as P;
-    case 22:
-      return (reader.readStringOrNull(offset)) as P;
-    case 23:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 24:
       return (reader.readString(offset)) as P;
+    case 21:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 22:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 23:
+      return (reader.readStringOrNull(offset)) as P;
+    case 24:
+      return (reader.readLongOrNull(offset)) as P;
     case 25:
-      return (_DutySessionEntitysyncStatusValueEnumMap[
-              reader.readByteOrNull(offset)] ??
-          SyncStatus.pending) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 26:
       return (reader.readDoubleOrNull(offset)) as P;
     case 27:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 28:
-      return (reader.readString(offset)) as P;
+      return (_DutySessionEntitysyncStatusValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          SyncStatus.pending) as P;
     case 29:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 30:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 31:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 32:
+      return (reader.readString(offset)) as P;
+    case 33:
+      return (reader.readString(offset)) as P;
+    case 34:
       return (reader.readStringOrNull(offset)) as P;
+    case 35:
+      return (reader.readStringOrNull(offset)) as P;
+    case 36:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1717,6 +1754,142 @@ extension DutySessionEntityQueryFilter
   }
 
   QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
       dutyEndTimeIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2321,6 +2494,16 @@ extension DutySessionEntityQueryFilter
   }
 
   QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2368,6 +2551,80 @@ extension DutySessionEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -4325,6 +4582,62 @@ extension DutySessionEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension DutySessionEntityQueryObject
@@ -4416,6 +4729,20 @@ extension DutySessionEntityQuerySortBy
       sortByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -4527,6 +4854,34 @@ extension DutySessionEntityQuerySortBy
       sortByIsOvertimeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isOvertime', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -4781,6 +5136,20 @@ extension DutySessionEntityQuerySortBy
       return query.addSortBy(r'vehicleNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension DutySessionEntityQuerySortThenBy
@@ -4866,6 +5235,20 @@ extension DutySessionEntityQuerySortThenBy
       thenByDeletedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
     });
   }
 
@@ -4981,6 +5364,20 @@ extension DutySessionEntityQuerySortThenBy
   }
 
   QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -4991,6 +5388,20 @@ extension DutySessionEntityQuerySortThenBy
       thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -5245,6 +5656,20 @@ extension DutySessionEntityQuerySortThenBy
       return query.addSortBy(r'vehicleNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension DutySessionEntityQueryWhereDistinct
@@ -5296,6 +5721,13 @@ extension DutySessionEntityQueryWhereDistinct
       distinctByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deletedAt');
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
     });
   }
 
@@ -5352,6 +5784,20 @@ extension DutySessionEntityQueryWhereDistinct
       distinctByIsOvertime() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isOvertime');
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -5481,6 +5927,13 @@ extension DutySessionEntityQueryWhereDistinct
           caseSensitive: caseSensitive);
     });
   }
+
+  QueryBuilder<DutySessionEntity, DutySessionEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension DutySessionEntityQueryProperty
@@ -5539,6 +5992,12 @@ extension DutySessionEntityQueryProperty
     });
   }
 
+  QueryBuilder<DutySessionEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<DutySessionEntity, String?, QQueryOperations>
       dutyEndTimeProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -5589,6 +6048,19 @@ extension DutySessionEntityQueryProperty
       isOvertimeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isOvertime');
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -5711,6 +6183,12 @@ extension DutySessionEntityQueryProperty
       vehicleNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'vehicleNumber');
+    });
+  }
+
+  QueryBuilder<DutySessionEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

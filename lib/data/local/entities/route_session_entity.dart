@@ -1,6 +1,8 @@
 import 'package:isar/isar.dart';
-import '../base_entity.dart';
+
 import '../../../services/visit_service.dart';
+import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'route_session_entity.g.dart';
 
@@ -20,11 +22,10 @@ class RouteSessionEntity extends BaseEntity {
   late String date;
 
   late String startTime;
-
   String? endTime;
 
   @Index()
-  late String status; // 'active', 'completed'
+  late String status;
 
   late double totalDistance;
   late int plannedStops;
@@ -32,10 +33,38 @@ class RouteSessionEntity extends BaseEntity {
   late int skippedStops;
   late double totalSales;
   late double totalCollection;
-
   late String createdAt;
 
-  // Convert to domain model
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'salesmanId': salesmanId,
+      'salesmanName': salesmanName,
+      'routeId': routeId,
+      'routeName': routeName,
+      'date': date,
+      'startTime': startTime,
+      'endTime': endTime,
+      'status': status,
+      'totalDistance': totalDistance,
+      'plannedStops': plannedStops,
+      'completedStops': completedStops,
+      'skippedStops': skippedStops,
+      'totalSales': totalSales,
+      'totalCollection': totalCollection,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
+    };
+  }
+
   RouteSession toDomain() {
     return RouteSession(
       id: id,
@@ -58,7 +87,34 @@ class RouteSessionEntity extends BaseEntity {
     );
   }
 
-  // Create from domain model
+  static RouteSessionEntity fromJson(Map<String, dynamic> json) {
+    return RouteSessionEntity()
+      ..id = parseString(json['id'])
+      ..salesmanId = parseString(json['salesmanId'])
+      ..salesmanName = parseString(json['salesmanName'])
+      ..routeId = parseString(json['routeId'])
+      ..routeName = parseString(json['routeName'])
+      ..date = parseString(json['date'])
+      ..startTime = parseString(json['startTime'])
+      ..endTime = parseString(json['endTime'], fallback: '')
+      ..status = parseString(json['status'], fallback: 'active')
+      ..totalDistance = parseDouble(json['totalDistance'])
+      ..plannedStops = parseInt(json['plannedStops'])
+      ..completedStops = parseInt(json['completedStops'])
+      ..skippedStops = parseInt(json['skippedStops'])
+      ..totalSales = parseDouble(json['totalSales'])
+      ..totalCollection = parseDouble(json['totalCollection'])
+      ..createdAt = parseString(json['createdAt'])
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
+  }
+
   static RouteSessionEntity fromDomain(RouteSession session) {
     return RouteSessionEntity()
       ..id = session.id
@@ -77,10 +133,8 @@ class RouteSessionEntity extends BaseEntity {
       ..totalSales = session.totalSales
       ..totalCollection = session.totalCollection
       ..createdAt = session.createdAt
-      ..updatedAt = session.updatedAt.isNotEmpty
-          ? DateTime.parse(session.updatedAt)
-          : DateTime.now()
-      ..syncStatus = SyncStatus.synced
+      ..updatedAt = parseDate(session.updatedAt)
+      ..syncStatus = SyncStatus.pending
       ..isDeleted = false;
   }
 }

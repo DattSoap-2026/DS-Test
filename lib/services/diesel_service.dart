@@ -2,12 +2,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:isar/isar.dart';
 import 'dart:async';
+import 'dart:convert';
 
+import '../core/network/connectivity_service.dart';
+import '../core/sync/collection_registry.dart';
+import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
+import '../core/utils/device_id_service.dart';
 import 'offline_first_service.dart';
 import 'database_service.dart';
 import 'outbox_codec.dart';
+import '../data/local/entities/config_cache_entity.dart';
 import '../data/local/entities/sync_queue_entity.dart';
 import '../core/firebase/firebase_config.dart';
+import '../data/local/entities/fuel_purchase_entity.dart';
+import '../data/repositories/fleet_repository.dart';
 import '../modules/accounting/posting_service.dart';
 import 'mixins/safe_voucher_posting_mixin.dart';
 
@@ -154,12 +163,14 @@ class FuelPurchase {
 class DieselService extends OfflineFirstService with SafeVoucherPostingMixin {
   final DatabaseService _dbService;
   late final PostingService _postingService;
+  late final FleetRepository _fleetRepository;
 
   @override
   PostingService? get postingService => _postingService;
 
   DieselService(super.firebase) : _dbService = DatabaseService() {
     _postingService = PostingService(firebaseServices);
+    _fleetRepository = FleetRepository(_dbService);
   }
 
   @override
@@ -485,63 +496,7 @@ class DieselService extends OfflineFirstService with SafeVoucherPostingMixin {
       ..createdBy = userId
       ..createdAt = DateTime.now().toIso8601String()
       ..updatedAt = DateTime.now();
-
-    // 3. Local Transaction
-    await _dbService.db.writeTxn(() async {
-      // Save Log
-      await _dbService.dieselLogs.put(entity);
-
-      // Update Vehicle
-      final vehicle = await _dbService.vehicles
-          .filter()
-          .idEqualTo(vehicleId)
-          .findFirst();
-      if (vehicle != null) {
-        vehicle.currentOdometer = odometerReading;
-        vehicle.totalDieselCost += totalCost;
-        vehicle.totalFuelConsumed += liters; // Correctly using Liters for avg
-
-        // Recalculate Distance (Total)
-        // If cycle calculated, add it? Or trust odometer?
-        // Trust odometer diff if reliable, or just rely on totalDistance field logic
-        if (tankFull && cycleDistance > 0) {
-          vehicle.totalDistance += cycleDistance;
-        } else if (!tankFull) {
-          // Approximate distance? Or wait for full tank?
-          // Usually we only update total confirmed distance on Full Tank cycles
-          // Or we update Odometer always.
-          // Let's stick to updating global stats carefully.
-        }
-
-        vehicle.lastDieselFill = fillDate.toIso8601String();
-        await _dbService.vehicles.put(vehicle);
-      }
-    });
-
-    // 4. Sync
-    final json = {
-      'id': entity.id,
-      'vehicleId': vehicleId,
-      'vehicleNumber': entity.vehicleNumber,
-      'driverName': entity.driverName,
-      'fillDate': logData['fillDate'],
-      'liters': liters,
-      'rate': rate,
-      'totalCost': totalCost,
-      'odometerReading': odometerReading,
-      'tankFull': tankFull,
-      'journeyFrom': entity.journeyFrom,
-      'journeyTo': entity.journeyTo,
-      if (cycleDistance > 0) 'cycleDistance': cycleDistance,
-      if (cycleFuelUsed > 0) 'cycleFuelUsed': cycleFuelUsed,
-      if (cycleEfficiency > 0) 'cycleEfficiency': cycleEfficiency,
-      'status': status,
-      'createdBy': userId,
-      'createdAt': entity.createdAt,
-      'updatedAt': entity.updatedAt.toIso8601String(),
-    };
-
-    await syncToFirebase('add', json, collectionName: dieselLogsCollection);
+    await _fleetRepository.saveDieselLog(entity);
   }
 
   // Stock (Stubbed or Online)
@@ -597,20 +552,21 @@ class DieselService extends OfflineFirstService with SafeVoucherPostingMixin {
 
     try {
       final totalCost = quantity * rate;
-      final nowIso = DateTime.now().toIso8601String();
       final purchaseId = generateId();
+      final purchase = FuelPurchaseEntity()
+        ..id = purchaseId
+        ..vehicleId = 'fuel_stock'
+        ..vehicleNumber = 'FUEL_STOCK'
+        ..driverName = supplierName
+        ..liters = quantity
+        ..rate = rate
+        ..totalCost = totalCost
+        ..stationName = supplierName
+        ..purchaseDate = DateTime.tryParse(purchaseDate) ?? DateTime.now()
+        ..createdBy = userId
+        ..createdAt = DateTime.now();
 
-      await syncToFirebase('set', {
-        'id': purchaseId,
-        'quantity': quantity,
-        'rate': rate,
-        'totalAmount': totalCost,
-        'supplierName': supplierName,
-        'purchaseDate': purchaseDate,
-        'addedBy': userId,
-        'createdAt': nowIso,
-        'updatedAt': nowIso,
-      }, collectionName: fuelPurchasesCollection).timeout(
+      await _fleetRepository.saveFuelPurchase(purchase).timeout(
         const Duration(seconds: 15),
       );
 
@@ -671,38 +627,21 @@ class DieselService extends OfflineFirstService with SafeVoucherPostingMixin {
   }
 
   Future<List<FuelPurchase>> getFuelPurchases() async {
-    try {
-      final firestore = db;
-      if (firestore == null) return [];
-
-      final snapshot = await firestore
-          .collection(fuelPurchasesCollection)
-          .orderBy('purchaseDate', descending: true)
-          .get(const GetOptions(source: Source.serverAndCache))
-          .timeout(const Duration(seconds: 3));
-
-      return snapshot.docs.map((doc) {
-        final data = Map<String, dynamic>.from(doc.data());
-        data['id'] = doc.id;
-        return FuelPurchase.fromJson(data);
-      }).toList();
-    } catch (_) {
-      try {
-        final firestore = db;
-        if (firestore != null) {
-          final snapshot = await firestore
-              .collection(fuelPurchasesCollection)
-              .orderBy('purchaseDate', descending: true)
-              .get(const GetOptions(source: Source.cache));
-          return snapshot.docs.map((doc) {
-            final data = Map<String, dynamic>.from(doc.data());
-            data['id'] = doc.id;
-            return FuelPurchase.fromJson(data);
-          }).toList();
-        }
-      } catch (_) {}
-      return [];
-    }
+    final purchases = await _fleetRepository.getAllFuelPurchases();
+    return purchases
+        .map((purchase) => FuelPurchase.fromJson({
+              'id': purchase.id,
+              'quantity': purchase.liters,
+              'rate': purchase.rate,
+              'totalAmount': purchase.totalCost,
+              'supplierName': purchase.stationName ?? purchase.driverName ?? '',
+              'purchaseDate':
+                  purchase.purchaseDate?.toIso8601String() ?? '',
+              'addedBy': purchase.createdBy ?? '',
+              'createdAt':
+                  purchase.createdAt?.toIso8601String() ?? '',
+            }))
+        .toList(growable: false);
   }
 
   Future<double> getLatestDieselRate() async {
@@ -734,17 +673,43 @@ class DieselService extends OfflineFirstService with SafeVoucherPostingMixin {
       throw Exception('Stock value cannot be negative');
     }
 
-    final firestore = db;
-    if (firestore == null) {
-      throw Exception('Cannot reset stock while offline');
-    }
-
     try {
-      await firestore.doc(fuelStockDoc).set({
+      final now = DateTime.now();
+      final documentId = 'fuel_stock';
+      final configKey = '${CollectionRegistry.publicSettings}/$documentId';
+      final existing = await _dbService.configCache
+          .filter()
+          .configKeyEqualTo(configKey)
+          .findFirst();
+      final payload = <String, dynamic>{
         'totalLiters': newStockValue,
-        'lastUpdated': DateTime.now().toIso8601String(),
+        'lastUpdated': now.toIso8601String(),
         'updatedBy': FirebaseAuth.instance.currentUser?.uid ?? 'unknown',
-      }, SetOptions(merge: true));
+      };
+      final configEntry = existing ?? ConfigCacheEntity();
+      configEntry
+        ..configKey = configKey
+        ..collectionName = CollectionRegistry.publicSettings
+        ..documentId = documentId
+        ..payloadJson = jsonEncode(payload)
+        ..version = existing == null ? 1 : existing.version + 1
+        ..lastModified = now
+        ..lastSynced = null
+        ..isSynced = false
+        ..deviceId = await DeviceIdService.instance.getDeviceId();
+
+      await _dbService.db.writeTxn(() async {
+        await _dbService.configCache.put(configEntry);
+      });
+      await SyncQueueService.instance.addToQueue(
+        collectionName: CollectionRegistry.publicSettings,
+        documentId: documentId,
+        operation: 'update',
+        payload: payload,
+      );
+      if (ConnectivityService.instance.isOnline) {
+        await SyncService.instance.syncAllPending();
+      }
     } catch (e) {
       throw handleError(e, 'resetFuelStock');
     }

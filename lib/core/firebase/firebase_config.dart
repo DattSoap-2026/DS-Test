@@ -45,12 +45,6 @@ class FirebaseServices {
       _db = FirebaseFirestore.instance;
       _storage = FirebaseStorage.instance;
 
-      if (kIsWeb) {
-        // await _db?.enablePersistence();
-      } else {
-        _db?.settings = const Settings(persistenceEnabled: false);
-      }
-
       debugPrint('Firebase Initialized Successfully with Real SDK');
       _initialized = true;
     } catch (e) {
@@ -76,5 +70,4 @@ class FirebaseServices {
 }
 
 final firebaseServices = FirebaseServices();
-
 

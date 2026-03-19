@@ -16,4 +16,6 @@ class ChatMessage {
 
   String? response;
   DateTime? responseTimestamp;
+  DateTime lastModified = DateTime.now();
+  int version = 1;
 }

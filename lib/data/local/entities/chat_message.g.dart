@@ -27,30 +27,40 @@ const ChatMessageSchema = CollectionSchema(
       name: r'isUser',
       type: IsarType.bool,
     ),
-    r'message': PropertySchema(
+    r'lastModified': PropertySchema(
       id: 2,
+      name: r'lastModified',
+      type: IsarType.dateTime,
+    ),
+    r'message': PropertySchema(
+      id: 3,
       name: r'message',
       type: IsarType.string,
     ),
     r'response': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'response',
       type: IsarType.string,
     ),
     r'responseTimestamp': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'responseTimestamp',
       type: IsarType.dateTime,
     ),
     r'sender': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'sender',
       type: IsarType.string,
     ),
     r'timestamp': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'timestamp',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 8,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _chatMessageEstimateSize,
@@ -107,11 +117,13 @@ void _chatMessageSerialize(
 ) {
   writer.writeString(offsets[0], object.id);
   writer.writeBool(offsets[1], object.isUser);
-  writer.writeString(offsets[2], object.message);
-  writer.writeString(offsets[3], object.response);
-  writer.writeDateTime(offsets[4], object.responseTimestamp);
-  writer.writeString(offsets[5], object.sender);
-  writer.writeDateTime(offsets[6], object.timestamp);
+  writer.writeDateTime(offsets[2], object.lastModified);
+  writer.writeString(offsets[3], object.message);
+  writer.writeString(offsets[4], object.response);
+  writer.writeDateTime(offsets[5], object.responseTimestamp);
+  writer.writeString(offsets[6], object.sender);
+  writer.writeDateTime(offsets[7], object.timestamp);
+  writer.writeLong(offsets[8], object.version);
 }
 
 ChatMessage _chatMessageDeserialize(
@@ -124,11 +136,13 @@ ChatMessage _chatMessageDeserialize(
   object.id = reader.readString(offsets[0]);
   object.isUser = reader.readBool(offsets[1]);
   object.isarId = id;
-  object.message = reader.readString(offsets[2]);
-  object.response = reader.readStringOrNull(offsets[3]);
-  object.responseTimestamp = reader.readDateTimeOrNull(offsets[4]);
-  object.sender = reader.readString(offsets[5]);
-  object.timestamp = reader.readDateTime(offsets[6]);
+  object.lastModified = reader.readDateTime(offsets[2]);
+  object.message = reader.readString(offsets[3]);
+  object.response = reader.readStringOrNull(offsets[4]);
+  object.responseTimestamp = reader.readDateTimeOrNull(offsets[5]);
+  object.sender = reader.readString(offsets[6]);
+  object.timestamp = reader.readDateTime(offsets[7]);
+  object.version = reader.readLong(offsets[8]);
   return object;
 }
 
@@ -144,15 +158,19 @@ P _chatMessageDeserializeProp<P>(
     case 1:
       return (reader.readBool(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
-    case 3:
-      return (reader.readStringOrNull(offset)) as P;
-    case 4:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 5:
-      return (reader.readString(offset)) as P;
-    case 6:
       return (reader.readDateTime(offset)) as P;
+    case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readStringOrNull(offset)) as P;
+    case 5:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 6:
+      return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readDateTime(offset)) as P;
+    case 8:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -539,6 +557,62 @@ extension ChatMessageQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      lastModifiedEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      lastModifiedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      lastModifiedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastModified',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      lastModifiedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastModified',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1097,6 +1171,60 @@ extension ChatMessageQueryFilter
       ));
     });
   }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition> versionEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition> versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterFilterCondition> versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension ChatMessageQueryObject
@@ -1128,6 +1256,19 @@ extension ChatMessageQuerySortBy
   QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByIsUserDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isUser', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy>
+      sortByLastModifiedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.desc);
     });
   }
 
@@ -1192,6 +1333,18 @@ extension ChatMessageQuerySortBy
       return query.addSortBy(r'timestamp', Sort.desc);
     });
   }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension ChatMessageQuerySortThenBy
@@ -1229,6 +1382,19 @@ extension ChatMessageQuerySortThenBy
   QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy>
+      thenByLastModifiedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModified', Sort.desc);
     });
   }
 
@@ -1293,6 +1459,18 @@ extension ChatMessageQuerySortThenBy
       return query.addSortBy(r'timestamp', Sort.desc);
     });
   }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QAfterSortBy> thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension ChatMessageQueryWhereDistinct
@@ -1307,6 +1485,12 @@ extension ChatMessageQueryWhereDistinct
   QueryBuilder<ChatMessage, ChatMessage, QDistinct> distinctByIsUser() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isUser');
+    });
+  }
+
+  QueryBuilder<ChatMessage, ChatMessage, QDistinct> distinctByLastModified() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastModified');
     });
   }
 
@@ -1343,6 +1527,12 @@ extension ChatMessageQueryWhereDistinct
       return query.addDistinctBy(r'timestamp');
     });
   }
+
+  QueryBuilder<ChatMessage, ChatMessage, QDistinct> distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension ChatMessageQueryProperty
@@ -1362,6 +1552,12 @@ extension ChatMessageQueryProperty
   QueryBuilder<ChatMessage, bool, QQueryOperations> isUserProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isUser');
+    });
+  }
+
+  QueryBuilder<ChatMessage, DateTime, QQueryOperations> lastModifiedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastModified');
     });
   }
 
@@ -1393,6 +1589,12 @@ extension ChatMessageQueryProperty
   QueryBuilder<ChatMessage, DateTime, QQueryOperations> timestampProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'timestamp');
+    });
+  }
+
+  QueryBuilder<ChatMessage, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

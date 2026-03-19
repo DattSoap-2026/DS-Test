@@ -43,92 +43,112 @@ const MaintenanceLogEntitySchema = CollectionSchema(
       name: r'description',
       type: IsarType.string,
     ),
-    r'id': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 5,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'id': PropertySchema(
+      id: 6,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 8,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
     r'items': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'items',
       type: IsarType.objectList,
       target: r'MaintenanceItemEntity',
     ),
     r'labourCost': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'labourCost',
       type: IsarType.double,
     ),
+    r'lastSynced': PropertySchema(
+      id: 11,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'mechanicName': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'mechanicName',
       type: IsarType.string,
     ),
     r'nextServiceDate': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'nextServiceDate',
       type: IsarType.dateTime,
     ),
     r'odometerReading': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'odometerReading',
       type: IsarType.double,
     ),
     r'partsCost': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'partsCost',
       type: IsarType.double,
     ),
     r'paymentMode': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'paymentMode',
       type: IsarType.string,
     ),
     r'serviceDate': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'serviceDate',
       type: IsarType.dateTime,
     ),
     r'syncStatus': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _MaintenanceLogEntitysyncStatusEnumValueMap,
     ),
     r'totalCost': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'totalCost',
       type: IsarType.double,
     ),
     r'type': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'type',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'vehicleId': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'vehicleId',
       type: IsarType.string,
     ),
     r'vehicleNumber': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'vehicleNumber',
       type: IsarType.string,
     ),
     r'vendor': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'vendor',
       type: IsarType.string,
+    ),
+    r'version': PropertySchema(
+      id: 25,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _maintenanceLogEntityEstimateSize,
@@ -198,6 +218,7 @@ int _maintenanceLogEntityEstimateSize(
   }
   bytesCount += 3 + object.createdAt.length * 3;
   bytesCount += 3 + object.description.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.id.length * 3;
   {
     final list = object.items;
@@ -243,28 +264,32 @@ void _maintenanceLogEntitySerialize(
   writer.writeString(offsets[2], object.createdAt);
   writer.writeDateTime(offsets[3], object.deletedAt);
   writer.writeString(offsets[4], object.description);
-  writer.writeString(offsets[5], object.id);
-  writer.writeBool(offsets[6], object.isDeleted);
+  writer.writeString(offsets[5], object.deviceId);
+  writer.writeString(offsets[6], object.id);
+  writer.writeBool(offsets[7], object.isDeleted);
+  writer.writeBool(offsets[8], object.isSynced);
   writer.writeObjectList<MaintenanceItemEntity>(
-    offsets[7],
+    offsets[9],
     allOffsets,
     MaintenanceItemEntitySchema.serialize,
     object.items,
   );
-  writer.writeDouble(offsets[8], object.labourCost);
-  writer.writeString(offsets[9], object.mechanicName);
-  writer.writeDateTime(offsets[10], object.nextServiceDate);
-  writer.writeDouble(offsets[11], object.odometerReading);
-  writer.writeDouble(offsets[12], object.partsCost);
-  writer.writeString(offsets[13], object.paymentMode);
-  writer.writeDateTime(offsets[14], object.serviceDate);
-  writer.writeByte(offsets[15], object.syncStatus.index);
-  writer.writeDouble(offsets[16], object.totalCost);
-  writer.writeString(offsets[17], object.type);
-  writer.writeDateTime(offsets[18], object.updatedAt);
-  writer.writeString(offsets[19], object.vehicleId);
-  writer.writeString(offsets[20], object.vehicleNumber);
-  writer.writeString(offsets[21], object.vendor);
+  writer.writeDouble(offsets[10], object.labourCost);
+  writer.writeDateTime(offsets[11], object.lastSynced);
+  writer.writeString(offsets[12], object.mechanicName);
+  writer.writeDateTime(offsets[13], object.nextServiceDate);
+  writer.writeDouble(offsets[14], object.odometerReading);
+  writer.writeDouble(offsets[15], object.partsCost);
+  writer.writeString(offsets[16], object.paymentMode);
+  writer.writeDateTime(offsets[17], object.serviceDate);
+  writer.writeByte(offsets[18], object.syncStatus.index);
+  writer.writeDouble(offsets[19], object.totalCost);
+  writer.writeString(offsets[20], object.type);
+  writer.writeDateTime(offsets[21], object.updatedAt);
+  writer.writeString(offsets[22], object.vehicleId);
+  writer.writeString(offsets[23], object.vehicleNumber);
+  writer.writeString(offsets[24], object.vendor);
+  writer.writeLong(offsets[25], object.version);
 }
 
 MaintenanceLogEntity _maintenanceLogEntityDeserialize(
@@ -279,30 +304,34 @@ MaintenanceLogEntity _maintenanceLogEntityDeserialize(
   object.createdAt = reader.readString(offsets[2]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[3]);
   object.description = reader.readString(offsets[4]);
-  object.id = reader.readString(offsets[5]);
-  object.isDeleted = reader.readBool(offsets[6]);
+  object.deviceId = reader.readString(offsets[5]);
+  object.id = reader.readString(offsets[6]);
+  object.isDeleted = reader.readBool(offsets[7]);
+  object.isSynced = reader.readBool(offsets[8]);
   object.items = reader.readObjectList<MaintenanceItemEntity>(
-    offsets[7],
+    offsets[9],
     MaintenanceItemEntitySchema.deserialize,
     allOffsets,
     MaintenanceItemEntity(),
   );
-  object.labourCost = reader.readDoubleOrNull(offsets[8]);
-  object.mechanicName = reader.readStringOrNull(offsets[9]);
-  object.nextServiceDate = reader.readDateTimeOrNull(offsets[10]);
-  object.odometerReading = reader.readDoubleOrNull(offsets[11]);
-  object.partsCost = reader.readDoubleOrNull(offsets[12]);
-  object.paymentMode = reader.readStringOrNull(offsets[13]);
-  object.serviceDate = reader.readDateTime(offsets[14]);
+  object.labourCost = reader.readDoubleOrNull(offsets[10]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[11]);
+  object.mechanicName = reader.readStringOrNull(offsets[12]);
+  object.nextServiceDate = reader.readDateTimeOrNull(offsets[13]);
+  object.odometerReading = reader.readDoubleOrNull(offsets[14]);
+  object.partsCost = reader.readDoubleOrNull(offsets[15]);
+  object.paymentMode = reader.readStringOrNull(offsets[16]);
+  object.serviceDate = reader.readDateTime(offsets[17]);
   object.syncStatus = _MaintenanceLogEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[15])] ??
+          reader.readByteOrNull(offsets[18])] ??
       SyncStatus.pending;
-  object.totalCost = reader.readDouble(offsets[16]);
-  object.type = reader.readString(offsets[17]);
-  object.updatedAt = reader.readDateTime(offsets[18]);
-  object.vehicleId = reader.readString(offsets[19]);
-  object.vehicleNumber = reader.readString(offsets[20]);
-  object.vendor = reader.readString(offsets[21]);
+  object.totalCost = reader.readDouble(offsets[19]);
+  object.type = reader.readString(offsets[20]);
+  object.updatedAt = reader.readDateTime(offsets[21]);
+  object.vehicleId = reader.readString(offsets[22]);
+  object.vehicleNumber = reader.readString(offsets[23]);
+  object.vendor = reader.readString(offsets[24]);
+  object.version = reader.readLong(offsets[25]);
   return object;
 }
 
@@ -326,44 +355,52 @@ P _maintenanceLogEntityDeserializeProp<P>(
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 7:
+      return (reader.readBool(offset)) as P;
+    case 8:
+      return (reader.readBool(offset)) as P;
+    case 9:
       return (reader.readObjectList<MaintenanceItemEntity>(
         offset,
         MaintenanceItemEntitySchema.deserialize,
         allOffsets,
         MaintenanceItemEntity(),
       )) as P;
-    case 8:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 9:
-      return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 11:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 12:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 13:
       return (reader.readStringOrNull(offset)) as P;
+    case 13:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 14:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 15:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 16:
+      return (reader.readStringOrNull(offset)) as P;
+    case 17:
+      return (reader.readDateTime(offset)) as P;
+    case 18:
       return (_MaintenanceLogEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 16:
-      return (reader.readDouble(offset)) as P;
-    case 17:
-      return (reader.readString(offset)) as P;
-    case 18:
-      return (reader.readDateTime(offset)) as P;
     case 19:
-      return (reader.readString(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 20:
       return (reader.readString(offset)) as P;
     case 21:
+      return (reader.readDateTime(offset)) as P;
+    case 22:
       return (reader.readString(offset)) as P;
+    case 23:
+      return (reader.readString(offset)) as P;
+    case 24:
+      return (reader.readString(offset)) as P;
+    case 25:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1372,6 +1409,144 @@ extension MaintenanceLogEntityQueryFilter on QueryBuilder<MaintenanceLogEntity,
   }
 
   QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+          QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+          QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
       QAfterFilterCondition> idEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1514,6 +1689,16 @@ extension MaintenanceLogEntityQueryFilter on QueryBuilder<MaintenanceLogEntity,
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isDeleted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
         value: value,
       ));
     });
@@ -1762,6 +1947,80 @@ extension MaintenanceLogEntityQueryFilter on QueryBuilder<MaintenanceLogEntity,
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -3105,6 +3364,62 @@ extension MaintenanceLogEntityQueryFilter on QueryBuilder<MaintenanceLogEntity,
       ));
     });
   }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity,
+      QAfterFilterCondition> versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension MaintenanceLogEntityQueryObject on QueryBuilder<MaintenanceLogEntity,
@@ -3180,6 +3495,20 @@ extension MaintenanceLogEntityQuerySortBy
   }
 
   QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
       sortById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -3208,6 +3537,20 @@ extension MaintenanceLogEntityQuerySortBy
   }
 
   QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
       sortByLabourCost() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'labourCost', Sort.asc);
@@ -3218,6 +3561,20 @@ extension MaintenanceLogEntityQuerySortBy
       sortByLabourCostDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'labourCost', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3402,6 +3759,20 @@ extension MaintenanceLogEntityQuerySortBy
       return query.addSortBy(r'vendor', Sort.desc);
     });
   }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension MaintenanceLogEntityQuerySortThenBy
@@ -3463,6 +3834,20 @@ extension MaintenanceLogEntityQuerySortThenBy
   }
 
   QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
       thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -3491,6 +3876,20 @@ extension MaintenanceLogEntityQuerySortThenBy
   }
 
   QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -3515,6 +3914,20 @@ extension MaintenanceLogEntityQuerySortThenBy
       thenByLabourCostDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'labourCost', Sort.desc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3699,6 +4112,20 @@ extension MaintenanceLogEntityQuerySortThenBy
       return query.addSortBy(r'vendor', Sort.desc);
     });
   }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension MaintenanceLogEntityQueryWhereDistinct
@@ -3739,6 +4166,13 @@ extension MaintenanceLogEntityQueryWhereDistinct
   }
 
   QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QDistinct>
       distinctById({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'id', caseSensitive: caseSensitive);
@@ -3753,9 +4187,23 @@ extension MaintenanceLogEntityQueryWhereDistinct
   }
 
   QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QDistinct>
       distinctByLabourCost() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'labourCost');
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -3850,6 +4298,13 @@ extension MaintenanceLogEntityQueryWhereDistinct
       return query.addDistinctBy(r'vendor', caseSensitive: caseSensitive);
     });
   }
+
+  QueryBuilder<MaintenanceLogEntity, MaintenanceLogEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension MaintenanceLogEntityQueryProperty on QueryBuilder<
@@ -3895,6 +4350,13 @@ extension MaintenanceLogEntityQueryProperty on QueryBuilder<
     });
   }
 
+  QueryBuilder<MaintenanceLogEntity, String, QQueryOperations>
+      deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<MaintenanceLogEntity, String, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
@@ -3905,6 +4367,13 @@ extension MaintenanceLogEntityQueryProperty on QueryBuilder<
       isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, bool, QQueryOperations>
+      isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
     });
   }
 
@@ -3919,6 +4388,13 @@ extension MaintenanceLogEntityQueryProperty on QueryBuilder<
       labourCostProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'labourCost');
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -4009,6 +4485,12 @@ extension MaintenanceLogEntityQueryProperty on QueryBuilder<
       vendorProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'vendor');
+    });
+  }
+
+  QueryBuilder<MaintenanceLogEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

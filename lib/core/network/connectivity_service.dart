@@ -24,7 +24,7 @@ class ConnectivityService {
   Stream<bool> get stream => _controller.stream.distinct();
 
   /// Starts the connectivity listener.
-  Future<void> initialize() async {
+  Future<void> startListening() async {
     try {
       final current = await _connectivity.checkConnectivity();
       _updateStatus(_mapResults(current));
@@ -41,7 +41,11 @@ class ConnectivityService {
             'Connectivity restored. Triggering automatic sync.',
             time: DateTime.now(),
           );
-          unawaited(SyncService.instance.syncAllPending());
+          unawaited(
+            Future<void>.delayed(const Duration(seconds: 2), () async {
+              await SyncService.instance.syncAllPending();
+            }),
+          );
         }
       });
     } catch (error, stackTrace) {
@@ -53,6 +57,9 @@ class ConnectivityService {
       );
     }
   }
+
+  /// Compatibility alias retained for existing startup code.
+  Future<void> initialize() => startListening();
 
   /// Disposes the connectivity listener.
   Future<void> dispose() async {

@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import '../base_entity.dart';
+import '../entity_json_utils.dart';
 
 part 'vehicle_entity.g.dart';
 
@@ -44,7 +45,7 @@ class VehicleEntity extends BaseEntity {
   String? permitNumber;
   String? rcNumber;
 
-  Map<String, dynamic> toFirebaseJson() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
@@ -58,17 +59,12 @@ class VehicleEntity extends BaseEntity {
       'totalTyreCost': totalTyreCost,
       'totalFuelConsumed': totalFuelConsumed,
       'costPerKm': costPerKm,
-      if (purchaseDate != null) 'purchaseDate': purchaseDate!.toIso8601String(),
-      if (insuranceStartDate != null)
-        'insuranceStartDate': insuranceStartDate!.toIso8601String(),
-      if (pucExpiryDate != null)
-        'pucExpiryDate': pucExpiryDate!.toIso8601String(),
-      if (insuranceExpiryDate != null)
-        'insuranceExpiryDate': insuranceExpiryDate!.toIso8601String(),
-      if (permitExpiryDate != null)
-        'permitExpiryDate': permitExpiryDate!.toIso8601String(),
-      if (fitnessExpiryDate != null)
-        'fitnessExpiryDate': fitnessExpiryDate!.toIso8601String(),
+      'purchaseDate': purchaseDate?.toIso8601String(),
+      'insuranceStartDate': insuranceStartDate?.toIso8601String(),
+      'pucExpiryDate': pucExpiryDate?.toIso8601String(),
+      'insuranceExpiryDate': insuranceExpiryDate?.toIso8601String(),
+      'permitExpiryDate': permitExpiryDate?.toIso8601String(),
+      'fitnessExpiryDate': fitnessExpiryDate?.toIso8601String(),
       'createdAt': createdAt,
       'lastDieselFill': lastDieselFill,
       'capacity': capacity,
@@ -84,68 +80,78 @@ class VehicleEntity extends BaseEntity {
       'permitNumber': permitNumber,
       'rcNumber': rcNumber,
       'updatedAt': updatedAt.toIso8601String(),
+      'lastModified': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'syncStatus': syncStatus.name,
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
+      'lastSynced': lastSynced?.toIso8601String(),
+      'version': version,
+      'deviceId': deviceId,
     };
   }
 
-  static VehicleEntity fromFirebaseJson(Map<String, dynamic> json) {
-    // Generate ID if missing (for new vehicles)
-    final id =
-        json['id'] as String? ??
-        'v_${DateTime.now().millisecondsSinceEpoch}_${(json['number'] ?? '').toString().hashCode.abs()}';
+  Map<String, dynamic> toFirebaseJson() {
+    return toJson();
+  }
 
+  static VehicleEntity fromJson(Map<String, dynamic> json) {
     return VehicleEntity()
-      ..id = id
-      ..name = json['name'] as String? ?? ''
-      ..number = json['number'] as String? ?? ''
-      ..type = json['type'] as String? ?? 'Truck'
-      ..status = json['status'] as String? ?? 'active'
-      ..currentOdometer = (json['currentOdometer'] as num?)?.toDouble() ?? 0
-      ..totalDistance = (json['totalDistance'] as num?)?.toDouble() ?? 0
-      ..totalMaintenanceCost =
-          (json['totalMaintenanceCost'] as num?)?.toDouble() ?? 0
-      ..totalDieselCost = (json['totalDieselCost'] as num?)?.toDouble() ?? 0
-      ..totalTyreCost = (json['totalTyreCost'] as num?)?.toDouble() ?? 0
-      ..totalFuelConsumed = (json['totalFuelConsumed'] as num?)?.toDouble() ?? 0
-      ..costPerKm = (json['costPerKm'] as num?)?.toDouble() ?? 0
-      ..purchaseDate = json['purchaseDate'] != null
-          ? DateTime.tryParse(json['purchaseDate'] as String)
-          : null
-      ..insuranceStartDate = json['insuranceStartDate'] != null
-          ? DateTime.tryParse(json['insuranceStartDate'] as String)
-          : null
-      ..pucExpiryDate = json['pucExpiryDate'] != null
-          ? DateTime.tryParse(json['pucExpiryDate'] as String)
-          : null
-      ..insuranceExpiryDate = json['insuranceExpiryDate'] != null
-          ? DateTime.tryParse(json['insuranceExpiryDate'] as String)
-          : null
-      ..permitExpiryDate = json['permitExpiryDate'] != null
-          ? DateTime.tryParse(json['permitExpiryDate'] as String)
-          : null
-      ..fitnessExpiryDate = json['fitnessExpiryDate'] != null
-          ? DateTime.tryParse(json['fitnessExpiryDate'] as String)
-          : null
-      ..createdAt =
-          json['createdAt'] as String? ?? DateTime.now().toIso8601String()
-      ..lastDieselFill = json['lastDieselFill'] as String?
-      ..capacity = (json['capacity'] as num?)?.toDouble()
-      ..minAverage = (json['minAverage'] as num?)?.toDouble() ?? 0.0
-      ..maxAverage = (json['maxAverage'] as num?)?.toDouble() ?? 0.0
-      ..model = json['model'] as String?
-      ..serialNumber = json['serialNumber'] as String?
-      ..fuelType = json['fuelType'] as String?
-      ..tyreSize = json['tyreSize'] as String?
-      ..insuranceProvider = json['insuranceProvider'] as String?
-      ..policyNumber = json['policyNumber'] as String?
-      ..pucNumber = json['pucNumber'] as String?
-      ..permitNumber = json['permitNumber'] as String?
-      ..rcNumber = json['rcNumber'] as String?
-      ..updatedAt = DateTime.parse(
-        json['updatedAt'] as String? ??
-            json['createdAt'] as String? ??
-            DateTime.now().toIso8601String(),
+      ..id = parseString(json['id'])
+      ..name = parseString(json['name'])
+      ..number = parseString(json['number'])
+      ..type = parseString(json['type'], fallback: 'Truck')
+      ..status = parseString(json['status'], fallback: 'active')
+      ..currentOdometer = parseDouble(json['currentOdometer'])
+      ..totalDistance = parseDouble(json['totalDistance'])
+      ..totalMaintenanceCost = parseDouble(json['totalMaintenanceCost'])
+      ..totalDieselCost = parseDouble(json['totalDieselCost'])
+      ..totalTyreCost = parseDouble(json['totalTyreCost'])
+      ..totalFuelConsumed = parseDouble(json['totalFuelConsumed'])
+      ..costPerKm = parseDouble(json['costPerKm'])
+      ..purchaseDate = parseDateOrNull(json['purchaseDate'])
+      ..insuranceStartDate = parseDateOrNull(json['insuranceStartDate'])
+      ..pucExpiryDate = parseDateOrNull(json['pucExpiryDate'])
+      ..insuranceExpiryDate = parseDateOrNull(json['insuranceExpiryDate'])
+      ..permitExpiryDate = parseDateOrNull(json['permitExpiryDate'])
+      ..fitnessExpiryDate = parseDateOrNull(json['fitnessExpiryDate'])
+      ..createdAt = parseString(
+        json['createdAt'],
+        fallback: DateTime.now().toIso8601String(),
       )
+      ..lastDieselFill = json['lastDieselFill']?.toString()
+      ..capacity = json['capacity'] == null ? null : parseDouble(json['capacity'])
+      ..minAverage = parseDouble(json['minAverage'])
+      ..maxAverage = parseDouble(json['maxAverage'])
+      ..model = json['model']?.toString()
+      ..serialNumber = json['serialNumber']?.toString()
+      ..fuelType = json['fuelType']?.toString()
+      ..tyreSize = json['tyreSize']?.toString()
+      ..insuranceProvider = json['insuranceProvider']?.toString()
+      ..policyNumber = json['policyNumber']?.toString()
+      ..pucNumber = json['pucNumber']?.toString()
+      ..permitNumber = json['permitNumber']?.toString()
+      ..rcNumber = json['rcNumber']?.toString()
+      ..updatedAt = parseDate(json['updatedAt'] ?? json['lastModified'])
+      ..deletedAt = parseDateOrNull(json['deletedAt'])
+      ..syncStatus = parseSyncStatus(json['syncStatus'])
+      ..isSynced = parseBool(json['isSynced'])
+      ..isDeleted = parseBool(json['isDeleted'])
+      ..lastSynced = parseDateOrNull(json['lastSynced'])
+      ..version = parseInt(json['version'], fallback: 1)
+      ..deviceId = parseString(json['deviceId']);
+  }
+
+  static VehicleEntity fromFirebaseJson(Map<String, dynamic> json) {
+    final payload = Map<String, dynamic>.from(json);
+    payload['id'] = parseString(
+      json['id'],
+      fallback:
+          'v_${DateTime.now().millisecondsSinceEpoch}_${(json['number'] ?? '').toString().hashCode.abs()}',
+    );
+    return VehicleEntity.fromJson(payload)
       ..syncStatus = SyncStatus.synced
+      ..isSynced = true
       ..isDeleted = false;
   }
 }

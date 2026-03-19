@@ -93,7 +93,7 @@ final tankServiceProvider = Provider<TankService>((ref) {
 
 final tankRepositoryProvider = Provider<TankRepository>((ref) {
   final db = ref.watch(databaseServiceProvider);
-  return TankRepository(db, firebaseServices);
+  return TankRepository(db, firebaseServices: firebaseServices);
 });
 
 final suppliersServiceProvider = Provider<SuppliersService>((ref) {
@@ -248,13 +248,17 @@ final syncAnalyticsServiceProvider = Provider<SyncAnalyticsService>((ref) {
 
 final bhattiRepositoryProvider = Provider<BhattiRepository>((ref) {
   final db = ref.watch(databaseServiceProvider);
-  return BhattiRepository(db, firebaseServices);
+  return BhattiRepository(db, firebaseServices: firebaseServices);
 });
 
 final productionRepositoryProvider = Provider<ProductionRepository>((ref) {
   final db = ref.watch(databaseServiceProvider);
   final inventoryService = ref.watch(inventoryServiceProvider);
-  return ProductionRepository(db, firebaseServices, inventoryService);
+  return ProductionRepository(
+    db,
+    firebaseServices: firebaseServices,
+    inventoryService: inventoryService,
+  );
 });
 
 final syncCommonUtilsProvider = Provider<SyncCommonUtils>((ref) {

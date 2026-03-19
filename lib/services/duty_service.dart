@@ -8,6 +8,7 @@ import 'gps_service.dart';
 import 'package:isar/isar.dart';
 import '../data/local/entities/duty_session_entity.dart';
 import '../data/local/base_entity.dart';
+import '../data/repositories/duty_repository.dart';
 import '../data/local/entities/settings_cache_entity.dart';
 import '../data/local/entities/sync_queue_entity.dart';
 import 'database_service.dart';
@@ -421,10 +422,13 @@ class SundayOverride {
 class DutyService extends BaseService {
   final GpsService _gpsService;
   final DatabaseService _dbService;
+  late final DutyRepository _dutyRepository;
   static const String _collection = dutySessionsCollection;
   static const String _dutySettingsCacheKey = 'duty_settings';
 
-  DutyService(super._firebase, this._gpsService, this._dbService);
+  DutyService(super._firebase, this._gpsService, this._dbService) {
+    _dutyRepository = DutyRepository(_dbService);
+  }
 
   int? _parseClockToMinutes(String? value) {
     final raw = value?.trim() ?? '';
@@ -525,13 +529,6 @@ class DutyService extends BaseService {
     await _dbService.db.writeTxn(() async {
       await _dbService.syncQueue.delete(existing.isarId);
     });
-  }
-
-  Map<String, dynamic> _toSyncPayload(DutySessionEntity entity) {
-    final payload = entity.toDomain().toJson();
-    payload['id'] = entity.id;
-    payload['updatedAt'] = entity.updatedAt.toIso8601String();
-    return payload;
   }
 
   Stream<List<DutySession>> subscribeToDateDutySessions(String date) {
@@ -897,11 +894,7 @@ class DutyService extends BaseService {
       // Save Local
       final entity = DutySessionEntity.fromDomain(sessionModel);
       entity.syncStatus = SyncStatus.pending;
-
-      await _dbService.db.writeTxn(() async {
-        await _dbService.dutySessions.put(entity);
-      });
-      await _enqueueOutbox(_toSyncPayload(entity), action: 'set');
+      await _dutyRepository.startDuty(entity);
 
       // Attempt immediate sync push (optional, or rely on SyncManager)
       // _syncManager.triggerSync... if available.
@@ -931,47 +924,46 @@ class DutyService extends BaseService {
     Map<String, dynamic> data,
   ) async {
     try {
-      var success = false;
-      Map<String, dynamic>? queuedPayload;
-      await _dbService.db.writeTxn(() async {
-        final session = await _dbService.dutySessions
+      final session = await _dbService.dutySessions
+          .filter()
+          .idEqualTo(sessionId)
+          .findFirst();
+      if (session != null) {
+        await _dutyRepository.endDuty(
+          sessionId,
+          DateTime.tryParse(data['logoutTime']?.toString() ?? '') ??
+              DateTime.now(),
+          (data['logoutLatitude'] as num?)?.toDouble(),
+          (data['logoutLongitude'] as num?)?.toDouble(),
+          (data['totalDistanceKm'] as num?)?.toDouble() ?? 0.0,
+        );
+        final refreshed = await _dbService.dutySessions
             .filter()
             .idEqualTo(sessionId)
             .findFirst();
-        if (session != null) {
-          session.logoutTime =
-              data['logoutTime'] ?? DateTime.now().toIso8601String();
-          session.logoutLatitude = data['logoutLatitude'];
-          session.logoutLongitude = data['logoutLongitude'];
-          session.totalDistanceKm = data['totalDistanceKm'];
-          session.endOdometer = double.tryParse(
-            data['endOdometer']?.toString() ?? '0',
+        if (refreshed != null) {
+          refreshed.endOdometer = double.tryParse(
+            data['endOdometer']?.toString() ?? '',
           );
-          session.status = 'completed';
-          session.updatedAt = DateTime.now();
-          session.syncStatus = SyncStatus.pending;
-          await _dbService.dutySessions.put(session);
-          queuedPayload = _toSyncPayload(session);
-          success = true;
+          await _dbService.db.writeTxn(() async {
+            await _dbService.dutySessions.put(refreshed);
+          });
 
-          // Update location status
           await _gpsService.updateEntityLocation(
-            session.userId,
+            refreshed.userId,
             PartialLocationData(
-              userId: session.userId,
-              userName: session.userName,
-              role: session.userRole,
-              latitude: session.logoutLatitude ?? 0.0,
-              longitude: session.logoutLongitude ?? 0.0,
+              userId: refreshed.userId,
+              userName: refreshed.userName,
+              role: refreshed.userRole,
+              latitude: refreshed.logoutLatitude ?? 0.0,
+              longitude: refreshed.logoutLongitude ?? 0.0,
               isOnline: false,
             ),
           );
         }
-      });
-      if (queuedPayload != null) {
-        await _enqueueOutbox(queuedPayload!, action: 'update');
+        return true;
       }
-      return success;
+      return false;
     } catch (e) {
       handleError(e, 'endDutySession');
       return false;

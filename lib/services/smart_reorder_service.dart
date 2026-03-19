@@ -1,6 +1,9 @@
-import 'base_service.dart';
+import 'dart:convert';
 
-const purchaseOrdersCollection = 'purchase_orders';
+import '../data/local/entities/purchase_order_entity.dart';
+import '../data/repositories/procurement_repository.dart';
+import 'base_service.dart';
+import 'database_service.dart';
 
 class ReorderSuggestion {
   final String id;
@@ -39,7 +42,10 @@ class ReorderSuggestion {
 }
 
 class SmartReorderService extends BaseService {
-  SmartReorderService(super.firebase);
+  SmartReorderService(super.firebase)
+    : _procurementRepository = ProcurementRepository(DatabaseService.instance);
+
+  final ProcurementRepository _procurementRepository;
 
   List<ReorderSuggestion> getReorderSuggestions(
     List<Map<String, dynamic>> products,
@@ -52,7 +58,7 @@ class SmartReorderService extends BaseService {
       final stock = (product['stock'] as num? ?? 0).toDouble();
       final reorderLevel = (product['reorderLevel'] as num? ?? 0).toDouble();
 
-      if (reorderLevel <= 0) continue; // Skip if not set
+      if (reorderLevel <= 0) continue;
 
       if (stock <= reorderLevel) {
         final stockAlertLevel = (product['stockAlertLevel'] as num? ?? 0)
@@ -62,7 +68,6 @@ class SmartReorderService extends BaseService {
           priority = 'critical';
         }
 
-        // Target = reorderLevel * 1.2
         final target = (reorderLevel * 1.2).ceilToDouble();
         final suggestedQty = (target - stock) > 0 ? (target - stock) : 0.0;
 
@@ -121,23 +126,14 @@ class SmartReorderService extends BaseService {
       }
     }
 
-    final firestore = db;
-    if (firestore == null) {
-      return {'success': false, 'message': 'Offline', 'createdCount': 0};
-    }
-
-    final batch = firestore.batch();
     int poCount = 0;
 
     try {
-      // Create PO for each supplier
       final now = DateTime.now();
 
-      for (var entry in supplierGroups.entries) {
+      for (final entry in supplierGroups.entries) {
         final supplierId = entry.key;
         final group = entry.value;
-        final poRef = firestore.collection(purchaseOrdersCollection).doc();
-
         final items = (group['items'] as List<ReorderSuggestion>)
             .map(
               (item) => {
@@ -149,33 +145,26 @@ class SmartReorderService extends BaseService {
                 'total': 0,
               },
             )
-            .toList();
+            .toList(growable: false);
 
-        final poData = {
-          'id': poRef.id,
-          'orderNumber': 'PO-${now.millisecondsSinceEpoch}-${poCount + 1}',
-          'supplierId': supplierId,
-          'supplierName': group['supplierName'],
-          'status': 'Draft',
-          'orderDate': now.toIso8601String(),
-          'expectedDeliveryDate': now
-              .add(const Duration(days: 7))
-              .toIso8601String(),
-          'items': items,
-          'totalAmount': 0,
-          'notes': 'Auto-generated via Smart Reorder',
-          'createdBy': {'id': userId, 'name': userName},
-          'createdAt': now.toIso8601String(),
-          'updatedAt': now.toIso8601String(),
-        };
+        final purchaseOrder = PurchaseOrderEntity()
+          ..supplierId = supplierId
+          ..supplierName = group['supplierName']?.toString() ?? 'Unknown Supplier'
+          ..itemsJson = jsonEncode(items)
+          ..totalAmount = 0
+          ..status = 'pending'
+          ..orderDate = now
+          ..expectedDeliveryDate = now.add(const Duration(days: 7))
+          ..notes = 'Auto-generated via Smart Reorder'
+          ..createdBy = userId
+          ..createdByName = userName
+          ..createdAt = now;
 
-        batch.set(poRef, poData);
+        await _procurementRepository.savePurchaseOrder(purchaseOrder);
         poCount++;
       }
 
-      // Unknown Supplier PO
       if (unknownSupplierItems.isNotEmpty) {
-        final poRef = firestore.collection(purchaseOrdersCollection).doc();
         final items = unknownSupplierItems
             .map(
               (item) => {
@@ -187,30 +176,27 @@ class SmartReorderService extends BaseService {
                 'total': 0,
               },
             )
-            .toList();
+            .toList(growable: false);
 
-        final poData = {
-          'id': poRef.id,
-          'orderNumber': 'PO-${now.millisecondsSinceEpoch}-GEN',
-          'supplierId': 'unknown',
-          'supplierName': 'Unknown Supplier (Please Assign)',
-          'status': 'Draft',
-          'orderDate': now.toIso8601String(),
-          'items': items,
-          'totalAmount': 0,
-          'notes': 'Auto-generated (No Supplier Linked)',
-          'createdBy': {'id': userId, 'name': userName},
-          'createdAt': now.toIso8601String(),
-          'updatedAt': now.toIso8601String(),
-        };
-        batch.set(poRef, poData);
+        final purchaseOrder = PurchaseOrderEntity()
+          ..supplierId = 'unknown'
+          ..supplierName = 'Unknown Supplier (Please Assign)'
+          ..itemsJson = jsonEncode(items)
+          ..totalAmount = 0
+          ..status = 'pending'
+          ..orderDate = now
+          ..notes = 'Auto-generated (No Supplier Linked)'
+          ..createdBy = userId
+          ..createdByName = userName
+          ..createdAt = now;
+
+        await _procurementRepository.savePurchaseOrder(purchaseOrder);
         poCount++;
       }
 
-      await batch.commit();
       return {
         'success': true,
-        'message': 'Successfully created $poCount Draft POs.',
+        'message': 'Successfully created $poCount pending POs.',
         'createdCount': poCount,
       };
     } catch (e) {

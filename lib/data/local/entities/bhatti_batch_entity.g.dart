@@ -47,78 +47,98 @@ const BhattiBatchEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'id': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 6,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'id': PropertySchema(
+      id: 7,
       name: r'id',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 9,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
     r'issueId': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'issueId',
       type: IsarType.string,
     ),
+    r'lastSynced': PropertySchema(
+      id: 11,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'outputBoxes': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'outputBoxes',
       type: IsarType.long,
     ),
     r'rawMaterialsConsumed': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'rawMaterialsConsumed',
       type: IsarType.objectList,
       target: r'ConsumedItem',
     ),
     r'status': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'status',
       type: IsarType.string,
     ),
     r'supervisorId': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'supervisorId',
       type: IsarType.string,
     ),
     r'supervisorName': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'supervisorName',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _BhattiBatchEntitysyncStatusEnumValueMap,
     ),
     r'tankConsumptions': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'tankConsumptions',
       type: IsarType.objectList,
       target: r'TankConsumptionItem',
     ),
     r'targetProductId': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'targetProductId',
       type: IsarType.string,
     ),
     r'targetProductName': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'targetProductName',
       type: IsarType.string,
     ),
     r'totalBatchCost': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'totalBatchCost',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 23,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _bhattiBatchEntityEstimateSize,
@@ -213,6 +233,7 @@ int _bhattiBatchEntityEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.batchNumber.length * 3;
   bytesCount += 3 + object.bhattiName.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.id.length * 3;
   {
     final value = object.issueId;
@@ -257,30 +278,34 @@ void _bhattiBatchEntitySerialize(
   writer.writeDouble(offsets[3], object.costPerBox);
   writer.writeDateTime(offsets[4], object.createdAt);
   writer.writeDateTime(offsets[5], object.deletedAt);
-  writer.writeString(offsets[6], object.id);
-  writer.writeBool(offsets[7], object.isDeleted);
-  writer.writeString(offsets[8], object.issueId);
-  writer.writeLong(offsets[9], object.outputBoxes);
+  writer.writeString(offsets[6], object.deviceId);
+  writer.writeString(offsets[7], object.id);
+  writer.writeBool(offsets[8], object.isDeleted);
+  writer.writeBool(offsets[9], object.isSynced);
+  writer.writeString(offsets[10], object.issueId);
+  writer.writeDateTime(offsets[11], object.lastSynced);
+  writer.writeLong(offsets[12], object.outputBoxes);
   writer.writeObjectList<ConsumedItem>(
-    offsets[10],
+    offsets[13],
     allOffsets,
     ConsumedItemSchema.serialize,
     object.rawMaterialsConsumed,
   );
-  writer.writeString(offsets[11], object.status);
-  writer.writeString(offsets[12], object.supervisorId);
-  writer.writeString(offsets[13], object.supervisorName);
-  writer.writeByte(offsets[14], object.syncStatus.index);
+  writer.writeString(offsets[14], object.status);
+  writer.writeString(offsets[15], object.supervisorId);
+  writer.writeString(offsets[16], object.supervisorName);
+  writer.writeByte(offsets[17], object.syncStatus.index);
   writer.writeObjectList<TankConsumptionItem>(
-    offsets[15],
+    offsets[18],
     allOffsets,
     TankConsumptionItemSchema.serialize,
     object.tankConsumptions,
   );
-  writer.writeString(offsets[16], object.targetProductId);
-  writer.writeString(offsets[17], object.targetProductName);
-  writer.writeDouble(offsets[18], object.totalBatchCost);
-  writer.writeDateTime(offsets[19], object.updatedAt);
+  writer.writeString(offsets[19], object.targetProductId);
+  writer.writeString(offsets[20], object.targetProductName);
+  writer.writeDouble(offsets[21], object.totalBatchCost);
+  writer.writeDateTime(offsets[22], object.updatedAt);
+  writer.writeLong(offsets[23], object.version);
 }
 
 BhattiBatchEntity _bhattiBatchEntityDeserialize(
@@ -296,34 +321,38 @@ BhattiBatchEntity _bhattiBatchEntityDeserialize(
   object.costPerBox = reader.readDouble(offsets[3]);
   object.createdAt = reader.readDateTime(offsets[4]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[5]);
-  object.id = reader.readString(offsets[6]);
-  object.isDeleted = reader.readBool(offsets[7]);
-  object.issueId = reader.readStringOrNull(offsets[8]);
-  object.outputBoxes = reader.readLong(offsets[9]);
+  object.deviceId = reader.readString(offsets[6]);
+  object.id = reader.readString(offsets[7]);
+  object.isDeleted = reader.readBool(offsets[8]);
+  object.isSynced = reader.readBool(offsets[9]);
+  object.issueId = reader.readStringOrNull(offsets[10]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[11]);
+  object.outputBoxes = reader.readLong(offsets[12]);
   object.rawMaterialsConsumed = reader.readObjectList<ConsumedItem>(
-        offsets[10],
+        offsets[13],
         ConsumedItemSchema.deserialize,
         allOffsets,
         ConsumedItem(),
       ) ??
       [];
-  object.status = reader.readString(offsets[11]);
-  object.supervisorId = reader.readString(offsets[12]);
-  object.supervisorName = reader.readString(offsets[13]);
+  object.status = reader.readString(offsets[14]);
+  object.supervisorId = reader.readString(offsets[15]);
+  object.supervisorName = reader.readString(offsets[16]);
   object.syncStatus = _BhattiBatchEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[14])] ??
+          reader.readByteOrNull(offsets[17])] ??
       SyncStatus.pending;
   object.tankConsumptions = reader.readObjectList<TankConsumptionItem>(
-        offsets[15],
+        offsets[18],
         TankConsumptionItemSchema.deserialize,
         allOffsets,
         TankConsumptionItem(),
       ) ??
       [];
-  object.targetProductId = reader.readString(offsets[16]);
-  object.targetProductName = reader.readString(offsets[17]);
-  object.totalBatchCost = reader.readDouble(offsets[18]);
-  object.updatedAt = reader.readDateTime(offsets[19]);
+  object.targetProductId = reader.readString(offsets[19]);
+  object.targetProductName = reader.readString(offsets[20]);
+  object.totalBatchCost = reader.readDouble(offsets[21]);
+  object.updatedAt = reader.readDateTime(offsets[22]);
+  object.version = reader.readLong(offsets[23]);
   return object;
 }
 
@@ -349,12 +378,18 @@ P _bhattiBatchEntityDeserializeProp<P>(
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 10:
+      return (reader.readStringOrNull(offset)) as P;
+    case 11:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 12:
+      return (reader.readLong(offset)) as P;
+    case 13:
       return (reader.readObjectList<ConsumedItem>(
             offset,
             ConsumedItemSchema.deserialize,
@@ -362,17 +397,17 @@ P _bhattiBatchEntityDeserializeProp<P>(
             ConsumedItem(),
           ) ??
           []) as P;
-    case 11:
-      return (reader.readString(offset)) as P;
-    case 12:
-      return (reader.readString(offset)) as P;
-    case 13:
-      return (reader.readString(offset)) as P;
     case 14:
+      return (reader.readString(offset)) as P;
+    case 15:
+      return (reader.readString(offset)) as P;
+    case 16:
+      return (reader.readString(offset)) as P;
+    case 17:
       return (_BhattiBatchEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 15:
+    case 18:
       return (reader.readObjectList<TankConsumptionItem>(
             offset,
             TankConsumptionItemSchema.deserialize,
@@ -380,14 +415,16 @@ P _bhattiBatchEntityDeserializeProp<P>(
             TankConsumptionItem(),
           ) ??
           []) as P;
-    case 16:
-      return (reader.readString(offset)) as P;
-    case 17:
-      return (reader.readString(offset)) as P;
-    case 18:
-      return (reader.readDouble(offset)) as P;
     case 19:
+      return (reader.readString(offset)) as P;
+    case 20:
+      return (reader.readString(offset)) as P;
+    case 21:
+      return (reader.readDouble(offset)) as P;
+    case 22:
       return (reader.readDateTime(offset)) as P;
+    case 23:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1303,6 +1340,142 @@ extension BhattiBatchEntityQueryFilter
   }
 
   QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
       idEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1443,6 +1616,16 @@ extension BhattiBatchEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isDeleted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
         value: value,
       ));
     });
@@ -1654,6 +1837,80 @@ extension BhattiBatchEntityQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'issueId',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -2749,6 +3006,62 @@ extension BhattiBatchEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension BhattiBatchEntityQueryObject
@@ -2857,6 +3170,20 @@ extension BhattiBatchEntityQuerySortBy
     });
   }
 
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy> sortById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -2885,6 +3212,20 @@ extension BhattiBatchEntityQuerySortBy
   }
 
   QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
       sortByIssueId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'issueId', Sort.asc);
@@ -2895,6 +3236,20 @@ extension BhattiBatchEntityQuerySortBy
       sortByIssueIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'issueId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3023,6 +3378,20 @@ extension BhattiBatchEntityQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension BhattiBatchEntityQuerySortThenBy
@@ -3111,6 +3480,20 @@ extension BhattiBatchEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -3139,6 +3522,20 @@ extension BhattiBatchEntityQuerySortThenBy
   }
 
   QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -3163,6 +3560,20 @@ extension BhattiBatchEntityQuerySortThenBy
       thenByIssueIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'issueId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3291,6 +3702,20 @@ extension BhattiBatchEntityQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension BhattiBatchEntityQueryWhereDistinct
@@ -3337,6 +3762,13 @@ extension BhattiBatchEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QDistinct> distinctById(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3352,9 +3784,23 @@ extension BhattiBatchEntityQueryWhereDistinct
   }
 
   QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QDistinct>
       distinctByIssueId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'issueId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
     });
   }
 
@@ -3423,6 +3869,13 @@ extension BhattiBatchEntityQueryWhereDistinct
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<BhattiBatchEntity, BhattiBatchEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
+    });
+  }
 }
 
 extension BhattiBatchEntityQueryProperty
@@ -3474,6 +3927,12 @@ extension BhattiBatchEntityQueryProperty
     });
   }
 
+  QueryBuilder<BhattiBatchEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<BhattiBatchEntity, String, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
@@ -3486,9 +3945,22 @@ extension BhattiBatchEntityQueryProperty
     });
   }
 
+  QueryBuilder<BhattiBatchEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
   QueryBuilder<BhattiBatchEntity, String?, QQueryOperations> issueIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'issueId');
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -3564,6 +4036,12 @@ extension BhattiBatchEntityQueryProperty
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<BhattiBatchEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }

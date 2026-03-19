@@ -2,8 +2,14 @@ import 'dart:async';
 
 import 'package:isar/isar.dart';
 
-import '../../features/inventory/models/product.dart' as inventory_model;
-import '../../features/inventory/models/stock_movement.dart' as inventory_model;
+import '../../data/local/entities/chat_message.dart';
+import '../../data/local/entities/config_cache_entity.dart';
+import '../../data/local/entities/product_entity.dart';
+import '../../data/local/entities/purchase_order_entity.dart';
+import '../../data/local/entities/stock_movement_entity.dart';
+import '../../data/local/entities/supplier_entity.dart';
+import '../../data/local/entities/warehouse_entity.dart';
+import '../../data/local/entities/fuel_purchase_entity.dart';
 import '../../features/inventory/models/sync_queue.dart' as inventory_model;
 import '../../services/database_service.dart';
 import '../utils/sync_logger.dart';
@@ -25,7 +31,7 @@ class IsarService {
     return current;
   }
 
-  /// Initializes Isar and ensures inventory sync schemas are available.
+  /// Initializes Isar and ensures all schemas are available.
   Future<Isar> initialize({String? directory}) async {
     try {
       await DatabaseService.instance.init(directory: directory);
@@ -42,25 +48,59 @@ class IsarService {
     }
   }
 
-  /// Product collection accessor.
-  IsarCollection<inventory_model.Product> get products =>
-      DatabaseService.instance.inventorySyncProducts;
+  /// Returns a generic collection handle for the registered schema.
+  IsarCollection<T> collection<T>() => isar.collection<T>();
 
-  /// Stock movement collection accessor.
-  IsarCollection<inventory_model.StockMovement> get stockMovements =>
-      DatabaseService.instance.inventorySyncStockMovements;
+  /// Canonical product entity collection accessor.
+  IsarCollection<ProductEntity> get products => DatabaseService.instance.products;
 
-  /// Sync queue collection accessor.
+  /// Canonical stock movement entity collection accessor.
+  IsarCollection<StockMovementEntity> get stockMovements =>
+      DatabaseService.instance.stockMovements;
+
+  /// Canonical product entity collection accessor.
+  IsarCollection<ProductEntity> get productEntities =>
+      DatabaseService.instance.products;
+
+  /// Canonical stock movement entity collection accessor.
+  IsarCollection<StockMovementEntity> get stockMovementEntities =>
+      DatabaseService.instance.stockMovements;
+
+  /// Supplier entity collection accessor.
+  IsarCollection<SupplierEntity> get suppliers =>
+      DatabaseService.instance.suppliers;
+
+  /// Purchase order entity collection accessor.
+  IsarCollection<PurchaseOrderEntity> get purchaseOrders =>
+      DatabaseService.instance.purchaseOrders;
+
+  /// Warehouse entity collection accessor.
+  IsarCollection<WarehouseEntity> get warehouses =>
+      DatabaseService.instance.warehouses;
+
+  /// Fuel purchase entity collection accessor.
+  IsarCollection<FuelPurchaseEntity> get fuelPurchases =>
+      DatabaseService.instance.fuelPurchases;
+
+  /// Generic config cache collection accessor.
+  IsarCollection<ConfigCacheEntity> get configCacheEntries =>
+      DatabaseService.instance.configCache;
+
+  /// Local chat message cache accessor.
+  IsarCollection<ChatMessage> get chatMessages =>
+      DatabaseService.instance.chatMessages;
+
+  /// Canonical sync queue collection accessor.
   IsarCollection<inventory_model.SyncQueue> get syncQueues =>
       DatabaseService.instance.inventorySyncQueues;
 
-  /// Watches active products ordered by last modified time.
-  Stream<List<inventory_model.Product>> watchProducts() {
+  /// Watches active products ordered by name.
+  Stream<List<ProductEntity>> watchProducts() {
     try {
       return products
           .filter()
           .isDeletedEqualTo(false)
-          .sortByLastModifiedDesc()
+          .sortByName()
           .watch(fireImmediately: true);
     } catch (error, stackTrace) {
       SyncLogger.instance.e(
@@ -74,13 +114,14 @@ class IsarService {
   }
 
   /// Watches low stock products for the provided threshold.
-  Stream<List<inventory_model.Product>> watchLowStockProducts(int threshold) {
+  Stream<List<ProductEntity>> watchLowStockProducts(int threshold) {
     try {
       return products
           .filter()
           .isDeletedEqualTo(false)
-          .stockQuantityLessThan(threshold)
-          .sortByStockQuantity()
+          .and()
+          .stockLessThan(threshold.toDouble())
+          .sortByStock()
           .watch(fireImmediately: true);
     } catch (error, stackTrace) {
       SyncLogger.instance.e(
@@ -113,14 +154,14 @@ class IsarService {
   }
 
   /// Watches stock movements for a product.
-  Stream<List<inventory_model.StockMovement>> watchStockMovements(
-    String productFirebaseId,
-  ) {
+  Stream<List<StockMovementEntity>> watchStockMovements(String productId) {
     try {
       return stockMovements
           .filter()
-          .productFirebaseIdEqualTo(productFirebaseId)
-          .sortByTimestampDesc()
+          .productIdEqualTo(productId)
+          .and()
+          .isDeletedEqualTo(false)
+          .sortByOccurredAtDesc()
           .watch(fireImmediately: true);
     } catch (error, stackTrace) {
       SyncLogger.instance.e(

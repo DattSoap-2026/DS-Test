@@ -62,66 +62,86 @@ const AttendanceEntitySchema = CollectionSchema(
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
-    r'employeeId': PropertySchema(
+    r'deviceId': PropertySchema(
       id: 9,
+      name: r'deviceId',
+      type: IsarType.string,
+    ),
+    r'employeeId': PropertySchema(
+      id: 10,
       name: r'employeeId',
       type: IsarType.string,
     ),
     r'id': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'id',
       type: IsarType.string,
     ),
     r'isCorrected': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'isCorrected',
       type: IsarType.bool,
     ),
     r'isDeleted': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isManualEntry': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'isManualEntry',
       type: IsarType.bool,
     ),
     r'isOvertime': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'isOvertime',
       type: IsarType.bool,
     ),
+    r'isSynced': PropertySchema(
+      id: 16,
+      name: r'isSynced',
+      type: IsarType.bool,
+    ),
+    r'lastSynced': PropertySchema(
+      id: 17,
+      name: r'lastSynced',
+      type: IsarType.dateTime,
+    ),
     r'markedAt': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'markedAt',
       type: IsarType.dateTime,
     ),
     r'overtimeHours': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'overtimeHours',
       type: IsarType.double,
     ),
     r'remarks': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'remarks',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _AttendanceEntitysyncStatusEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'version': PropertySchema(
+      id: 24,
+      name: r'version',
+      type: IsarType.long,
     )
   },
   estimateSize: _attendanceEntityEstimateSize,
@@ -216,6 +236,7 @@ int _attendanceEntityEstimateSize(
     }
   }
   bytesCount += 3 + object.date.length * 3;
+  bytesCount += 3 + object.deviceId.length * 3;
   bytesCount += 3 + object.employeeId.length * 3;
   bytesCount += 3 + object.id.length * 3;
   {
@@ -243,18 +264,22 @@ void _attendanceEntitySerialize(
   writer.writeString(offsets[6], object.checkOutTime);
   writer.writeString(offsets[7], object.date);
   writer.writeDateTime(offsets[8], object.deletedAt);
-  writer.writeString(offsets[9], object.employeeId);
-  writer.writeString(offsets[10], object.id);
-  writer.writeBool(offsets[11], object.isCorrected);
-  writer.writeBool(offsets[12], object.isDeleted);
-  writer.writeBool(offsets[13], object.isManualEntry);
-  writer.writeBool(offsets[14], object.isOvertime);
-  writer.writeDateTime(offsets[15], object.markedAt);
-  writer.writeDouble(offsets[16], object.overtimeHours);
-  writer.writeString(offsets[17], object.remarks);
-  writer.writeString(offsets[18], object.status);
-  writer.writeByte(offsets[19], object.syncStatus.index);
-  writer.writeDateTime(offsets[20], object.updatedAt);
+  writer.writeString(offsets[9], object.deviceId);
+  writer.writeString(offsets[10], object.employeeId);
+  writer.writeString(offsets[11], object.id);
+  writer.writeBool(offsets[12], object.isCorrected);
+  writer.writeBool(offsets[13], object.isDeleted);
+  writer.writeBool(offsets[14], object.isManualEntry);
+  writer.writeBool(offsets[15], object.isOvertime);
+  writer.writeBool(offsets[16], object.isSynced);
+  writer.writeDateTime(offsets[17], object.lastSynced);
+  writer.writeDateTime(offsets[18], object.markedAt);
+  writer.writeDouble(offsets[19], object.overtimeHours);
+  writer.writeString(offsets[20], object.remarks);
+  writer.writeString(offsets[21], object.status);
+  writer.writeByte(offsets[22], object.syncStatus.index);
+  writer.writeDateTime(offsets[23], object.updatedAt);
+  writer.writeLong(offsets[24], object.version);
 }
 
 AttendanceEntity _attendanceEntityDeserialize(
@@ -273,20 +298,24 @@ AttendanceEntity _attendanceEntityDeserialize(
   object.checkOutTime = reader.readStringOrNull(offsets[6]);
   object.date = reader.readString(offsets[7]);
   object.deletedAt = reader.readDateTimeOrNull(offsets[8]);
-  object.employeeId = reader.readString(offsets[9]);
-  object.id = reader.readString(offsets[10]);
-  object.isCorrected = reader.readBool(offsets[11]);
-  object.isDeleted = reader.readBool(offsets[12]);
-  object.isManualEntry = reader.readBool(offsets[13]);
-  object.isOvertime = reader.readBool(offsets[14]);
-  object.markedAt = reader.readDateTimeOrNull(offsets[15]);
-  object.overtimeHours = reader.readDoubleOrNull(offsets[16]);
-  object.remarks = reader.readStringOrNull(offsets[17]);
-  object.status = reader.readString(offsets[18]);
+  object.deviceId = reader.readString(offsets[9]);
+  object.employeeId = reader.readString(offsets[10]);
+  object.id = reader.readString(offsets[11]);
+  object.isCorrected = reader.readBool(offsets[12]);
+  object.isDeleted = reader.readBool(offsets[13]);
+  object.isManualEntry = reader.readBool(offsets[14]);
+  object.isOvertime = reader.readBool(offsets[15]);
+  object.isSynced = reader.readBool(offsets[16]);
+  object.lastSynced = reader.readDateTimeOrNull(offsets[17]);
+  object.markedAt = reader.readDateTimeOrNull(offsets[18]);
+  object.overtimeHours = reader.readDoubleOrNull(offsets[19]);
+  object.remarks = reader.readStringOrNull(offsets[20]);
+  object.status = reader.readString(offsets[21]);
   object.syncStatus = _AttendanceEntitysyncStatusValueEnumMap[
-          reader.readByteOrNull(offsets[19])] ??
+          reader.readByteOrNull(offsets[22])] ??
       SyncStatus.pending;
-  object.updatedAt = reader.readDateTime(offsets[20]);
+  object.updatedAt = reader.readDateTime(offsets[23]);
+  object.version = reader.readLong(offsets[24]);
   return object;
 }
 
@@ -320,7 +349,7 @@ P _attendanceEntityDeserializeProp<P>(
     case 10:
       return (reader.readString(offset)) as P;
     case 11:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 12:
       return (reader.readBool(offset)) as P;
     case 13:
@@ -328,19 +357,27 @@ P _attendanceEntityDeserializeProp<P>(
     case 14:
       return (reader.readBool(offset)) as P;
     case 15:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 16:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 18:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 19:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 20:
+      return (reader.readStringOrNull(offset)) as P;
+    case 21:
+      return (reader.readString(offset)) as P;
+    case 22:
       return (_AttendanceEntitysyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 20:
+    case 23:
       return (reader.readDateTime(offset)) as P;
+    case 24:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1694,6 +1731,142 @@ extension AttendanceEntityQueryFilter
   }
 
   QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      deviceIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      deviceIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      deviceIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      deviceIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'deviceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      deviceIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      deviceIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      deviceIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'deviceId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      deviceIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'deviceId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      deviceIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      deviceIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'deviceId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
       employeeIdEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -2006,6 +2179,16 @@ extension AttendanceEntityQueryFilter
   }
 
   QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
       isarIdEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2053,6 +2236,80 @@ extension AttendanceEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      lastSyncedIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      lastSyncedIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastSynced',
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      lastSyncedEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      lastSyncedGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      lastSyncedLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastSynced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      lastSyncedBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastSynced',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -2620,6 +2877,62 @@ extension AttendanceEntityQueryFilter
       ));
     });
   }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      versionEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      versionGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      versionLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'version',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterFilterCondition>
+      versionBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'version',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension AttendanceEntityQueryObject
@@ -2756,6 +3069,20 @@ extension AttendanceEntityQuerySortBy
   }
 
   QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      sortByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      sortByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
       sortByEmployeeId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'employeeId', Sort.asc);
@@ -2835,6 +3162,34 @@ extension AttendanceEntityQuerySortBy
       sortByIsOvertimeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isOvertime', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      sortByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      sortByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      sortByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      sortByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -2919,6 +3274,20 @@ extension AttendanceEntityQuerySortBy
       sortByUpdatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      sortByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      sortByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
     });
   }
 }
@@ -3051,6 +3420,20 @@ extension AttendanceEntityQuerySortThenBy
   }
 
   QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      thenByDeviceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      thenByDeviceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'deviceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
       thenByEmployeeId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'employeeId', Sort.asc);
@@ -3134,6 +3517,20 @@ extension AttendanceEntityQuerySortThenBy
   }
 
   QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      thenByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      thenByIsSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSynced', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
       thenByIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.asc);
@@ -3144,6 +3541,20 @@ extension AttendanceEntityQuerySortThenBy
       thenByIsarIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      thenByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      thenByLastSyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastSynced', Sort.desc);
     });
   }
 
@@ -3230,6 +3641,20 @@ extension AttendanceEntityQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      thenByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QAfterSortBy>
+      thenByVersionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'version', Sort.desc);
+    });
+  }
 }
 
 extension AttendanceEntityQueryWhereDistinct
@@ -3298,6 +3723,13 @@ extension AttendanceEntityQueryWhereDistinct
   }
 
   QueryBuilder<AttendanceEntity, AttendanceEntity, QDistinct>
+      distinctByDeviceId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'deviceId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QDistinct>
       distinctByEmployeeId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'employeeId', caseSensitive: caseSensitive);
@@ -3340,6 +3772,20 @@ extension AttendanceEntityQueryWhereDistinct
   }
 
   QueryBuilder<AttendanceEntity, AttendanceEntity, QDistinct>
+      distinctByIsSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSynced');
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QDistinct>
+      distinctByLastSynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastSynced');
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QDistinct>
       distinctByMarkedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'markedAt');
@@ -3378,6 +3824,13 @@ extension AttendanceEntityQueryWhereDistinct
       distinctByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, AttendanceEntity, QDistinct>
+      distinctByVersion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'version');
     });
   }
 }
@@ -3451,6 +3904,12 @@ extension AttendanceEntityQueryProperty
     });
   }
 
+  QueryBuilder<AttendanceEntity, String, QQueryOperations> deviceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deviceId');
+    });
+  }
+
   QueryBuilder<AttendanceEntity, String, QQueryOperations>
       employeeIdProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -3486,6 +3945,19 @@ extension AttendanceEntityQueryProperty
   QueryBuilder<AttendanceEntity, bool, QQueryOperations> isOvertimeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isOvertime');
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, bool, QQueryOperations> isSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, DateTime?, QQueryOperations>
+      lastSyncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastSynced');
     });
   }
 
@@ -3526,6 +3998,12 @@ extension AttendanceEntityQueryProperty
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<AttendanceEntity, int, QQueryOperations> versionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'version');
     });
   }
 }
