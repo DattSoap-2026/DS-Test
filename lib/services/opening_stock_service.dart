@@ -424,7 +424,7 @@ class OpeningStockService {
     );
 
     try {
-      await SyncService.instance.pushAllPending();
+      await SyncService.instance.trySync();
     } catch (_) {
       // Keep durable outbox record for sync coordinator retry.
     }

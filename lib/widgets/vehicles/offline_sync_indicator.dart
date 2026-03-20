@@ -66,18 +66,6 @@ class OfflineSyncIndicator extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-              if (!isSyncing && pendingCount > 0) ...[
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.sync, size: 18),
-                  onPressed: () {
-                    appSyncCoordinator.syncAll(null);
-                  },
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  tooltip: 'Sync Now',
-                ),
-              ],
             ],
           ),
         );

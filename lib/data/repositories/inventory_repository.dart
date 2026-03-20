@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/network/connectivity_service.dart';
 import '../../core/sync/collection_registry.dart';
+import '../../core/sync/optimistic_sync_payload.dart';
 import '../../core/sync/sync_queue_service.dart';
 import '../../core/sync/sync_service.dart';
 import '../../core/utils/device_id_service.dart';
@@ -348,6 +349,7 @@ class InventoryRepository {
 
     final now = DateTime.now();
     final deviceId = await _deviceIdService.getDeviceId();
+    final previousProductSnapshot = ProductEntity.fromJson(product.toJson());
     final currentStock = product.stock ?? 0.0;
     final nextStock = movementType == 'IN'
         ? currentStock + quantity
@@ -420,23 +422,60 @@ class InventoryRepository {
       await _dbService.stockLedger.put(ledger);
     });
 
+    final rollbackOperations = <SyncRollbackOperation>[
+      SyncRollbackOperation(
+        collectionName: CollectionRegistry.products,
+        documentId: previousProductSnapshot.id,
+        action: 'put',
+        payload: previousProductSnapshot.toJson(),
+      ),
+      SyncRollbackOperation(
+        collectionName: CollectionRegistry.stockMovements,
+        documentId: movement.id,
+        action: 'delete',
+      ),
+      SyncRollbackOperation(
+        collectionName: CollectionRegistry.stockLedger,
+        documentId: ledger.id,
+        action: 'delete',
+      ),
+    ];
+    final groupId = 'stock_${product.id}_${now.microsecondsSinceEpoch}';
+    final failureMessage =
+        'Inventory sync failed after multiple retries. The stock change was reverted.';
+
     await _syncQueueService.addToQueue(
       collectionName: CollectionRegistry.products,
       documentId: product.id,
       operation: 'update',
-      payload: product.toJson(),
+      payload: OptimisticSyncEnvelope.wrap(
+        payload: product.toJson(),
+        groupId: groupId,
+        rollbackOperations: rollbackOperations,
+        failureMessage: failureMessage,
+      ),
     );
     await _syncQueueService.addToQueue(
       collectionName: CollectionRegistry.stockMovements,
       documentId: movement.id,
       operation: 'create',
-      payload: movement.toJson(),
+      payload: OptimisticSyncEnvelope.wrap(
+        payload: movement.toJson(),
+        groupId: groupId,
+        rollbackOperations: rollbackOperations,
+        failureMessage: failureMessage,
+      ),
     );
     await _syncQueueService.addToQueue(
       collectionName: CollectionRegistry.stockLedger,
       documentId: ledger.id,
       operation: 'create',
-      payload: ledger.toJson(),
+      payload: OptimisticSyncEnvelope.wrap(
+        payload: ledger.toJson(),
+        groupId: groupId,
+        rollbackOperations: rollbackOperations,
+        failureMessage: failureMessage,
+      ),
     );
 
     await _syncIfOnline();

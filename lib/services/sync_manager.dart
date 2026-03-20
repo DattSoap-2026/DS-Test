@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -33,6 +34,7 @@ import 'package:flutter_app/data/local/entities/product_type_entity.dart';
 import 'package:flutter_app/models/types/user_types.dart';
 import 'package:flutter_app/models/types/alert_types.dart';
 import 'package:flutter_app/core/constants/collection_registry.dart';
+import 'package:flutter_app/core/sync/targeted_pull_sync_executor.dart';
 import 'package:flutter_app/core/sync/sync_service.dart';
 import 'package:flutter_app/core/sync/sync_queue_service.dart';
 
@@ -147,6 +149,7 @@ class AppSyncCoordinator extends ChangeNotifier {
   bool get isSyncing => _syncService.currentStatus.isSyncing;
   int get pendingCount => _syncService.currentStatus.pendingCount;
   DateTime? get lastSyncTime => _syncService.currentStatus.lastSyncTime;
+  AppUser? get currentUser => _currentUser;
   String get currentSyncStep => isSyncing ? 'syncing' : '';
   double get syncStepProgress => isSyncing ? 0.5 : 0.0;
   Stream<bool> get syncStream =>
@@ -162,6 +165,8 @@ class AppSyncCoordinator extends ChangeNotifier {
 
   void setCurrentUser(AppUser user, {bool triggerBootstrap = true}) {
     _currentUser = user;
+    _syncService.setCurrentUser(user);
+    unawaited(_syncService.processStoredPullRequests(source: 'user_context'));
     if (triggerBootstrap) {
       scheduleDebouncedSync(
         forceRefresh: true,
@@ -182,7 +187,8 @@ class AppSyncCoordinator extends ChangeNotifier {
 
   void handleAppLifecycle(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      unawaited(_syncService.syncAllPending());
+      unawaited(_syncService.processStoredPullRequests(source: 'app_resume'));
+      unawaited(_syncService.syncAllPending(source: 'app_resume'));
     }
   }
 
@@ -204,7 +210,9 @@ class AppSyncCoordinator extends ChangeNotifier {
     }
 
     try {
-      await _syncService.syncAllPending();
+      await _syncService.syncAllPending(
+        source: forceRefresh ? 'force_refresh' : 'coordinator',
+      );
       final status = _syncService.currentStatus;
       return SyncRunResult(
         executed: true,
@@ -236,19 +244,19 @@ class AppSyncCoordinator extends ChangeNotifier {
     }
   }
 
-  Future<void> push() => _syncService.pushAllPending();
+  Future<void> push() => _syncService.trySync();
 
   Future<void> pull() => _syncService.pullAllChanges();
 
   Future<void> processSyncQueue() async {
-    await _syncService.pushAllPending();
+    await _syncService.trySync();
     notifyListeners();
   }
 
-  Future<void> syncOfflineSalesViaService() => _syncService.syncAllPending();
+  Future<void> syncOfflineSalesViaService() => _syncService.trySync();
 
   Future<void> syncUsersViaDelegate({bool forceRefresh = true}) =>
-      _syncService.syncAllPending();
+      _syncService.trySync();
 
   Future<int> resetStuckOpeningStockRetry() async => 0;
 
@@ -262,6 +270,7 @@ class AppSyncCoordinator extends ChangeNotifier {
     _statusSubscription?.cancel();
     _statusSubscription = null;
     _currentUser = null;
+    _syncService.clearCurrentUser();
     if (notify) {
       notifyListeners();
     }
@@ -289,7 +298,28 @@ AppSyncCoordinator createAppSyncCoordinator(
   BhattiRepository bhattiRepo,
   ProductionRepository productionRepo,
   SyncCommonUtils utils,
-) => AppSyncCoordinator(SyncService.instance);
+) {
+  final syncService = SyncService.instance;
+  final coordinator = AppSyncCoordinator(syncService);
+  final executor = TargetedPullSyncExecutor(
+    dbService: dbService,
+    utils: utils,
+    firebase: firebase,
+  );
+  syncService.registerPullExecutor((
+    modules, {
+    bool forceRefresh = false,
+    String source = 'unknown',
+  }) {
+    return executor.execute(
+      modules,
+      currentUser: coordinator.currentUser,
+      forceRefresh: forceRefresh,
+      source: source,
+    );
+  });
+  return coordinator;
+}
 
 /// [SyncManager] is the central orchestrator for data synchronization in the DattSoap ERP.
 ///
@@ -305,14 +335,15 @@ class SyncManager extends ChangeNotifier {
   static const bool _enableConnectivityAutoSync = true;
   static const bool _enablePartnerOutboxAutoSync = true;
   static const bool _enableQueueAutoSync = true;
-  static const bool _enablePeriodicBulkSync = true;
   static const String _windowsKnownBadQueueItemKey =
       'windows_known_bad_sync_queue_item_id';
 
   final DatabaseService _dbService;
   final FirebaseServices _firebase;
   final SuppliersService _suppliersService;
+  // ignore: unused_field
   final AlertService _alertService;
+  // ignore: unused_field
   final VehiclesService _vehiclesService;
   final SyncAnalyticsService _analyticsService;
 
@@ -482,13 +513,10 @@ class SyncManager extends ChangeNotifier {
   /// The currently authenticated user context for role-based synchronization.
   AppUser? _currentUser;
 
-  /// Timer for the daily 8 PM check.
-  Timer? _bulkSyncTimer;
-
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
   bool _lifecyclePaused = false;
   Timer? _debouncedSyncTimer;
-  Timer? _authReadyBootstrapTimer;
+  StreamSubscription<fb_auth.User?>? _authStateSubscription;
   String? _bootstrappedUserId;
   StreamSubscription<void>? _customerOutboxWatchSubscription;
   StreamSubscription<void>? _dealerOutboxWatchSubscription;
@@ -832,8 +860,7 @@ class SyncManager extends ChangeNotifier {
   }
 
   void _scheduleInitialBootstrapWhenAuthReady(AppUser user) {
-    _authReadyBootstrapTimer?.cancel();
-    _authReadyBootstrapTimer = null;
+    _clearAuthBootstrapSubscription();
 
     if (_firebase.auth?.currentUser != null) {
       _runInitialBootstrapSync(user);
@@ -844,36 +871,34 @@ class SyncManager extends ChangeNotifier {
       'Deferring initial sync bootstrap until Firebase auth is ready.',
       tag: 'Sync',
     );
-
-    var attempts = 0;
-    _authReadyBootstrapTimer = Timer.periodic(const Duration(seconds: 2), (
-      timer,
-    ) {
-      attempts++;
-
-      final activeUser = _currentUser;
-      if (activeUser == null || activeUser.id != user.id) {
-        timer.cancel();
-        _authReadyBootstrapTimer = null;
-        return;
-      }
-
-      if (_firebase.auth?.currentUser != null) {
-        timer.cancel();
-        _authReadyBootstrapTimer = null;
-        _runInitialBootstrapSync(user);
-        return;
-      }
-
-      if (attempts >= 15) {
-        timer.cancel();
-        _authReadyBootstrapTimer = null;
+    _authStateSubscription = _firebase.auth?.authStateChanges().listen(
+      (firebaseUser) {
+        final activeUser = _currentUser;
+        if (activeUser == null || activeUser.id != user.id) {
+          _clearAuthBootstrapSubscription();
+          return;
+        }
+        if (firebaseUser != null) {
+          _clearAuthBootstrapSubscription();
+          _runInitialBootstrapSync(user);
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
         AppLogger.warning(
-          'Initial sync bootstrap timed out waiting for Firebase auth.',
+          'Initial sync bootstrap auth listener failed: $error',
           tag: 'Sync',
         );
-      }
-    });
+        _clearAuthBootstrapSubscription();
+      },
+    );
+  }
+
+  void _clearAuthBootstrapSubscription() {
+    final subscription = _authStateSubscription;
+    _authStateSubscription = null;
+    if (subscription != null) {
+      unawaited(subscription.cancel());
+    }
   }
 
   void scheduleDebouncedSync({
@@ -909,8 +934,6 @@ class SyncManager extends ChangeNotifier {
     // Prevent duplicate listeners
     _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
-    _bulkSyncTimer?.cancel();
-    _bulkSyncTimer = null;
 
     if (_enableConnectivityAutoSync) {
       _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
@@ -930,9 +953,6 @@ class SyncManager extends ChangeNotifier {
           AppLogger.error('Connectivity listener error', error: e, tag: 'Sync');
         },
       );
-    }
-    if (_enablePeriodicBulkSync) {
-      _startBulkSyncTimer();
     }
 
     _updatePendingCount();
@@ -977,9 +997,6 @@ class SyncManager extends ChangeNotifier {
     if (_enableConnectivityAutoSync) {
       _connectivitySubscription?.pause();
     }
-    if (_enablePeriodicBulkSync) {
-      _bulkSyncTimer?.cancel();
-    }
   }
 
   void _resumeBackgroundServices() {
@@ -997,9 +1014,6 @@ class SyncManager extends ChangeNotifier {
 
     if (_enableConnectivityAutoSync) {
       _connectivitySubscription?.resume();
-    }
-    if (_enablePeriodicBulkSync) {
-      _startBulkSyncTimer();
     }
   }
 
@@ -1061,41 +1075,6 @@ class SyncManager extends ChangeNotifier {
     await _ensurePartnerOutboxForCollection(collection);
     await _updatePendingCount();
     scheduleDebouncedSync(debounce: const Duration(seconds: 3));
-  }
-
-  void _startBulkSyncTimer() {
-    // WhatsApp-like: More frequent sync checks (every 5 minutes)
-    _bulkSyncTimer?.cancel();
-    _bulkSyncTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
-      if (_currentUser != null || _firebase.auth?.currentUser != null) {
-        _checkAndPerformBulkSync(
-          _currentUser ??
-              AppUser(
-                id: _firebase.auth!.currentUser!.uid,
-                name: '',
-                email: '',
-                role: UserRole.salesman,
-                departments: [],
-                createdAt: DateTime.now().toIso8601String(),
-              ),
-        );
-        _checkVehicleExpiries();
-      }
-    });
-  }
-
-  Future<void> _checkVehicleExpiries() async {
-    if (_firebase.auth?.currentUser == null) return;
-    final user = _currentUser;
-    if (user == null || !_canSyncFleetData(user.role)) return;
-    try {
-      AppLogger.info('Checking vehicle expiries...', tag: 'Sync');
-      final vehicles = await _vehiclesService.getVehicles(status: 'active');
-      await _alertService.checkVehicleExpiryAlerts(vehicles);
-      AppLogger.success('Vehicle expiry check completed', tag: 'Sync');
-    } catch (e) {
-      AppLogger.error('Error checking vehicle expiries', error: e, tag: 'Sync');
-    }
   }
 
   Future<void> _updatePendingCount() async {
@@ -1511,12 +1490,9 @@ class SyncManager extends ChangeNotifier {
     _dealerOutboxWatchSubscription = null;
     _syncQueueWatchSubscription?.cancel();
     _syncQueueWatchSubscription = null;
-    _bulkSyncTimer?.cancel();
-    _bulkSyncTimer = null;
     _debouncedSyncTimer?.cancel();
     _debouncedSyncTimer = null;
-    _authReadyBootstrapTimer?.cancel();
-    _authReadyBootstrapTimer = null;
+    _clearAuthBootstrapSubscription();
     _lifecyclePaused = false;
     _isSyncing = false;
     _bootstrappedUserId = null;

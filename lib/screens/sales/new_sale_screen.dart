@@ -669,9 +669,9 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
 
   String get _lineDiscountLabel {
     if (!_isSalesman || !_isSalesmanSpecialDiscountEnabled) {
-      return 'Line Discounts';
+      return 'Product Discount';
     }
-    return 'Line Discounts (Default + SP ${_formatDiscountPercent(_salesmanSpecialDiscountPercentage)}%)';
+    return 'Product + SP Discount (${_formatDiscountPercent(_salesmanSpecialDiscountPercentage)}%)';
   }
 
   double _resolveBaseDefaultDiscount(
@@ -1699,21 +1699,26 @@ class _NewSaleScreenState extends State<NewSaleScreen> {
                           ),
                           if (totalsSnapshot.itemDiscountTotal > 0)
                             _buildSummaryDialogRow(
-                              'PROMO DISCOUNTS',
+                              _lineDiscountLabel.toUpperCase(),
                               '-\u20B9${totalsSnapshot.itemDiscountTotal.toStringAsFixed(2)}',
-                              valueColor: AppColors.success,
+                              valueColor: AppColors.error,
+                            ),
+                          if (totalsSnapshot.itemDiscountTotal > 0)
+                            _buildSummaryDialogRow(
+                              'DISCOUNTED SUBTOTAL',
+                              '\u20B9${(totalsSnapshot.subtotal - totalsSnapshot.itemDiscountTotal).toStringAsFixed(2)}',
                             ),
                           if (totalsSnapshot.discountAmount > 0)
                             _buildSummaryDialogRow(
                               'PRIMARY DISCOUNT',
                               '-\u20B9${totalsSnapshot.discountAmount.toStringAsFixed(2)}',
-                              valueColor: AppColors.success,
+                              valueColor: AppColors.error,
                             ),
                           if (totalsSnapshot.additionalDiscountAmount > 0)
                             _buildSummaryDialogRow(
                               'ADDITIONAL DISCOUNT',
                               '-\u20B9${totalsSnapshot.additionalDiscountAmount.toStringAsFixed(2)}',
-                              valueColor: AppColors.success,
+                              valueColor: AppColors.error,
                             ),
                           if (totalsSnapshot.totalGstAmount > 0)
                             _buildSummaryDialogRow(

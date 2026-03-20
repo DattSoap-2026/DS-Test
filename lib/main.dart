@@ -173,6 +173,11 @@ void main() {
 
         AppLogger.info('App Starting...', tag: 'App');
 
+        // Register the FCM background hook before app services start so
+        // sync_required control messages can be persisted while the app is not
+        // in the foreground.
+        NotificationService.registerBackgroundMessageHandler();
+
         // 1. Initialize Firebase
         await firebaseServices.initialize();
 
@@ -851,6 +856,24 @@ class _DattSoapAppState extends rp.ConsumerState<DattSoapApp>
         tag: 'App',
       );
     }
+
+    try {
+      await ConnectivityService.instance.dispose();
+    } catch (e) {
+      AppLogger.warning(
+        'Connectivity cleanup during app shutdown failed: $e',
+        tag: 'App',
+      );
+    }
+
+    try {
+      await SyncService.instance.dispose();
+    } catch (e) {
+      AppLogger.warning(
+        'Core sync cleanup during app shutdown failed: $e',
+        tag: 'App',
+      );
+    }
   }
 
   Future<void> _checkUpdate() async {
@@ -928,18 +951,6 @@ class _DattSoapAppState extends rp.ConsumerState<DattSoapApp>
                   builder: (_) => const CommandPaletteDialog(),
                 );
               }
-            },
-            // Ctrl + R: Manual Sync
-            onSync: (ctx) {
-              final appSyncCoordinator = ctx.read<AppSyncCoordinator>();
-              final authProvider = ctx.read<AuthProvider>();
-              appSyncCoordinator.syncAll(authProvider.currentUser);
-              ScaffoldMessenger.of(ctx).showSnackBar(
-                const SnackBar(
-                  content: Text('Sync started...'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
             },
             // Ctrl + /: Show Shortcuts Help
             onHelp: (ctx) {

@@ -158,7 +158,7 @@ class SalesTargetsService extends BaseService {
 
     if (db != null) {
       try {
-        await SyncService.instance.pushAllPending();
+        await SyncService.instance.trySync();
       } catch (_) {
         return;
       }

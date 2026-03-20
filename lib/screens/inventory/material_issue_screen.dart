@@ -524,8 +524,8 @@ class _MaterialIssueScreenState extends State<MaterialIssueScreen>
                   _loadProducts();
                   _loadTanks();
                 },
-                icon: const Icon(Icons.sync_rounded),
-                tooltip: 'Refresh',
+                icon: const Icon(Icons.replay_rounded),
+                tooltip: 'Reload',
                 style: IconButton.styleFrom(
                   backgroundColor: theme.colorScheme.surfaceContainerHighest
                       .withValues(alpha: 0.3),

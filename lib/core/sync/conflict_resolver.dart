@@ -14,7 +14,6 @@ enum SyncConflictAction { pushLocal, useFirebase, inSync, manualResolution }
 
 /// Generic conflict resolution result.
 class ConflictResolution {
-  /// Creates an immutable conflict resolution result.
   const ConflictResolution({
     required this.action,
     required this.collectionName,
@@ -29,7 +28,6 @@ class ConflictResolution {
   final String reason;
   final DateTime timestamp;
 
-  /// Returns the protocol action code expected by the sync pipeline.
   String get code {
     switch (action) {
       case SyncConflictAction.pushLocal:
@@ -48,7 +46,17 @@ class ConflictResolution {
 class ConflictResolver {
   ConflictResolver._();
 
-  /// Resolves a conflict between a local record and a Firebase record.
+  static const Set<String> _serverWinsCollections = <String>{
+    CollectionRegistry.units,
+    CollectionRegistry.productCategories,
+    CollectionRegistry.productTypes,
+    CollectionRegistry.attendances,
+  };
+
+  static const Set<String> _localPendingWinsCollections = <String>{
+    CollectionRegistry.sales,
+  };
+
   static Future<ConflictResolution> resolve({
     required dynamic localRecord,
     required dynamic firebaseRecord,
@@ -65,7 +73,7 @@ class ConflictResolver {
         action: SyncConflictAction.inSync,
         collectionName: normalizedCollection,
         documentId: resolvedDocumentId,
-        reason: 'Both local and Firebase records are absent.',
+        reason: 'Both local and remote records are absent.',
       );
     }
 
@@ -74,7 +82,7 @@ class ConflictResolver {
         action: SyncConflictAction.pushLocal,
         collectionName: normalizedCollection,
         documentId: resolvedDocumentId,
-        reason: 'Firebase record is missing, so the local record wins.',
+        reason: 'Remote record is missing, so the local record wins.',
       );
     }
 
@@ -83,95 +91,117 @@ class ConflictResolver {
         action: SyncConflictAction.useFirebase,
         collectionName: normalizedCollection,
         documentId: resolvedDocumentId,
-        reason: 'Local record is missing, so Firebase wins.',
+        reason: 'Local record is missing, so the remote record wins.',
       );
     }
 
-    if (CollectionRegistry.isFinancial(normalizedCollection) ||
-        CollectionRegistry.isFinancial(localRecord.runtimeType.toString())) {
-      final localVersion = _readVersion(localRecord);
-      final remoteVersion = _readVersion(firebaseRecord);
-      final localModified = _readModifiedAt(localRecord);
-      final remoteModified = _readModifiedAt(firebaseRecord);
-      if (localVersion == remoteVersion && localModified == remoteModified) {
-        return _log(
-          action: SyncConflictAction.inSync,
-          collectionName: normalizedCollection,
-          documentId: resolvedDocumentId,
-          reason: 'Financial record already matches on version and timestamp.',
-        );
-      }
-      await _createConflictRecord(
-        entityId: resolvedDocumentId,
-        entityType: normalizedCollection,
-        localRecord: localRecord,
-        firebaseRecord: firebaseRecord,
-      );
-      return _log(
-        action: SyncConflictAction.manualResolution,
-        collectionName: normalizedCollection,
-        documentId: resolvedDocumentId,
-        reason: 'Financial records never auto-overwrite when both sides differ.',
-      );
-    }
-
-    if (CollectionRegistry.firebaseWins(normalizedCollection) ||
-        CollectionRegistry.firebaseWins(localRecord.runtimeType.toString())) {
-      return _log(
-        action: SyncConflictAction.useFirebase,
-        collectionName: normalizedCollection,
-        documentId: resolvedDocumentId,
-        reason: 'Firebase is the source of truth for this master data.',
-      );
-    }
-
-    final localVersion = _readVersion(localRecord);
-    final remoteVersion = _readVersion(firebaseRecord);
-    if (localVersion > remoteVersion) {
-      return _log(
-        action: SyncConflictAction.pushLocal,
-        collectionName: normalizedCollection,
-        documentId: resolvedDocumentId,
-        reason: 'Local record has a higher version.',
-      );
-    }
-    if (remoteVersion > localVersion) {
-      return _log(
-        action: SyncConflictAction.useFirebase,
-        collectionName: normalizedCollection,
-        documentId: resolvedDocumentId,
-        reason: 'Firebase record has a higher version.',
-      );
-    }
-
+    final recordsDiffer = _recordsDiffer(localRecord, firebaseRecord);
     final localModified = _readModifiedAt(localRecord);
     final remoteModified = _readModifiedAt(firebaseRecord);
-    if (localModified != null &&
-        remoteModified != null &&
-        localModified.isAfter(remoteModified)) {
+
+    if (!recordsDiffer && _sameInstant(localModified, remoteModified)) {
       return _log(
-        action: SyncConflictAction.pushLocal,
+        action: SyncConflictAction.inSync,
         collectionName: normalizedCollection,
         documentId: resolvedDocumentId,
-        reason: 'Versions match and the local record is newer.',
-      );
-    }
-    if (localModified != null &&
-        remoteModified != null &&
-        remoteModified.isAfter(localModified)) {
-      return _log(
-        action: SyncConflictAction.useFirebase,
-        collectionName: normalizedCollection,
-        documentId: resolvedDocumentId,
-        reason: 'Versions match and the Firebase record is newer.',
+        reason: 'Local and remote records already match.',
       );
     }
 
-    return _log(
-      action: SyncConflictAction.inSync,
+    if (_shouldServerAlwaysWin(normalizedCollection)) {
+      final resolution = await _recordAndLog(
+        action: SyncConflictAction.useFirebase,
+        collectionName: normalizedCollection,
+        documentId: resolvedDocumentId,
+        reason: 'Server is the source of truth for this module.',
+        localRecord: localRecord,
+        firebaseRecord: firebaseRecord,
+        shouldPersist: recordsDiffer,
+      );
+      return resolution;
+    }
+
+    if (_shouldKeepLocalUntilSynced(normalizedCollection, localRecord)) {
+      final resolution = await _recordAndLog(
+        action: SyncConflictAction.pushLocal,
+        collectionName: normalizedCollection,
+        documentId: resolvedDocumentId,
+        reason: 'Unsynced local sales changes must win until push completes.',
+        localRecord: localRecord,
+        firebaseRecord: firebaseRecord,
+        shouldPersist: recordsDiffer,
+      );
+      return resolution;
+    }
+
+    if (localModified != null && remoteModified != null) {
+      if (localModified.isAfter(remoteModified)) {
+        return _recordAndLog(
+          action: SyncConflictAction.pushLocal,
+          collectionName: normalizedCollection,
+          documentId: resolvedDocumentId,
+          reason: 'Local updatedAt is newer than remote updatedAt.',
+          localRecord: localRecord,
+          firebaseRecord: firebaseRecord,
+          shouldPersist: recordsDiffer,
+        );
+      }
+      return _recordAndLog(
+        action: SyncConflictAction.useFirebase,
+        collectionName: normalizedCollection,
+        documentId: resolvedDocumentId,
+        reason: remoteModified.isAfter(localModified)
+            ? 'Remote updatedAt is newer than local updatedAt.'
+            : 'Timestamps are equal, so the server wins by default.',
+        localRecord: localRecord,
+        firebaseRecord: firebaseRecord,
+        shouldPersist: recordsDiffer,
+      );
+    }
+
+    if (!recordsDiffer) {
+      return _log(
+        action: SyncConflictAction.inSync,
+        collectionName: normalizedCollection,
+        documentId: resolvedDocumentId,
+        reason: 'Local and remote records are structurally identical.',
+      );
+    }
+
+    return _recordAndLog(
+      action: SyncConflictAction.useFirebase,
       collectionName: normalizedCollection,
       documentId: resolvedDocumentId,
-      reason: 'Version and last-modified values match.',
+      reason: 'Unable to compare timestamps, so the server wins safely.',
+      localRecord: localRecord,
+      firebaseRecord: firebaseRecord,
+      shouldPersist: true,
+    );
+  }
+
+  static Future<ConflictResolution> _recordAndLog({
+    required SyncConflictAction action,
+    required String collectionName,
+    required String documentId,
+    required String reason,
+    required dynamic localRecord,
+    required dynamic firebaseRecord,
+    required bool shouldPersist,
+  }) async {
+    if (shouldPersist) {
+      await _createConflictRecord(
+        entityId: documentId,
+        entityType: collectionName,
+        localRecord: localRecord,
+        firebaseRecord: firebaseRecord,
+        action: action,
+      );
+    }
+    return _log(
+      action: action,
+      collectionName: collectionName,
+      documentId: documentId,
+      reason: reason,
     );
   }
 
@@ -200,6 +230,7 @@ class ConflictResolver {
     required String entityType,
     required dynamic localRecord,
     required dynamic firebaseRecord,
+    required SyncConflictAction action,
   }) async {
     final now = DateTime.now();
     final conflict = ConflictEntity()
@@ -209,8 +240,10 @@ class ConflictResolver {
       ..localData = jsonEncode(_serializeRecord(localRecord))
       ..serverData = jsonEncode(_serializeRecord(firebaseRecord))
       ..conflictDate = now
-      ..resolved = false
-      ..resolutionStrategy = ResolutionStrategy.manualMerge
+      ..resolved = action != SyncConflictAction.manualResolution
+      ..resolutionStrategy = _resolutionStrategyFor(action)
+      ..resolvedBy = 'conflict_resolver'
+      ..resolvedAt = action == SyncConflictAction.manualResolution ? null : now
       ..updatedAt = now
       ..syncStatus = SyncStatus.synced
       ..isSynced = true
@@ -224,20 +257,90 @@ class ConflictResolver {
     });
   }
 
-  static int _readVersion(dynamic target) {
-    final value = _readField(target, const <String>['version']);
-    if (value is num) {
-      return value.toInt();
+  static ResolutionStrategy _resolutionStrategyFor(
+    SyncConflictAction action,
+  ) {
+    switch (action) {
+      case SyncConflictAction.pushLocal:
+        return ResolutionStrategy.useLocal;
+      case SyncConflictAction.useFirebase:
+      case SyncConflictAction.inSync:
+        return ResolutionStrategy.useServer;
+      case SyncConflictAction.manualResolution:
+        return ResolutionStrategy.manualMerge;
     }
-    return int.tryParse(value?.toString() ?? '') ?? 1;
+  }
+
+  static bool _shouldServerAlwaysWin(String collectionName) {
+    return _serverWinsCollections.contains(collectionName) ||
+        CollectionRegistry.firebaseWins(collectionName);
+  }
+
+  static bool _shouldKeepLocalUntilSynced(
+    String collectionName,
+    dynamic localRecord,
+  ) {
+    return _localPendingWinsCollections.contains(collectionName) &&
+        _isLocalPending(localRecord);
+  }
+
+  static bool _isLocalPending(dynamic target) {
+    final syncStatus = _readField(target, const <String>['syncStatus']);
+    final statusName = syncStatus?.toString().toLowerCase();
+    if (statusName != null && statusName.contains('pending')) {
+      return true;
+    }
+    final isSynced = _readField(target, const <String>['isSynced']);
+    if (isSynced is bool) {
+      return !isSynced;
+    }
+    return false;
+  }
+
+  static bool _recordsDiffer(dynamic localRecord, dynamic remoteRecord) {
+    final localSerialized = jsonEncode(_normalizeComparable(_serializeRecord(localRecord)));
+    final remoteSerialized = jsonEncode(
+      _normalizeComparable(_serializeRecord(remoteRecord)),
+    );
+    return localSerialized != remoteSerialized;
+  }
+
+  static bool _sameInstant(DateTime? left, DateTime? right) {
+    if (left == null || right == null) {
+      return false;
+    }
+    return left.isAtSameMomentAs(right);
+  }
+
+  static Object? _normalizeComparable(Object? value) {
+    if (value is Map) {
+      final keys = value.keys.map((key) => key.toString()).toList(growable: false)
+        ..sort();
+      return <String, Object?>{
+        for (final key in keys)
+          if (!_isVolatileField(key))
+            key: _normalizeComparable(value[key]),
+      };
+    }
+    if (value is List) {
+      return value.map(_normalizeComparable).toList(growable: false);
+    }
+    return value;
+  }
+
+  static bool _isVolatileField(String field) {
+    return field == 'lastSynced' ||
+        field == 'syncStatus' ||
+        field == 'deviceId' ||
+        field == 'version';
   }
 
   static DateTime? _readModifiedAt(dynamic target) {
     final value = _readField(
       target,
       const <String>[
-        'lastModified',
         'updatedAt',
+        'lastModified',
         'timestamp',
         'occurredAt',
         'createdAt',
@@ -273,23 +376,30 @@ class ConflictResolver {
       return target[field];
     }
     if (target is Map) {
-      return target[field];
+      for (final entry in target.entries) {
+        if (entry.key.toString() == field) {
+          return entry.value;
+        }
+      }
+      return null;
     }
 
     try {
       switch (field) {
-        case 'version':
-          return (target as dynamic).version;
-        case 'lastModified':
-          return (target as dynamic).lastModified;
         case 'updatedAt':
           return (target as dynamic).updatedAt;
+        case 'lastModified':
+          return (target as dynamic).lastModified;
         case 'timestamp':
           return (target as dynamic).timestamp;
         case 'occurredAt':
           return (target as dynamic).occurredAt;
         case 'createdAt':
           return (target as dynamic).createdAt;
+        case 'syncStatus':
+          return (target as dynamic).syncStatus;
+        case 'isSynced':
+          return (target as dynamic).isSynced;
         case 'firebaseId':
           return (target as dynamic).firebaseId;
         case 'id':
@@ -310,13 +420,29 @@ class ConflictResolver {
       return null;
     }
     if (target is Map<String, dynamic>) {
-      return target;
+      return target.map(
+        (key, value) => MapEntry(key.toString(), _serializeRecord(value)),
+      );
     }
     if (target is Map) {
-      return Map<String, dynamic>.from(target);
+      return target.map(
+        (key, value) => MapEntry(key.toString(), _serializeRecord(value)),
+      );
+    }
+    if (target is List) {
+      return target.map(_serializeRecord).toList(growable: false);
+    }
+    if (target is DateTime) {
+      return target.toIso8601String();
     }
     try {
-      return (target as dynamic).toJson();
+      final json = (target as dynamic).toJson();
+      if (json is Map<String, dynamic>) {
+        return json.map(
+          (key, value) => MapEntry(key.toString(), _serializeRecord(value)),
+        );
+      }
+      return json;
     } catch (_) {
       return target.toString();
     }

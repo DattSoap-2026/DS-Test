@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:isar/isar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -9,7 +8,7 @@ import '../core/network/connectivity_service.dart';
 import '../core/sync/sync_queue_service.dart';
 import '../core/sync/sync_service.dart';
 import '../data/local/base_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
+import '../features/inventory/models/sync_queue.dart';
 import 'base_service.dart';
 import 'database_service.dart';
 import 'outbox_codec.dart';
@@ -332,25 +331,21 @@ abstract class OfflineFirstService extends BaseService {
 
   /// Returns all permanently-failed (dead-letter) sync queue items.
   ///
-  /// These are items that exhausted their retry budget and were marked
-  /// with [SyncStatus.conflict] by [_recordQueueFailure].
-  Future<List<SyncQueueEntity>> getFailedSyncItems() async {
-    final all = await dbService.syncQueue.where().findAll();
-    return all.where((e) => e.syncStatus == SyncStatus.conflict).toList();
+  /// These are items that exhausted their retry budget in the new durable queue.
+  Future<List<SyncQueue>> getFailedSyncItems() {
+    return SyncQueueService.instance.getFailedQueue();
   }
 
   /// Resets a permanently-failed item back to [SyncStatus.pending] so the
   /// queue processor will retry it on the next sync cycle.
   Future<bool> retryFailedSyncItem(String queueId) async {
     try {
-      final item = await dbService.syncQueue.getById(queueId);
-      if (item == null) return false;
-      item
-        ..syncStatus = SyncStatus.pending
-        ..updatedAt = DateTime.now();
-      await dbService.db.writeTxn(() async {
-        await dbService.syncQueue.put(item);
-      });
+      final target = _resolveQueueTarget(queueId);
+      if (target == null) return false;
+      await SyncQueueService.instance.resetRetry(
+        collectionName: target.key,
+        documentId: target.value,
+      );
       return true;
     } catch (_) {
       return false;
@@ -360,11 +355,12 @@ abstract class OfflineFirstService extends BaseService {
   /// Permanently removes a failed sync queue item (admin discard).
   Future<bool> deleteFailedSyncItem(String queueId) async {
     try {
-      final item = await dbService.syncQueue.getById(queueId);
-      if (item == null) return false;
-      await dbService.db.writeTxn(() async {
-        await dbService.syncQueue.delete(item.isarId);
-      });
+      final target = _resolveQueueTarget(queueId);
+      if (target == null) return false;
+      await SyncQueueService.instance.removeFromQueue(
+        collectionName: target.key,
+        documentId: target.value,
+      );
       return true;
     } catch (_) {
       return false;
@@ -439,7 +435,7 @@ abstract class OfflineFirstService extends BaseService {
       operation: action,
       payload: data,
     );
-    await SyncService.instance.pushAllPending();
+    await SyncService.instance.trySync();
   }
 
   bool _isFinancialCollection(String collection) {
@@ -514,5 +510,28 @@ abstract class OfflineFirstService extends BaseService {
       default:
         return 'update';
     }
+  }
+
+  MapEntry<String, String>? _resolveQueueTarget(String queueId) {
+    final normalized = queueId.trim();
+    if (normalized.isEmpty) {
+      return null;
+    }
+
+    final separatorIndex = normalized.indexOf('::');
+    if (separatorIndex > 0 && separatorIndex < normalized.length - 2) {
+      final collection = normalized.substring(0, separatorIndex).trim();
+      final documentId = normalized.substring(separatorIndex + 2).trim();
+      if (collection.isNotEmpty && documentId.isNotEmpty) {
+        return MapEntry(collection, documentId);
+      }
+    }
+
+    final collection = OutboxCodec.tryExtractCollection(normalized);
+    final documentId = OutboxCodec.tryExtractRecordId(normalized);
+    if (collection == null || documentId == null) {
+      return null;
+    }
+    return MapEntry(collection, documentId);
   }
 }

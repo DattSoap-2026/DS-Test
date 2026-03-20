@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,10 +9,10 @@ import 'package:csv/csv.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter_app/core/constants/collection_registry.dart';
 import 'base_service.dart';
+import '../core/sync/sync_service.dart';
 import 'database_service.dart';
 import '../data/local/base_entity.dart';
 import '../data/local/entities/sale_entity.dart';
-import '../data/local/entities/sync_queue_entity.dart';
 import '../data/repositories/user_repository.dart';
 import 'delegates/data_management_remote_delegate.dart';
 
@@ -365,6 +366,10 @@ class DataManagementService extends BaseService {
     }
   }
 
+  void triggerAutomaticPostResetSync() {
+    unawaited(SyncService.instance.trySync());
+  }
+
   Future<bool> _resetRemoteTransactions(
     DateTime now, {
     void Function(String message)? onProgress,
@@ -488,7 +493,7 @@ class DataManagementService extends BaseService {
           // --- System / Notifications ---
           await _dbService.alerts.clear();
           await _dbService.auditLogs.clear();
-          await _dbService.syncQueue.clear();
+          await _dbService.inventorySyncQueues.clear();
           await _dbService.syncMetrics.clear();
           await _dbService.conflicts.clear();
 
@@ -577,14 +582,14 @@ class DataManagementService extends BaseService {
 
   Future<void> _clearSyncQueueByCollections(List<String> collections) async {
     if (collections.isEmpty) return;
-    final items = await _dbService.syncQueue.where().findAll();
+    final items = await _dbService.inventorySyncQueues.where().findAll();
     final ids = items
-        .where((q) => collections.contains(q.collection))
-        .map((q) => fastHash(q.id))
+        .where((q) => collections.contains(q.collectionName))
+        .map((q) => q.id)
         .toList();
     if (ids.isEmpty) return;
     await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.deleteAll(ids);
+      await _dbService.inventorySyncQueues.deleteAll(ids);
     });
   }
 
@@ -592,21 +597,21 @@ class DataManagementService extends BaseService {
     Set<String> recipientTypes,
   ) async {
     if (recipientTypes.isEmpty) return;
-    final salesQueueItems = await _dbService.syncQueue
-        .filter()
-        .collectionEqualTo('sales')
-        .findAll();
+    final salesQueueItems = await _dbService.inventorySyncQueues.where().findAll();
     if (salesQueueItems.isEmpty) return;
 
     final ids = <Id>[];
     for (final item in salesQueueItems) {
+      if (item.collectionName != 'sales') {
+        continue;
+      }
       try {
-        final decoded = jsonDecode(item.dataJson);
+        final decoded = jsonDecode(item.payload);
         if (decoded is! Map) continue;
         final data = Map<String, dynamic>.from(decoded);
         final type = data['recipientType']?.toString();
         if (type != null && recipientTypes.contains(type)) {
-          ids.add(fastHash(item.id));
+          ids.add(item.id);
         }
       } catch (_) {
         // Ignore malformed queued payloads and keep queue intact.
@@ -615,7 +620,7 @@ class DataManagementService extends BaseService {
 
     if (ids.isEmpty) return;
     await _dbService.db.writeTxn(() async {
-      await _dbService.syncQueue.deleteAll(ids);
+      await _dbService.inventorySyncQueues.deleteAll(ids);
     });
   }
 

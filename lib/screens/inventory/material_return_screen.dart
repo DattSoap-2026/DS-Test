@@ -192,8 +192,8 @@ class _MaterialReturnScreenState extends State<MaterialReturnScreen> {
                     _loadDeptProducts(_selectedDepartment!);
                   }
                 },
-                icon: const Icon(Icons.sync_rounded),
-                tooltip: 'Refresh Dept Stock',
+                icon: const Icon(Icons.replay_rounded),
+                tooltip: 'Reload Dept Stock',
                 style: IconButton.styleFrom(
                   backgroundColor: Theme.of(
                     context,
@@ -495,4 +495,3 @@ class _MaterialReturnScreenState extends State<MaterialReturnScreen> {
     );
   }
 }
-

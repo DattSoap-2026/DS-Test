@@ -403,7 +403,7 @@ class SalesSyncDelegate {
 
           // Conflict Detection
           final existing = existingSalesMap[doc.id];
-          if (existing != null && existing.syncStatus == SyncStatus.pending) {
+          if (existing != null) {
             await detectAndFlagConflict(
               entityId: doc.id,
               entityType: 'sales',
@@ -563,7 +563,7 @@ class SalesSyncDelegate {
 
           // Conflict Detection
           final existing = existingReturnsMap[doc.id];
-          if (existing != null && existing.syncStatus == SyncStatus.pending) {
+          if (existing != null) {
             await detectAndFlagConflict(
               entityId: doc.id,
               entityType: 'returns',
@@ -1293,9 +1293,7 @@ class SalesSyncDelegate {
           }
 
           final existing = existingTargetsMap[id];
-          if (existing != null &&
-              (existing.syncStatus == SyncStatus.pending ||
-                  existing.syncStatus == SyncStatus.conflict)) {
+          if (existing != null) {
             await detectAndFlagConflict(
               localEntity: existing,
               serverData: data,

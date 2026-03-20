@@ -18,7 +18,6 @@ import '../../services/inventory_service.dart';
 import '../../services/users_service.dart';
 import '../../services/vehicles_service.dart';
 import '../../services/route_order_service.dart';
-import '../../services/sync_manager.dart';
 
 import '../../services/products_service.dart';
 import '../../services/schemes_service.dart';
@@ -329,27 +328,6 @@ class _DispatchScreenState extends State<DispatchScreen>
     } finally {
       await _loadDispatchStats();
     }
-  }
-
-  Future<void> _syncAndRefresh() async {
-    setState(() => _isLoading = true);
-    try {
-      await context.read<AppSyncCoordinator>().syncUsersViaDelegate(
-        forceRefresh: true,
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Master Data Synced Successfully')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Sync Failed: $e')));
-      }
-    }
-    await _loadMasterData();
   }
 
   bool _isDispatchRecord(Map<String, dynamic> data) {
@@ -853,12 +831,6 @@ class _DispatchScreenState extends State<DispatchScreen>
                     ],
                   ),
                 ),
-                IconButton(
-                  onPressed: _syncAndRefresh,
-                  icon: const Icon(Icons.sync_rounded),
-                  tooltip: 'Sync Master Data',
-                ),
-                const SizedBox(width: 8),
                 if (Responsive.isMobile(context))
                   IconButton(
                     onPressed: () =>

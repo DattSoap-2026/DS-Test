@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:isar/isar.dart';
+import '../core/network/connectivity_service.dart';
+import '../core/sync/optimistic_sync_payload.dart';
 import '../core/sync/sync_queue_service.dart';
+import '../core/sync/sync_service.dart';
 import '../data/local/base_entity.dart';
 import '../data/local/entities/route_session_entity.dart';
 import '../data/local/entities/customer_visit_entity.dart';
@@ -215,6 +220,12 @@ class VisitService extends BaseService {
     );
   }
 
+  void _triggerSyncIfOnline() {
+    if (ConnectivityService.instance.isOnline) {
+      unawaited(SyncService.instance.trySync(source: 'visit_write'));
+    }
+  }
+
   Map<String, dynamic> _routePayload(RouteSessionEntity entity) {
     final payload = entity.toDomain().toJson();
     payload['id'] = entity.id;
@@ -376,10 +387,22 @@ class VisitService extends BaseService {
       });
       await _enqueueOutbox(
         collection: visitsCollection,
-        payload: _visitPayload(entity),
+        payload: OptimisticSyncEnvelope.wrap(
+          payload: _visitPayload(entity),
+          groupId: 'visit_${entity.id}_${now.microsecondsSinceEpoch}',
+          rollbackOperations: <SyncRollbackOperation>[
+            SyncRollbackOperation(
+              collectionName: visitsCollection,
+              documentId: entity.id,
+              action: 'delete',
+            ),
+          ],
+          failureMessage: 'Visit sync failed after multiple retries. The local visit was reverted.',
+        ),
         action: 'set',
         explicitRecordKey: entity.id,
       );
+      _triggerSyncIfOnline();
 
       return id;
     } catch (e) {
@@ -395,12 +418,18 @@ class VisitService extends BaseService {
     try {
       Map<String, dynamic>? visitSyncPayload;
       Map<String, dynamic>? sessionSyncPayload;
+      CustomerVisitEntity? previousVisit;
+      RouteSessionEntity? previousSession;
+      final groupId = 'visit_complete_${visitId}_${DateTime.now().microsecondsSinceEpoch}';
+      const failureMessage =
+          'Visit sync failed after multiple retries. The local visit log was reverted.';
       final success = await _dbService.db.writeTxn(() async {
         final entity = await _dbService.customerVisits
             .filter()
             .idEqualTo(visitId)
             .findFirst();
         if (entity == null) return false;
+        previousVisit = CustomerVisitEntity.fromJson(entity.toJson());
 
         entity.status = data['status'] ?? 'completed';
         entity.departureTime =
@@ -426,6 +455,7 @@ class VisitService extends BaseService {
             .idEqualTo(entity.sessionId)
             .findFirst();
         if (session != null) {
+          previousSession = RouteSessionEntity.fromJson(session.toJson());
           if (entity.status == 'completed') {
             session.completedStops++;
           } else if (entity.status == 'skipped') {
@@ -442,10 +472,31 @@ class VisitService extends BaseService {
         return true;
       });
       if (success) {
+        final rollbackOperations = <SyncRollbackOperation>[
+          if (previousVisit != null)
+            SyncRollbackOperation(
+              collectionName: visitsCollection,
+              documentId: previousVisit!.id,
+              action: 'put',
+              payload: previousVisit!.toJson(),
+            ),
+          if (previousSession != null)
+            SyncRollbackOperation(
+              collectionName: sessionsCollection,
+              documentId: previousSession!.id,
+              action: 'put',
+              payload: previousSession!.toJson(),
+            ),
+        ];
         if (visitSyncPayload != null) {
           await _enqueueOutbox(
             collection: visitsCollection,
-            payload: visitSyncPayload!,
+            payload: OptimisticSyncEnvelope.wrap(
+              payload: visitSyncPayload!,
+              groupId: groupId,
+              rollbackOperations: rollbackOperations,
+              failureMessage: failureMessage,
+            ),
             action: 'update',
             explicitRecordKey: visitSyncPayload!['id']?.toString(),
           );
@@ -453,11 +504,17 @@ class VisitService extends BaseService {
         if (sessionSyncPayload != null) {
           await _enqueueOutbox(
             collection: sessionsCollection,
-            payload: sessionSyncPayload!,
+            payload: OptimisticSyncEnvelope.wrap(
+              payload: sessionSyncPayload!,
+              groupId: groupId,
+              rollbackOperations: rollbackOperations,
+              failureMessage: failureMessage,
+            ),
             action: 'update',
             explicitRecordKey: sessionSyncPayload!['id']?.toString(),
           );
         }
+        _triggerSyncIfOnline();
       }
       return success;
     } catch (e) {

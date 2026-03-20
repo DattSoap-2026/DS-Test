@@ -70,7 +70,7 @@ class RolesService extends BaseService {
     if (db == null) {
       throw Exception('Offline');
     }
-    await SyncService.instance.pushAllPending();
+    await SyncService.instance.trySync();
   }
 
   Future<void> _upsertLocalRoleEntity(

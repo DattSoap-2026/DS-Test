@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../services/attendance_service.dart';
 import '../models/attendance_model.dart';
 import '../../../providers/auth/auth_provider.dart';
-import '../../../services/sync_manager.dart';
 
 import 'package:intl/intl.dart';
 import 'package:flutter_app/widgets/dialogs/responsive_alert_dialog.dart';
@@ -66,23 +65,6 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Attendance Report'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.sync_rounded),
-            tooltip: 'Sync & Refresh',
-            onPressed: () async {
-              final sync = context.read<AppSyncCoordinator>();
-              final user = context.read<AuthProvider>().currentUser;
-              if (user != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Syncing data from cloud...')),
-                );
-                await sync.syncAll(user, forceRefresh: true);
-              }
-              _loadData();
-            },
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -370,4 +352,3 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
     return months[month - 1];
   }
 }
-

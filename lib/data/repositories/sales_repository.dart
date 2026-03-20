@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/network/connectivity_service.dart';
 import '../../core/sync/collection_registry.dart';
+import '../../core/sync/optimistic_sync_payload.dart';
 import '../../core/sync/sync_queue_service.dart';
 import '../../core/sync/sync_service.dart';
 import '../../core/utils/device_id_service.dart';
@@ -185,6 +186,9 @@ class SalesRepository {
     final now = DateTime.now();
     final deviceId = await _deviceIdService.getDeviceId();
     final existing = await _dbService.sales.getById(_ensureId(sale));
+    final previousSnapshot = existing == null
+        ? null
+        : SaleEntity.fromJson(existing.toJson());
     final createdAt = _ensureCreatedAt(sale, existing?.createdAt, now);
     final createdAtDate = DateTime.tryParse(createdAt) ?? now;
 
@@ -209,7 +213,26 @@ class SalesRepository {
       collectionName: CollectionRegistry.sales,
       documentId: sale.id,
       operation: existing == null ? 'create' : 'update',
-      payload: sale.toJson(),
+      payload: OptimisticSyncEnvelope.wrap(
+        payload: sale.toJson(),
+        groupId: 'sale_${sale.id}_${now.microsecondsSinceEpoch}',
+        rollbackOperations: <SyncRollbackOperation>[
+          if (previousSnapshot == null)
+            SyncRollbackOperation(
+              collectionName: CollectionRegistry.sales,
+              documentId: sale.id,
+              action: 'delete',
+            )
+          else
+            SyncRollbackOperation(
+              collectionName: CollectionRegistry.sales,
+              documentId: previousSnapshot.id,
+              action: 'put',
+              payload: previousSnapshot.toJson(),
+            ),
+        ],
+        failureMessage: 'Sale sync failed after multiple retries. The local save was reverted.',
+      ),
     );
 
     await _syncIfOnline();

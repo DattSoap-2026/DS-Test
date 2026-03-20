@@ -5,7 +5,6 @@ import '../../services/products_service.dart';
 import '../../services/csv_service.dart';
 import '../../models/types/product_types.dart';
 import '../../services/master_data_service.dart';
-import '../../services/sync_manager.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../utils/csv_type_mapper.dart';
 import '../../utils/debouncer.dart';
@@ -313,52 +312,6 @@ class _ProductsManagementScreenState extends State<ProductsManagementScreen> {
 
     final actions = [
       if (!effectiveReadOnly) ...[
-        Consumer2<AppSyncCoordinator, AuthProvider>(
-          builder: (context, appSyncCoordinator, auth, _) {
-            final isSyncing = appSyncCoordinator.isSyncing;
-            final pending = appSyncCoordinator.pendingCount;
-            final user = auth.currentUser;
-
-            return OutlinedButton.icon(
-              onPressed: (isSyncing || user == null)
-                  ? null
-                  : () async {
-                      await appSyncCoordinator.syncAll(
-                        user,
-                        forceRefresh: true,
-                      );
-                      if (!mounted) return;
-                      await _loadProducts();
-                    },
-              icon: isSyncing
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Badge(
-                      label: Text(pending.toString()),
-                      isLabelVisible: pending > 0,
-                      child: Icon(Icons.sync, size: actionIconSize),
-                    ),
-              label: Text(isSyncing ? 'Syncing...' : 'Sync Now'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: isSyncing
-                    ? theme.disabledColor
-                    : theme.colorScheme.primary,
-                textStyle: actionTextStyle,
-                visualDensity: actionVisualDensity,
-                padding: EdgeInsets.symmetric(
-                  horizontal: actionHorizontalPadding,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            );
-          },
-        ),
-        const SizedBox(width: 8),
         OutlinedButton.icon(
           onPressed: () async {
             final csvService = context.read<CsvService>();

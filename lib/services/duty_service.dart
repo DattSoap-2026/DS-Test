@@ -630,7 +630,7 @@ class DutyService extends BaseService {
       // Best-effort immediate sync when online.
       if (db != null) {
         try {
-          await SyncService.instance.pushAllPending();
+          await SyncService.instance.trySync();
         } catch (_) {
           // Keep queued item for sync coordinator retry.
         }

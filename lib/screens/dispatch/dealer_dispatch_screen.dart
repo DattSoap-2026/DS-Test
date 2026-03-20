@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../domain/engines/sale_calculation_engine.dart';
 import '../../services/dealers_service.dart';
 import '../../services/products_service.dart';
 import '../../services/sales_service.dart';
@@ -78,8 +79,22 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
   TextEditingController? _internalProductSearchController;
 
   // Financials
+  final SaleCalculationEngine _calculationEngine = SaleCalculationEngine();
   double _discountPercentage = 0;
+  double _specialDiscountPercentage = 0;
   bool _gstEnabled = false;
+  double _gstPercentage = 0;
+  String _gstType = 'None';
+  bool _allowDealerGstToggle = true;
+  bool _allowDealerAdditionalDiscountToggle = true;
+  bool _allowDealerSpecialDiscountToggle = true;
+  List<double> _dealerAdditionalDiscountOptions = const [2, 5, 10, 15];
+  double _dealerAdditionalDiscountDefault = 5.0;
+  List<double> _dealerSpecialDiscountOptions = const [1, 2, 3, 5];
+  double _dealerSpecialDiscountDefault = 5.0;
+  bool _gstDefaultEnabled = false;
+  double _gstDefaultPercentage = 18.0;
+  String _gstDefaultType = 'None';
 
   bool _isLoading = true;
   bool _isSaving = false;
@@ -344,8 +359,7 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
       _cart
         ..clear()
         ..addAll(prefilledCart);
-      _discountPercentage = 0;
-      _gstEnabled = false;
+      _resetPricingSelections();
     });
 
     _applySchemes();
@@ -390,6 +404,8 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
         _vehiclesService.getVehicles(status: 'active'),
         _vehiclesService.getRoutes(), // Load routes from Master Data
         _settingsService.getCompanyProfileClient(),
+        _settingsService.getGeneralSettings(forceRefresh: true),
+        _settingsService.getGstSettings(),
       ]);
 
       if (mounted) {
@@ -429,6 +445,11 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
             previousDealer: _selectedDealer,
           );
           _companyProfile = results[5] as CompanyProfileData?;
+          _applyDealerPricingSettings(
+            results[6] as GeneralSettingsData?,
+            results[7] as GstSettings?,
+            initializeValues: true,
+          );
           _isLoading = false;
         });
 
@@ -450,6 +471,178 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
         _tryApplyRouteOrderPrefill();
       }
     }
+  }
+
+  double _clampDiscount(double value) => value.clamp(0.0, 100.0).toDouble();
+
+  List<double> _normalizeDiscountOptions(
+    List<double>? rawValues, {
+    required List<double> fallback,
+    List<double> ensureValues = const <double>[],
+  }) {
+    final values = <double>{};
+    for (final value in rawValues ?? const <double>[]) {
+      final normalized = _clampDiscount(value);
+      if (normalized > 0) values.add(normalized);
+    }
+    for (final value in ensureValues) {
+      final normalized = _clampDiscount(value);
+      if (normalized > 0) values.add(normalized);
+    }
+    if (values.isEmpty) {
+      values.addAll(fallback.where((entry) => entry > 0));
+    }
+    final sorted = values.toList()..sort();
+    return sorted;
+  }
+
+  double _normalizeDiscountSelection(
+    double value,
+    List<double> options, {
+    bool allowZero = true,
+  }) {
+    final normalized = _clampDiscount(value);
+    if (allowZero && normalized == 0) return 0;
+    if (options.contains(normalized)) return normalized;
+    return options.first;
+  }
+
+  String _normalizeGstType(String? value) {
+    final normalized = (value ?? '').trim().toLowerCase();
+    if (normalized == 'cgst+sgst' || normalized == 'cgst_sgst') {
+      return 'CGST+SGST';
+    }
+    if (normalized == 'igst') {
+      return 'IGST';
+    }
+    return 'None';
+  }
+
+  double _defaultAdditionalDiscountSelection() {
+    if (!_allowDealerAdditionalDiscountToggle) return 0.0;
+    return _normalizeDiscountSelection(
+      _dealerAdditionalDiscountDefault,
+      _dealerAdditionalDiscountOptions,
+    );
+  }
+
+  double _defaultSpecialDiscountSelection() {
+    if (!_allowDealerSpecialDiscountToggle) return 0.0;
+    return _normalizeDiscountSelection(
+      _dealerSpecialDiscountDefault,
+      _dealerSpecialDiscountOptions,
+    );
+  }
+
+  void _resetPricingSelections() {
+    _discountPercentage = _defaultAdditionalDiscountSelection();
+    _specialDiscountPercentage = _defaultSpecialDiscountSelection();
+    _gstEnabled = _allowDealerGstToggle && _gstDefaultEnabled;
+    _gstType = _gstEnabled ? _gstDefaultType : 'None';
+    _gstPercentage = _gstEnabled ? _gstDefaultPercentage : 0.0;
+  }
+
+  void _applyDealerPricingSettings(
+    GeneralSettingsData? settings,
+    GstSettings? gstSettings, {
+    bool initializeValues = false,
+  }) {
+    final allowGst = settings?.allowDealerGstToggle ?? true;
+    final allowAdditional =
+        settings?.allowDealerAdditionalDiscountToggle ?? true;
+    final allowSpecial = settings?.allowDealerSpecialDiscountToggle ?? true;
+    final additionalDefault = _clampDiscount(
+      settings?.dealerAdditionalDiscountDefault ?? 5.0,
+    );
+    final specialDefault = _clampDiscount(
+      settings?.dealerSpecialDiscountDefault ?? 5.0,
+    );
+    final additionalOptions = _normalizeDiscountOptions(
+      settings?.dealerAdditionalDiscountOptions,
+      fallback: const [2, 5, 10, 15],
+      ensureValues: [additionalDefault],
+    );
+    final specialOptions = _normalizeDiscountOptions(
+      settings?.dealerSpecialDiscountOptions,
+      fallback: const [1, 2, 3, 5],
+      ensureValues: [specialDefault],
+    );
+
+    _allowDealerGstToggle = allowGst;
+    _allowDealerAdditionalDiscountToggle = allowAdditional;
+    _allowDealerSpecialDiscountToggle = allowSpecial;
+    _dealerAdditionalDiscountDefault = additionalDefault;
+    _dealerSpecialDiscountDefault = specialDefault;
+    _dealerAdditionalDiscountOptions = additionalOptions;
+    _dealerSpecialDiscountOptions = specialOptions;
+    _gstDefaultEnabled = gstSettings?.isEnabled ?? false;
+    _gstDefaultType = _normalizeGstType(gstSettings?.defaultGstType);
+    _gstDefaultPercentage = _clampDiscount(
+      gstSettings?.defaultGstPercentage ?? 18.0,
+    );
+
+    if (!_allowDealerAdditionalDiscountToggle) {
+      _discountPercentage = 0.0;
+    } else if (initializeValues) {
+      _discountPercentage = _normalizeDiscountSelection(
+        _discountPercentage > 0
+            ? _discountPercentage
+            : _dealerAdditionalDiscountDefault,
+        _dealerAdditionalDiscountOptions,
+      );
+    }
+
+    if (!_allowDealerSpecialDiscountToggle) {
+      _specialDiscountPercentage = 0.0;
+    } else if (initializeValues) {
+      _specialDiscountPercentage = _normalizeDiscountSelection(
+        _specialDiscountPercentage > 0
+            ? _specialDiscountPercentage
+            : _dealerSpecialDiscountDefault,
+        _dealerSpecialDiscountOptions,
+      );
+    }
+
+    if (!_allowDealerGstToggle) {
+      _gstEnabled = false;
+      _gstType = 'None';
+      _gstPercentage = 0.0;
+    } else if (initializeValues) {
+      _gstEnabled = _gstEnabled || _gstDefaultEnabled;
+      _gstType = _gstEnabled ? _gstDefaultType : 'None';
+      _gstPercentage = _gstEnabled ? _gstDefaultPercentage : 0.0;
+    }
+  }
+
+  String _formatPercent(double value) {
+    final rounded = value.roundToDouble();
+    if ((value - rounded).abs() < 0.001) {
+      return rounded.toStringAsFixed(0);
+    }
+    final singleDecimal = double.parse(value.toStringAsFixed(1));
+    if ((value - singleDecimal).abs() < 0.001) {
+      return singleDecimal.toStringAsFixed(1);
+    }
+    return value.toStringAsFixed(2);
+  }
+
+  List<double> get _dealerAdditionalDiscountDropdownOptions {
+    final values = <double>{0.0, ..._dealerAdditionalDiscountOptions};
+    final sorted = values.toList()..sort();
+    return sorted;
+  }
+
+  String get _productDiscountLabel {
+    final discounts = _cart
+        .where((item) => !item.isFree && item.quantity > 0 && item.discount > 0)
+        .map((item) => _clampDiscount(item.discount))
+        .toSet()
+        .toList()
+      ..sort();
+    if (discounts.length == 1) {
+      return 'PRODUCT DISCOUNT (${_formatPercent(discounts.first)}%)';
+    }
+    return 'PRODUCT DISCOUNT';
   }
 
   String _normalizeRouteToken(String value) {
@@ -729,34 +922,47 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
 
   // Calculations
   double get _grossSubtotal {
-    return _cart.fold(0, (sum, item) => sum + (item.price * item.quantity));
+    return _pricing.subtotal;
   }
 
   double get _itemLevelDiscounts {
-    double total = 0;
-    for (final item in _cart) {
-      if (item.isFree) continue;
-      final itemSubtotal = item.price * item.quantity;
-      final itemDiscount = itemSubtotal * (item.discount / 100);
-      total += itemDiscount;
-    }
-    return total;
+    return _pricing.itemDiscountTotal;
   }
 
-  double get _subtotal => _grossSubtotal - _itemLevelDiscounts;
+  double get _discountedSubtotal => _grossSubtotal - _itemLevelDiscounts;
 
-  double get _discountAmount {
-    return _subtotal * (_discountPercentage / 100);
+  double get _effectiveAdditionalDiscountPercentage =>
+      _allowDealerAdditionalDiscountToggle ? _discountPercentage : 0.0;
+
+  double get _effectiveSpecialDiscountPercentage =>
+      _allowDealerSpecialDiscountToggle ? _specialDiscountPercentage : 0.0;
+
+  bool get _effectiveGstEnabled => _allowDealerGstToggle && _gstEnabled;
+
+  double get _effectiveGstPercentage => _effectiveGstEnabled ? _gstPercentage : 0;
+
+  String get _effectiveGstType => _effectiveGstEnabled ? _gstType : 'None';
+
+  SaleCalculationResult get _pricing {
+    final items = _cart.map((item) => item.toSaleItemForUI()).toList();
+    return _calculationEngine.calculateSale(
+      items: items,
+      discountPercentage: _effectiveAdditionalDiscountPercentage,
+      additionalDiscountPercentage: _effectiveSpecialDiscountPercentage,
+      gstPercentage: _effectiveGstPercentage,
+      gstType: _effectiveGstType,
+    );
   }
 
-  double get _taxableAmount => _subtotal - _discountAmount;
+  double get _discountAmount => _pricing.discountAmount;
 
-  double get _totalGst {
-    if (!_gstEnabled) return 0;
-    return (_taxableAmount * 18 / 100);
-  }
+  double get _specialDiscountAmount => _pricing.additionalDiscountAmount;
 
-  double get _grandTotal => _taxableAmount + _totalGst;
+  double get _taxableAmount => _pricing.taxableAmount;
+
+  double get _totalGst => _pricing.totalGstAmount;
+
+  double get _grandTotal => _pricing.totalAmount;
   int get _totalDispatchQty => _cart
       .where((item) => !item.isFree)
       .fold(0, (sum, item) => sum + item.quantity);
@@ -792,11 +998,15 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
           totalDispatchQty: _totalDispatchQty,
           grossSubtotal: _grossSubtotal,
           itemLevelDiscounts: _itemLevelDiscounts,
-          subtotal: _subtotal,
-          discountPercentage: _discountPercentage,
+          discountedSubtotal: _discountedSubtotal,
+          productDiscountLabel: _productDiscountLabel,
+          discountPercentage: _effectiveAdditionalDiscountPercentage,
           discountAmount: _discountAmount,
+          specialDiscountPercentage: _effectiveSpecialDiscountPercentage,
+          specialDiscountAmount: _specialDiscountAmount,
           taxableAmount: _taxableAmount,
-          gstEnabled: _gstEnabled,
+          gstEnabled: _effectiveGstEnabled,
+          gstLabel: 'GST (${_formatPercent(_effectiveGstPercentage)}%)',
           totalGst: _totalGst,
           grandTotal: _grandTotal,
         ),
@@ -834,8 +1044,7 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
       _selectedDriver = null;
       _selectedVehicle = null;
       _selectedRoute = null;
-      _discountPercentage = 0;
-      _gstEnabled = false;
+      _resetPricingSelections();
       _routeOrderPayload = null;
       _routeOrderPrefillApplied = true;
       _internalProductSearchController?.clear();
@@ -860,12 +1069,12 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
           recipientId: _selectedDealer!.id,
           recipientName: _selectedDealer!.name,
           items: _cart.map((e) => e.toSaleItemForUI()).toList(),
-          discountPercentage: _discountPercentage,
-          gstPercentage: _gstEnabled ? 18 : 0,
-          gstType: _selectedRoute == 'Direct'
-              ? GstType.igst.name
-              : GstType.none.name,
+          discountPercentage: _effectiveAdditionalDiscountPercentage,
+          additionalDiscountPercentage: _effectiveSpecialDiscountPercentage,
+          gstPercentage: _effectiveGstPercentage,
+          gstType: _effectiveGstType,
           vehicleNumber: _selectedVehicle?.number,
+          driverName: _selectedDriver?.name,
           route: _selectedRoute,
           status: 'created',
         ),
@@ -920,14 +1129,20 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
               recipientName: _selectedDealer!.name,
               items: _cart.map((e) => e.toSaleItem()).toList(),
               itemProductIds: _cart.map((e) => e.productId).toList(),
-              subtotal: _subtotal,
-              discountPercentage: _discountPercentage,
+              subtotal: _grossSubtotal,
+              itemDiscountAmount: _itemLevelDiscounts,
+              discountPercentage: _effectiveAdditionalDiscountPercentage,
               discountAmount: _discountAmount,
+              additionalDiscountPercentage: _effectiveSpecialDiscountPercentage,
+              additionalDiscountAmount: _specialDiscountAmount,
               taxableAmount: _taxableAmount,
-              gstType: _gstEnabled ? 'IGST' : 'None',
-              gstPercentage: _gstEnabled ? 18 : 0,
+              gstType: _effectiveGstType,
+              gstPercentage: _effectiveGstPercentage,
               totalAmount: _grandTotal,
               roundOff: 0.0,
+              vehicleNumber: _selectedVehicle?.number,
+              driverName: _selectedDriver?.name,
+              route: _selectedRoute,
               salesmanId: user?.id ?? '',
               salesmanName: user?.name ?? '',
               createdAt: DateTime.now().toIso8601String(),
@@ -1995,10 +2210,16 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
 
   Widget _buildSummaryAndActions() {
     final theme = Theme.of(context);
-    const discountOptions = [0.0, 5.0, 8.0, 13.0];
-    final discountValue = discountOptions.contains(_discountPercentage)
-        ? _discountPercentage
-        : 0.0;
+    final discountOptions = _dealerAdditionalDiscountDropdownOptions;
+    final discountValue = discountOptions.contains(
+      _effectiveAdditionalDiscountPercentage,
+    )
+        ? _effectiveAdditionalDiscountPercentage
+        : discountOptions.first;
+    final showPricingControls =
+        _allowDealerAdditionalDiscountToggle ||
+        _allowDealerSpecialDiscountToggle ||
+        _allowDealerGstToggle;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -2018,141 +2239,204 @@ class _DealerDispatchScreenState extends State<DealerDispatchScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ADDITIONAL DISCOUNT (%)',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurfaceVariant.withValues(
-                          alpha: 0.7,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: Responsive.clamp(
-                          context,
-                          min: 96,
-                          max: 140,
-                          ratio: 0.2,
-                        ),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant.withValues(
-                              alpha: 0.5,
+          if (showPricingControls) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_allowDealerAdditionalDiscountToggle) ...[
+                        Text(
+                          'ADDITIONAL DISCOUNT (%)',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.7,
                             ),
                           ),
                         ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<double>(
-                            value: discountValue,
-                            isExpanded: true,
-                            icon: Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 18,
-                              color: theme.colorScheme.onSurfaceVariant,
+                        const SizedBox(height: 8),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: Responsive.clamp(
+                              context,
+                              min: 96,
+                              max: 140,
+                              ratio: 0.2,
                             ),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: theme.colorScheme.outlineVariant
+                                    .withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<double>(
+                                value: discountValue,
+                                isExpanded: true,
+                                icon: Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 18,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                                items: discountOptions
+                                    .map(
+                                      (value) => DropdownMenuItem<double>(
+                                        value: value,
+                                        child: Center(
+                                          child: Text(
+                                            '${_formatPercent(value)}%',
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (value) => setState(
+                                  () => _discountPercentage = value ?? 0.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (_allowDealerSpecialDiscountToggle) ...[
+                        SizedBox(
+                          height:
+                              _allowDealerAdditionalDiscountToggle ? 16 : 0,
+                        ),
+                        Text(
+                          'SPECIAL DISCOUNT',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.7,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant.withValues(
+                                alpha: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            '${_formatPercent(_effectiveSpecialDiscountPercentage)}% default applied',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                               color: theme.colorScheme.onSurface,
                             ),
-                            items: discountOptions
-                                .map(
-                                  (value) => DropdownMenuItem<double>(
-                                    value: value,
-                                    child: Center(
-                                      child: Text(
-                                        '${value.toStringAsFixed(0)}%',
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) => setState(
-                              () => _discountPercentage = value ?? 0.0,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (_allowDealerGstToggle) ...[
+                  const SizedBox(width: 24),
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'GST ENABLED',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.7),
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 24),
-              Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'GST ENABLED',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.7,
+                          Text(
+                            _effectiveGstEnabled
+                                ? '${_formatPercent(_effectiveGstPercentage)}% applied'
+                                : 'Tax free',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 10,
+                              color: theme.colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.5),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                      Text(
-                        _gstEnabled ? '18% inclusive' : 'Tax free',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 10,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.5,
-                          ),
+                      const SizedBox(width: 12),
+                      Switch(
+                        value: _gstEnabled,
+                        onChanged: (val) => setState(() {
+                          _gstEnabled = val;
+                          _gstType = val ? _gstDefaultType : 'None';
+                          _gstPercentage = val ? _gstDefaultPercentage : 0.0;
+                        }),
+                        activeTrackColor: theme.colorScheme.primary.withValues(
+                          alpha: 0.5,
+                        ),
+                        thumbColor: WidgetStatePropertyAll(
+                          _gstEnabled ? theme.colorScheme.primary : null,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(width: 12),
-                  Switch(
-                    value: _gstEnabled,
-                    onChanged: (val) => setState(() => _gstEnabled = val),
-                    activeTrackColor: theme.colorScheme.primary.withValues(
-                      alpha: 0.5,
-                    ),
-                    thumbColor: WidgetStatePropertyAll(
-                      _gstEnabled ? theme.colorScheme.primary : null,
-                    ),
-                  ),
                 ],
-              ),
-            ],
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Divider(height: 1),
-          ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Divider(height: 1),
+            ),
+          ],
           _summaryRow('SUBTOTAL (GROSS)', '₹${_grossSubtotal.toStringAsFixed(2)}'),
           if (_itemLevelDiscounts > 0) ...[
             const SizedBox(height: 12),
             _summaryRow(
-              'PRODUCT DISCOUNT',
+              _productDiscountLabel,
               '-₹${_itemLevelDiscounts.toStringAsFixed(2)}',
-              color: AppColors.success,
+              color: AppColors.error,
             ),
-          ],
-          if (_discountPercentage > 0) ...[
             const SizedBox(height: 12),
             _summaryRow(
-              'ADDITIONAL DISCOUNT ($_discountPercentage%)',
-              '-₹${_discountAmount.toStringAsFixed(2)}',
-              color: AppColors.success,
+              'DISCOUNTED SUBTOTAL',
+              '\u20B9${_discountedSubtotal.toStringAsFixed(2)}',
             ),
           ],
-          if (_gstEnabled) ...[
+          if (_effectiveAdditionalDiscountPercentage > 0) ...[
             const SizedBox(height: 12),
-            _summaryRow('GST (18%)', '₹${_totalGst.toStringAsFixed(2)}'),
+            _summaryRow(
+              'ADDITIONAL DISCOUNT (${_formatPercent(_effectiveAdditionalDiscountPercentage)}%)',
+              '-₹${_discountAmount.toStringAsFixed(2)}',
+              color: AppColors.error,
+            ),
+          ],
+          if (_effectiveSpecialDiscountPercentage > 0) ...[
+            const SizedBox(height: 12),
+            _summaryRow(
+              'SPECIAL DISCOUNT (${_formatPercent(_effectiveSpecialDiscountPercentage)}%)',
+              '-₹${_specialDiscountAmount.toStringAsFixed(2)}',
+              color: AppColors.error,
+            ),
+          ],
+          if (_effectiveGstEnabled) ...[
+            const SizedBox(height: 12),
+            _summaryRow(
+              'GST (${_formatPercent(_effectiveGstPercentage)}%)',
+              '₹${_totalGst.toStringAsFixed(2)}',
+            ),
           ],
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
@@ -2263,11 +2547,15 @@ class _DealerDispatchInvoicePreviewPage extends StatelessWidget {
   final int totalDispatchQty;
   final double grossSubtotal;
   final double itemLevelDiscounts;
-  final double subtotal;
+  final double discountedSubtotal;
+  final String productDiscountLabel;
   final double discountPercentage;
   final double discountAmount;
+  final double specialDiscountPercentage;
+  final double specialDiscountAmount;
   final double taxableAmount;
   final bool gstEnabled;
+  final String gstLabel;
   final double totalGst;
   final double grandTotal;
 
@@ -2283,11 +2571,15 @@ class _DealerDispatchInvoicePreviewPage extends StatelessWidget {
     required this.totalDispatchQty,
     required this.grossSubtotal,
     required this.itemLevelDiscounts,
-    required this.subtotal,
+    required this.discountedSubtotal,
+    required this.productDiscountLabel,
     required this.discountPercentage,
     required this.discountAmount,
+    required this.specialDiscountPercentage,
+    required this.specialDiscountAmount,
     required this.taxableAmount,
     required this.gstEnabled,
+    required this.gstLabel,
     required this.totalGst,
     required this.grandTotal,
   });
@@ -2326,7 +2618,12 @@ class _DealerDispatchInvoicePreviewPage extends StatelessWidget {
     );
   }
 
-  Widget _summaryRow(String label, String value, {bool isBold = false}) {
+  Widget _summaryRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    Color? valueColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: LayoutBuilder(
@@ -2346,6 +2643,7 @@ class _DealerDispatchInvoicePreviewPage extends StatelessWidget {
             style: TextStyle(
               fontSize: isBold ? 17 : 14,
               fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+              color: valueColor,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -2508,18 +2806,36 @@ class _DealerDispatchInvoicePreviewPage extends StatelessWidget {
                     _summaryRow('Subtotal (Gross)', _currency(grossSubtotal)),
                     if (itemLevelDiscounts > 0)
                       _summaryRow(
-                        'Product Discount',
+                        productDiscountLabel,
                         '-${_currency(itemLevelDiscounts)}',
+                        valueColor: AppColors.error,
+                      ),
+                    if (itemLevelDiscounts > 0)
+                      _summaryRow(
+                        'Discounted Subtotal',
+                        _currency(discountedSubtotal),
                       ),
                     if (discountAmount > 0)
                       _summaryRow(
                         'Additional Discount (${discountPercentage.toStringAsFixed(0)}%)',
                         '-${_currency(discountAmount)}',
+                        valueColor: AppColors.error,
                       ),
-                    if ((subtotal - taxableAmount).abs() > 0.0001)
+                    if (specialDiscountAmount > 0)
+                      _summaryRow(
+                        'Special Discount (${specialDiscountPercentage.toStringAsFixed(0)}%)',
+                        '-${_currency(specialDiscountAmount)}',
+                        valueColor: AppColors.error,
+                      ),
+                    if ((discountedSubtotal -
+                                discountAmount -
+                                specialDiscountAmount -
+                                taxableAmount)
+                            .abs() >
+                        0.0001)
                       _summaryRow('Taxable Amount', _currency(taxableAmount)),
                     if (gstEnabled)
-                      _summaryRow('GST (18%)', _currency(totalGst)),
+                      _summaryRow(gstLabel, _currency(totalGst)),
                     const Divider(height: 24),
                     _summaryRow(
                       'Grand Total',

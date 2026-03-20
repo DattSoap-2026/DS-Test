@@ -1076,7 +1076,7 @@ class SettingsService extends BaseService {
     required Map<String, dynamic> payload,
     bool merge = true,
   }) async {
-    await SyncService.instance.pushAllPending();
+    await SyncService.instance.trySync();
   }
 
   Future<void> _queueDocWrite({

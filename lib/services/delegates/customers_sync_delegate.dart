@@ -283,18 +283,14 @@ class CustomersSyncDelegate {
 
           // Conflict Detection
           final existing = existingMap[doc.id];
-          if (existing != null &&
-              (existing.syncStatus == SyncStatus.pending ||
-                  existing.syncStatus == SyncStatus.conflict)) {
-            if (existing.syncStatus == SyncStatus.pending) {
-              await _utils.detectAndFlagConflict<CustomerEntity>(
-                entityId: doc.id,
-                entityType: 'customers',
-                serverData: data,
-                localEntity: existing,
-                localToJson: (e) => e.toDomain().toJson(),
-              );
-            }
+          if (existing != null) {
+            await _utils.detectAndFlagConflict<CustomerEntity>(
+              entityId: doc.id,
+              entityType: 'customers',
+              serverData: data,
+              localEntity: existing,
+              localToJson: (e) => e.toDomain().toJson(),
+            );
             continue;
           }
 

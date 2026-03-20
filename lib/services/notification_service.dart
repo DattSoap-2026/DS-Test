@@ -9,10 +9,55 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/firebase/firebase_config.dart';
+import '../core/sync/sync_push_request_store.dart';
+import '../core/sync/sync_request.dart';
+import '../core/sync/sync_service.dart';
+import '../core/sync/targeted_pull_sync_executor.dart';
 import '../models/types/user_types.dart';
 import 'delegates/notification_remote_delegate.dart';
 import 'delegates/firestore_query_delegate.dart';
 import '../utils/app_logger.dart';
+
+bool _isSyncRequiredPayload(Map<String, dynamic> data) {
+  return data['type']?.toString() == 'sync_required';
+}
+
+Future<void> _persistSyncPullRequest(
+  Map<String, dynamic> data, {
+  String source = 'fcm',
+}) async {
+  if (!_isSyncRequiredPayload(data)) {
+    return;
+  }
+  final request = SyncPullRequest.fromFcmPayload(data);
+  await SyncPushRequestStore.instance.enqueue(
+    SyncPullRequest(
+      modules: request.modules,
+      requestedAt: request.requestedAt,
+      changedBy: request.changedBy,
+      source: source,
+    ),
+  );
+}
+
+@pragma('vm:entry-point')
+Future<void> notificationSyncBackgroundHandler(RemoteMessage message) async {
+  if (!_isSyncRequiredPayload(message.data)) {
+    return;
+  }
+
+  try {
+    await firebaseServices.initialize();
+  } catch (_) {
+    try {
+      await Firebase.initializeApp();
+    } catch (_) {}
+  }
+
+  await _persistSyncPullRequest(message.data, source: 'fcm_background');
+  await TargetedPullSyncExecutor.bootstrapStoredRequests();
+}
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -34,6 +79,13 @@ class NotificationService {
       'notification_events_outbox_instance_v1';
   static const int _maxOutboxEntries = 250;
   static const Duration _outboxDrainRetryDelay = Duration(seconds: 20);
+
+  static void registerBackgroundMessageHandler() {
+    if (Platform.isWindows) {
+      return;
+    }
+    FirebaseMessaging.onBackgroundMessage(notificationSyncBackgroundHandler);
+  }
 
   FirebaseMessaging? _firebaseMessaging;
   FirebaseFirestore? _firestore;
@@ -95,6 +147,7 @@ class NotificationService {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
+    registerBackgroundMessageHandler();
     await _resolveFirestore();
 
     if (Platform.isWindows) {
@@ -149,7 +202,7 @@ class NotificationService {
 
       final initialMessage = await _firebaseMessaging!.getInitialMessage();
       if (initialMessage != null) {
-        _handleMessageOpenedApp(initialMessage);
+        await _handleMessageOpenedApp(initialMessage);
       }
     }
 
@@ -411,6 +464,9 @@ class NotificationService {
 
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     AppLogger.info('Foreground FCM message received', tag: 'Notification');
+    if (await _handleSyncRequiredMessage(message, source: 'foreground')) {
+      return;
+    }
 
     final title =
         message.notification?.title ?? message.data['title']?.toString();
@@ -426,11 +482,42 @@ class NotificationService {
     );
   }
 
-  void _handleMessageOpenedApp(RemoteMessage message) {
+  Future<void> _handleMessageOpenedApp(RemoteMessage message) async {
     AppLogger.info(
       'Notification tap opened app (data: ${message.data})',
       tag: 'Notification',
     );
+    await _handleSyncRequiredMessage(message, source: 'opened_app');
+  }
+
+  Future<bool> _handleSyncRequiredMessage(
+    RemoteMessage message, {
+    required String source,
+  }) async {
+    if (!_isSyncRequiredPayload(message.data)) {
+      return false;
+    }
+
+    final request = SyncPullRequest.fromFcmPayload(message.data);
+    final authUid = _boundAuthUid ?? FirebaseAuth.instance.currentUser?.uid;
+    if (request.shouldSkipForCurrentUser(
+      appUserId: _boundUserId,
+      authUid: authUid,
+    )) {
+      AppLogger.info(
+        'Skipping self-originated sync request in $source',
+        tag: 'Notification',
+      );
+      return true;
+    }
+
+    await _persistSyncPullRequest(message.data, source: 'fcm_$source');
+    unawaited(
+      SyncService.instance.processStoredPullRequests(
+        source: 'fcm_$source',
+      ),
+    );
+    return true;
   }
 
   Future<void> _showLocalNotification({

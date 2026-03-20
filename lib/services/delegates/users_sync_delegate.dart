@@ -269,7 +269,7 @@ class UsersSyncDelegate {
 
           // Conflict Detection
           final existing = existingMap[doc.id];
-          if (existing != null && existing.syncStatus == SyncStatus.pending) {
+          if (existing != null) {
             await _utils.detectAndFlagConflict<UserEntity>(
               entityId: doc.id,
               entityType: 'users',
@@ -277,9 +277,6 @@ class UsersSyncDelegate {
               localEntity: existing,
               localToJson: (e) => e.toDomain().toJson(),
             );
-            continue;
-          }
-          if (existing != null && existing.syncStatus == SyncStatus.conflict) {
             continue;
           }
 

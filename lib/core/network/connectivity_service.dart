@@ -16,6 +16,8 @@ class ConnectivityService {
 
   StreamSubscription<ConnectivityResult>? _subscription;
   bool _isOnline = false;
+  bool _isListening = false;
+  bool _isDisposed = false;
 
   /// Current connectivity state.
   bool get isOnline => _isOnline;
@@ -25,6 +27,10 @@ class ConnectivityService {
 
   /// Starts the connectivity listener.
   Future<void> startListening() async {
+    if (_isDisposed || _isListening) {
+      return;
+    }
+    _isListening = true;
     try {
       final current = await _connectivity.checkConnectivity();
       _updateStatus(_mapResults(current));
@@ -43,7 +49,10 @@ class ConnectivityService {
           );
           unawaited(
             Future<void>.delayed(const Duration(seconds: 2), () async {
-              await SyncService.instance.syncAllPending();
+              await SyncService.instance.processStoredPullRequests(
+                source: 'reconnect',
+              );
+              await SyncService.instance.syncAllPending(source: 'reconnect');
             }),
           );
         }
@@ -55,6 +64,7 @@ class ConnectivityService {
         stackTrace: stackTrace,
         time: DateTime.now(),
       );
+      _isListening = false;
     }
   }
 
@@ -63,9 +73,17 @@ class ConnectivityService {
 
   /// Disposes the connectivity listener.
   Future<void> dispose() async {
+    if (_isDisposed) {
+      return;
+    }
+    _isDisposed = true;
+    _isListening = false;
     try {
       await _subscription?.cancel();
-      await _controller.close();
+      _subscription = null;
+      if (!_controller.isClosed) {
+        await _controller.close();
+      }
     } catch (error, stackTrace) {
       SyncLogger.instance.e(
         'Failed to dispose connectivity service',

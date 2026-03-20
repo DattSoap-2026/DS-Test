@@ -320,7 +320,7 @@ class AgingService extends BaseService {
 
         if (db != null) {
           try {
-            await SyncService.instance.pushAllPending();
+            await SyncService.instance.trySync();
             await _dequeueOutbox(queueId, 'customers');
           } catch (_) {
             // Keep queued item for sync coordinator retry.

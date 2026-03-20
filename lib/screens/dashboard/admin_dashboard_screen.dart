@@ -505,7 +505,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         const SizedBox(width: 8),
         IconButton.filled(
           onPressed: _loadAllData,
-          icon: const Icon(Icons.sync_rounded),
+          icon: const Icon(Icons.replay_rounded),
           style: IconButton.styleFrom(
             backgroundColor: theme.colorScheme.primaryContainer.withValues(
               alpha: 0.5,

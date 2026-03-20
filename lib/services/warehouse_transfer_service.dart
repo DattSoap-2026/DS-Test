@@ -96,7 +96,7 @@ class WarehouseTransferService {
         operation: 'set',
         payload: transfer.toJson(),
       );
-      await SyncService.instance.pushAllPending();
+      await SyncService.instance.trySync();
       AppLogger.success(
         'Stock transferred: $quantity $unit of $productName from $fromWarehouseName to $toWarehouseName',
         tag: 'Warehouse',

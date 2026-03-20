@@ -71,6 +71,7 @@ class SaleTotalsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final discountedSubtotal = subtotal - lineItemDiscountsTotal;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -158,6 +159,12 @@ class SaleTotalsWidget extends StatelessWidget {
                       lineDiscountLabel,
                       -lineItemDiscountsTotal,
                       isNegative: true,
+                    ),
+                  if (lineItemDiscountsTotal > 0)
+                    _buildSummaryRow(
+                      context,
+                      'Discounted Subtotal',
+                      discountedSubtotal,
                     ),
                   if (discountPercentage > 0)
                     _buildSummaryRow(
@@ -580,7 +587,7 @@ class SaleTotalsWidget extends StatelessWidget {
               fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
               fontSize: isBold ? 14 : 13,
               color: isNegative
-                  ? AppColors.success
+                  ? AppColors.error
                   : (isBold
                         ? theme.colorScheme.primary
                         : theme.colorScheme.onSurface),

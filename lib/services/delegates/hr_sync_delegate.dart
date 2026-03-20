@@ -490,9 +490,7 @@ class HrSyncDelegate {
           }
 
           final existing = existingMap[id];
-          if (existing != null &&
-              (existing.syncStatus == SyncStatus.pending ||
-                  existing.syncStatus == SyncStatus.conflict)) {
+          if (existing != null) {
             await _utils.detectAndFlagConflict(
               localEntity: existing,
               serverData: data,
@@ -775,9 +773,7 @@ class HrSyncDelegate {
           }
 
           final existing = existingMap[employeeId];
-          if (existing != null &&
-              (existing.syncStatus == SyncStatus.pending ||
-                  existing.syncStatus == SyncStatus.conflict)) {
+          if (existing != null) {
             await _utils.detectAndFlagConflict(
               entityId: existing.id,
               entityType: 'employees',
@@ -978,9 +974,7 @@ class HrSyncDelegate {
           }
 
           final existing = existingMap[id];
-          if (existing != null &&
-              (existing.syncStatus == SyncStatus.pending ||
-                  existing.syncStatus == SyncStatus.conflict)) {
+          if (existing != null) {
             await _utils.detectAndFlagConflict(
               entityId: id,
               entityType: 'leave_requests',
@@ -1183,9 +1177,7 @@ class HrSyncDelegate {
           }
 
           final existing = existingMap[id];
-          if (existing != null &&
-              (existing.syncStatus == SyncStatus.pending ||
-                  existing.syncStatus == SyncStatus.conflict)) {
+          if (existing != null) {
             await _utils.detectAndFlagConflict(
               entityId: id,
               entityType: 'advances',
@@ -1392,9 +1384,7 @@ class HrSyncDelegate {
           }
 
           final existing = existingMap[id];
-          if (existing != null &&
-              (existing.syncStatus == SyncStatus.pending ||
-                  existing.syncStatus == SyncStatus.conflict)) {
+          if (existing != null) {
             await _utils.detectAndFlagConflict(
               entityId: id,
               entityType: 'performance_reviews',
@@ -1603,9 +1593,7 @@ class HrSyncDelegate {
           }
 
           final existing = existingMap[id];
-          if (existing != null &&
-              (existing.syncStatus == SyncStatus.pending ||
-                  existing.syncStatus == SyncStatus.conflict)) {
+          if (existing != null) {
             await _utils.detectAndFlagConflict(
               entityId: id,
               entityType: 'employee_documents',

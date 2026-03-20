@@ -7,7 +7,6 @@ import 'package:file_picker/file_picker.dart';
 
 import '../../services/backup_service.dart';
 import '../../services/data_management_service.dart';
-import '../../services/sync_manager.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../widgets/ui/custom_card.dart';
 import '../../widgets/ui/custom_button.dart';
@@ -711,16 +710,8 @@ class _DataMaintenanceTabState extends State<_DataMaintenanceTab> {
 
     if (!mounted) return;
     if (success) {
-      setState(() => _fullResetStatus = 'Resyncing master data...');
-      try {
-        final appSyncCoordinator = context.read<AppSyncCoordinator>();
-        await appSyncCoordinator.syncAll(user, forceRefresh: true).timeout(
-          const Duration(minutes: 5),
-          onTimeout: () => SyncRunResult.skipped('Sync timeout'),
-        );
-      } catch (e) {
-        // Ignore sync errors during cleanup
-      }
+      setState(() => _fullResetStatus = 'Finalizing automatic recovery...');
+      _dataService.triggerAutomaticPostResetSync();
     }
 
     if (!mounted) return;

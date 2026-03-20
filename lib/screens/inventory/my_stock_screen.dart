@@ -305,9 +305,9 @@ class _MyStockScreenState extends State<MyStockScreen> {
                         ),
                         IconButton(
                           onPressed: _loadStock,
-                          icon: const Icon(Icons.sync_rounded),
+                          icon: const Icon(Icons.replay_rounded),
                           iconSize: 20,
-                          tooltip: 'Sync Stock',
+                          tooltip: 'Reload Stock',
                           style: IconButton.styleFrom(
                             minimumSize: const Size(36, 36),
                             padding: const EdgeInsets.all(6),

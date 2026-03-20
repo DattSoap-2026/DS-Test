@@ -403,6 +403,8 @@ class ProductEntity extends BaseEntity {
       purchasePrice: purchasePriceValue,
       averageCost: averageCostValue,
       lastCost: lastCostValue,
+      gstRate: gstRate,
+      defaultDiscount: defaultDiscount,
       internalCost: internalCostValue,
       status: status ?? 'active',
       createdAt:

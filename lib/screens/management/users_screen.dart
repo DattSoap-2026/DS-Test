@@ -11,7 +11,6 @@ import '../../models/types/user_types.dart';
 import '../../utils/password_utils.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../data/local/entities/user_entity.dart';
-import '../../services/sync_manager.dart';
 import 'user_form_dialog.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/ui/master_screen_header.dart';
@@ -138,21 +137,8 @@ class _UsersScreenState extends State<UsersScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final appSyncCoordinator = context.read<AppSyncCoordinator>();
     try {
-      // Load users via service (offline-first), then attempt one sync refresh.
-      var users = await _usersService.getUsers();
-      try {
-        await appSyncCoordinator.syncUsersViaDelegate(
-          forceRefresh: true,
-        );
-        final syncedUsers = await _usersService.getUsers();
-        if (syncedUsers.isNotEmpty || users.isEmpty) {
-          users = syncedUsers;
-        }
-      } catch (e) {
-        debugPrint('User sync skipped: $e');
-      }
+      final users = await _usersService.getUsers();
 
       // Deduplicate by email to handle dirty legacy records with different IDs.
       final userMap = <String, AppUser>{};
@@ -334,11 +320,6 @@ class _UsersScreenState extends State<UsersScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () async {
-                final appSyncCoordinator = context.read<AppSyncCoordinator>();
-                final authProvider = context.read<AuthProvider>();
-                if (authProvider.state.user != null) {
-                  await appSyncCoordinator.syncAll(authProvider.state.user);
-                }
                 await _loadData();
               },
               child: CustomScrollView(
@@ -1068,15 +1049,8 @@ class _UsersScreenState extends State<UsersScreen> {
             ..assignedBhatti = result['assignedBhatti'];
 
           final userRepo = context.read<UserRepository>();
-          final appSyncCoordinator = context.read<AppSyncCoordinator>();
 
           await userRepo.createUser(newUser);
-
-          // 2. Trigger Background Sync (Optional, app sync coordinator will pick it up)
-          final authUser = authProvider.state.user;
-          if (authUser != null) {
-            appSyncCoordinator.syncAll(authUser);
-          }
         } else {
           // Update
           final currentUser = authProvider.currentUser;
@@ -1135,13 +1109,6 @@ class _UsersScreenState extends State<UsersScreen> {
 
           if (success) {
             if (!mounted) return;
-            final appSyncCoordinator = context.read<AppSyncCoordinator>();
-            final authProvider = context.read<AuthProvider>();
-            final authUser = authProvider.state.user;
-
-            if (authUser != null) {
-              await appSyncCoordinator.syncAll(authUser);
-            }
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('User $newStatus successfully')),
@@ -1188,15 +1155,8 @@ class _UsersScreenState extends State<UsersScreen> {
               // Also delete from local repository
               try {
                 final userRepo = context.read<UserRepository>();
-                final appSyncCoordinator = context.read<AppSyncCoordinator>();
-                final authProvider = context.read<AuthProvider>();
 
                 await userRepo.deleteUser(user.id);
-
-                final authUser = authProvider.state.user;
-                if (authUser != null) {
-                  await appSyncCoordinator.syncAll(authUser);
-                }
               } catch (e) {
                 debugPrint(
                   'Local deletion failed (might not be in local DB): $e',

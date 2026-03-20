@@ -90,7 +90,7 @@ class TaskHistoryService extends BaseService {
     String action,
     Map<String, dynamic> payload,
   ) async {
-    await SyncService.instance.pushAllPending();
+    await SyncService.instance.trySync();
   }
 
   Future<bool> addTaskHistory(AddTaskHistoryPayload payload) async {

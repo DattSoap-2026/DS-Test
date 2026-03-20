@@ -182,11 +182,6 @@ class _SystemMastersScreenState extends State<SystemMastersScreen>
       isReadOnly: widget.isReadOnly,
       actions: [
         if (!widget.isReadOnly) ...[
-          IconButton(
-            icon: const Icon(Icons.sync, color: AppColors.info),
-            onPressed: _handleSyncDefaults,
-            tooltip: 'Sync Defaults',
-          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColors.info),
             onSelected: (val) {
@@ -547,21 +542,6 @@ class _SystemMastersScreenState extends State<SystemMastersScreen>
         ),
       ],
     );
-  }
-
-  Future<void> _handleSyncDefaults() async {
-    setState(() => _isLoading = true);
-    final result = await _service.syncDefaultData();
-    await _loadAllData();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Sync Complete: ${result['typesAdded']} types, ${result['catsAdded']} categories added',
-          ),
-        ),
-      );
-    }
   }
 
   Future<void> _handleFixSoapBase() async {

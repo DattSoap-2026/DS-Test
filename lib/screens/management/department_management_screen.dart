@@ -306,7 +306,7 @@ class _DepartmentManagementScreenState
     }
   }
 
-  Future<void> _handleSyncDefaults() async {
+  Future<void> _handleLoadDefaults() async {
     if (widget.isReadOnly) {
       _showReadOnlyWarning();
       return;
@@ -316,7 +316,7 @@ class _DepartmentManagementScreenState
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Syncing defaults...')));
+    ).showSnackBar(const SnackBar(content: Text('Loading defaults...')));
     await _settingsService.syncDefaultDepartments(
       _departments,
       user.id,
@@ -357,8 +357,8 @@ class _DepartmentManagementScreenState
                               ElevatedButton(
                                 onPressed: widget.isReadOnly
                                     ? null
-                                    : _handleSyncDefaults,
-                                child: const Text('Sync Defaults'),
+                                    : _handleLoadDefaults,
+                                child: const Text('Load Defaults'),
                               ),
                             ],
                           ),
@@ -663,6 +663,5 @@ class _DepartmentManagementScreenState
     );
   }
 }
-
 
 

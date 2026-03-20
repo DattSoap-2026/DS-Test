@@ -78,6 +78,7 @@ import '../../screens/bhatti/bhatti_dashboard_screen.dart';
 import '../../screens/sales/new_sale_screen.dart';
 import '../../screens/map/customers_map_screen.dart';
 import '../../screens/map/route_planner_screen.dart';
+import '../ui/auto_sync_status_indicator.dart';
 
 class WorkspaceTab {
   String path;
@@ -616,60 +617,6 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
     final userRole = ref.read(authProviderProvider).state.user?.role;
     if (userRole == null) return [];
     return navItemsForRole(userRole, position: NavPosition.bottom);
-  }
-
-  void handleManualSync({bool forceRefresh = false}) async {
-    final appSyncCoordinator = ref.read(appSyncCoordinatorProvider);
-    final authProvider = ref.read(authProviderProvider);
-    final user = authProvider.state.user;
-
-    if (user == null || appSyncCoordinator.isSyncing) return;
-
-    // Show feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          forceRefresh
-              ? 'Starting force sync (full pull)...'
-              : 'Starting manual synchronization...',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    try {
-      // Defer heavy sync to the next frame to avoid mouse tracker assertions
-      await Future<void>.delayed(Duration.zero);
-      if (!mounted) return;
-      final result = await appSyncCoordinator.syncAll(
-        user,
-        forceRefresh: forceRefresh,
-      );
-      await authProvider.refreshUser();
-      if (mounted) {
-        final strictSuccess = result.isStrictSuccess;
-        final content = strictSuccess
-            ? (forceRefresh
-                  ? 'Force sync completed!'
-                  : 'Sync completed successfully!')
-            : 'Sync completed with issues. '
-                  'Errors: ${result.criticalErrors.length}, '
-                  'Pending outbox: ${result.outboxPendingCount}, '
-                  'Conflicts: ${result.unresolvedConflictCount}.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(content),
-            backgroundColor: strictSuccess ? null : AppColors.warning,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Sync failed: $e')));
-      }
-    }
   }
 
   void _handleLogout() async {
@@ -1657,12 +1604,6 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
 
     return Actions(
       actions: {
-        SyncIntent: CallbackAction<SyncIntent>(
-          onInvoke: (_) {
-            handleManualSync();
-            return null;
-          },
-        ),
         NewTabIntent: CallbackAction<NewTabIntent>(
           onInvoke: (_) {
             _handleAddTab();
@@ -1818,15 +1759,6 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
                             icon: const Icon(Icons.arrow_back),
                             style: _topBarIconButtonStyle(context),
                           ),
-                        if (!isDesktop)
-                          IconButton(
-                            icon: _isOnline
-                                ? const Icon(Icons.sync)
-                                : const Icon(Icons.sync_disabled),
-                            style: _topBarIconButtonStyle(context),
-                            onPressed: () => handleManualSync(),
-                            tooltip: 'Refresh',
-                          ),
                         if (isReportRoute && isDesktop)
                           _isReportExporting
                               ? const Padding(
@@ -1850,6 +1782,7 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
                                       _printCurrentReportPage(currentPath),
                                 ),
                         if (isDesktop) _buildConnectionStatusChip(),
+                        const AutoSyncStatusIndicator(),
                         if (isDesktop)
                           Builder(
                             builder: (context) => IconButton(
@@ -1862,9 +1795,6 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
                           ),
                         if (isDesktop)
                           _buildThemeToggleButton(isDesktop: isDesktop),
-                        if (isDesktop) _buildSyncButton(),
-                        if (!isDesktop && !_isOnline)
-                          _buildOfflineOnlyStatusIcon(),
                         _buildNotificationBadge(),
                         _buildUserMenu(user, isDesktop: isDesktop),
                       ],
@@ -1903,33 +1833,6 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
         ),
         floatingActionButton: null,
         bottomNavigationBar: showBottomNavBar ? _buildBottomNavBar() : null,
-      ),
-    );
-  }
-
-  Widget _buildSyncButton() {
-    final isSyncing = ref.watch(appSyncCoordinatorProvider).isSyncing;
-
-    return GestureDetector(
-      onLongPress: isSyncing
-          ? null
-          : () => handleManualSync(forceRefresh: true),
-      child: IconButton(
-        icon: isSyncing
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              )
-            : const Icon(Icons.sync),
-        style: _topBarIconButtonStyle(context),
-        onPressed: isSyncing ? null : () => handleManualSync(),
-        tooltip: isSyncing
-            ? 'Syncing...'
-            : 'Sync (long-press for Force Refresh)',
       ),
     );
   }
@@ -2003,20 +1906,6 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildOfflineOnlyStatusIcon() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Tooltip(
-        message: 'Offline',
-        child: Icon(
-          Icons.cloud_off_outlined,
-          size: 18,
-          color: AppColors.warning,
-        ),
       ),
     );
   }
@@ -2361,10 +2250,6 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
               _navigateFromMenu('/dashboard/settings');
               return;
             }
-            if (val == 'refresh') {
-              handleManualSync();
-              return;
-            }
             if (val == 'assistant') {
               Scaffold.of(menuContext).openEndDrawer();
               return;
@@ -2474,17 +2359,6 @@ class MainScaffoldState extends rp.ConsumerState<MainScaffold>
                     Icon(Icons.settings_outlined, size: 18),
                     SizedBox(width: 12),
                     Text('Settings'),
-                  ],
-                ),
-              ),
-            if (!isDesktop)
-              const PopupMenuItem(
-                value: 'refresh',
-                child: Row(
-                  children: [
-                    Icon(Icons.sync_rounded, size: 18),
-                    SizedBox(width: 12),
-                    Text('Refresh'),
                   ],
                 ),
               ),

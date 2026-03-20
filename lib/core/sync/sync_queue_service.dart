@@ -82,6 +82,40 @@ class SyncQueueService {
     }
   }
 
+  /// Returns all queue entries, including permanently failed ones.
+  Future<List<SyncQueue>> getAllQueueItems() async {
+    try {
+      return await _isarService.syncQueues.where().findAll();
+    } catch (error, stackTrace) {
+      SyncLogger.instance.e(
+        'Failed to load all sync queue items',
+        error: error,
+        stackTrace: stackTrace,
+        time: DateTime.now(),
+      );
+      return const <SyncQueue>[];
+    }
+  }
+
+  /// Returns queue entries that exhausted their retry budget.
+  Future<List<SyncQueue>> getFailedQueue() async {
+    try {
+      return await _isarService.syncQueues
+          .filter()
+          .isFailedEqualTo(true)
+          .sortByCreatedAt()
+          .findAll();
+    } catch (error, stackTrace) {
+      SyncLogger.instance.e(
+        'Failed to load failed sync queue items',
+        error: error,
+        stackTrace: stackTrace,
+        time: DateTime.now(),
+      );
+      return const <SyncQueue>[];
+    }
+  }
+
   /// Returns the count of pending queue entries.
   Future<int> getPendingCount({String? collectionName}) async {
     final pending = await getPendingQueue();
@@ -118,6 +152,34 @@ class SyncQueueService {
         time: DateTime.now(),
       );
       return false;
+    }
+  }
+
+  /// Returns a queue entry for a specific collection/document pair.
+  Future<SyncQueue?> getQueueItem({
+    required String collectionName,
+    required String documentId,
+  }) async {
+    final normalizedCollection = collectionName.trim();
+    final normalizedDocumentId = documentId.trim();
+    if (normalizedCollection.isEmpty || normalizedDocumentId.isEmpty) {
+      return null;
+    }
+
+    try {
+      return await _isarService.syncQueues
+          .filter()
+          .collectionNameEqualTo(normalizedCollection)
+          .documentIdEqualTo(normalizedDocumentId)
+          .findFirst();
+    } catch (error, stackTrace) {
+      SyncLogger.instance.e(
+        'Failed to load sync queue item',
+        error: error,
+        stackTrace: stackTrace,
+        time: DateTime.now(),
+      );
+      return null;
     }
   }
 
@@ -227,6 +289,51 @@ class SyncQueueService {
     } catch (error, stackTrace) {
       SyncLogger.instance.e(
         'Failed to mark queue item as failed',
+        error: error,
+        stackTrace: stackTrace,
+        time: DateTime.now(),
+      );
+    }
+  }
+
+  /// Resets a failed queue item back to a retryable state.
+  Future<void> resetRetry({
+    required String collectionName,
+    required String documentId,
+  }) async {
+    try {
+      final current = await getQueueItem(
+        collectionName: collectionName,
+        documentId: documentId,
+      );
+      if (current == null) {
+        return;
+      }
+
+      await _isarService.isar.writeTxn(() async {
+        await _isarService.syncQueues.put(
+          current.copyWith(retryCount: 0, lastAttemptAt: null, isFailed: false),
+        );
+      });
+    } catch (error, stackTrace) {
+      SyncLogger.instance.e(
+        'Failed to reset sync queue retry state',
+        error: error,
+        stackTrace: stackTrace,
+        time: DateTime.now(),
+      );
+    }
+  }
+
+  /// Clears the durable queue.
+  Future<void> clearQueue() async {
+    try {
+      await _isarService.isar.writeTxn(() async {
+        await _isarService.syncQueues.clear();
+      });
+    } catch (error, stackTrace) {
+      SyncLogger.instance.e(
+        'Failed to clear sync queue',
         error: error,
         stackTrace: stackTrace,
         time: DateTime.now(),

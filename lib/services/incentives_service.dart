@@ -82,7 +82,7 @@ class IncentivesService extends BaseService {
         payload: payload,
       );
       if (db != null) {
-        await SyncService.instance.pushAllPending();
+        await SyncService.instance.trySync();
       }
       return true;
     } catch (e) {

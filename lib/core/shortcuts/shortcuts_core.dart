@@ -10,7 +10,6 @@ typedef ShortcutCallback = void Function(BuildContext context);
 class GlobalShortcutsWrapper extends StatelessWidget {
   final Widget child;
   final ShortcutCallback? onSearch; // Ctrl+K
-  final ShortcutCallback? onSync; // Ctrl+R
   final ShortcutCallback? onHelp; // Ctrl+/
   final ShortcutCallback? onNewItem; // Ctrl+N
   final ShortcutCallback? onNewTab; // Ctrl+T
@@ -21,7 +20,6 @@ class GlobalShortcutsWrapper extends StatelessWidget {
     super.key,
     required this.child,
     this.onSearch,
-    this.onSync,
     this.onHelp,
     this.onNewItem,
     this.onNewTab,
@@ -41,11 +39,6 @@ class GlobalShortcutsWrapper extends StatelessWidget {
         // Ctrl + K: Search / Command Palette
         const SingleActivator(LogicalKeyboardKey.keyK, control: true): () {
           onSearch?.call(context);
-        },
-
-        // Ctrl + R: Sync
-        const SingleActivator(LogicalKeyboardKey.keyR, control: true): () {
-          onSync?.call(context);
         },
 
         // Ctrl + /: Help
@@ -119,10 +112,6 @@ class SearchIntent extends Intent {
 
 class SaveIntent extends Intent {
   const SaveIntent();
-}
-
-class SyncIntent extends Intent {
-  const SyncIntent();
 }
 
 class HelpIntent extends Intent {

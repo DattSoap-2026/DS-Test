@@ -1,64 +1,75 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../services/sync_manager.dart';
+import '../../core/sync/sync_service.dart';
 
-/// WhatsApp-like auto-sync status indicator
-/// Shows sync status without requiring user interaction
+/// Read-only sync indicator driven by the SyncService stream.
 class AutoSyncStatusIndicator extends StatelessWidget {
-  final Color? iconColor;
-  final double iconSize;
-
   const AutoSyncStatusIndicator({
     super.key,
-    this.iconColor,
-    this.iconSize = 24.0,
+    this.iconSize = 18,
   });
+
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final effectiveColor = iconColor ?? theme.colorScheme.onSurface;
+    return StreamBuilder<SyncStatusSnapshot>(
+      stream: SyncService.instance.statusStream,
+      initialData: SyncService.instance.currentStatus,
+      builder: (context, snapshot) {
+        final status = snapshot.data ?? SyncService.instance.currentStatus;
+        final pendingCount = status.pendingCount + status.failedCount;
 
-    return Consumer<AppSyncCoordinator>(
-      builder: (context, appSyncCoordinator, _) {
-        // Syncing state
-        if (appSyncCoordinator.isSyncing) {
-          return Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: SizedBox(
-              width: iconSize,
-              height: iconSize,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(effectiveColor),
-              ),
-            ),
-          );
+        if (!status.isOnline && pendingCount <= 0) {
+          return const SizedBox.shrink();
         }
 
-        // Pending items
-        if (appSyncCoordinator.pendingCount > 0) {
+        if (!status.isOnline) {
           return Tooltip(
-            message: '${appSyncCoordinator.pendingCount} items pending sync',
-            child: Badge(
-              label: Text('${appSyncCoordinator.pendingCount}'),
-              child: Icon(
-                Icons.cloud_upload_outlined,
-                size: iconSize,
-                color: effectiveColor.withValues(alpha: 0.7),
+            message: 'Offline, $pendingCount pending',
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Badge(
+                isLabelVisible: pendingCount > 0,
+                label: Text('$pendingCount'),
+                child: Icon(
+                  Icons.cloud_off_rounded,
+                  size: iconSize,
+                  color: Colors.red.shade600,
+                ),
               ),
             ),
           );
         }
 
-        // All synced
+        if (status.isSyncing || pendingCount > 0) {
+          return Tooltip(
+            message: status.isSyncing ? 'Syncing' : '$pendingCount pending',
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: SizedBox(
+                width: iconSize,
+                height: iconSize,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Colors.amber.shade700,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
         return Tooltip(
-          message: 'All data synced',
-          child: Icon(
-            Icons.cloud_done_outlined,
-            size: iconSize,
-            color: Colors.green.withValues(alpha: 0.8),
+          message: 'All synced',
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Icon(
+              Icons.cloud_done_rounded,
+              size: iconSize,
+              color: Colors.green.shade600,
+            ),
           ),
         );
       },

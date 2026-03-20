@@ -222,48 +222,46 @@ class MasterDataSyncDelegate {
 
         final existingUnitsMap = {for (final u in existingUnitsList) u.name: u};
 
-        await _dbService.db.writeTxn(() async {
-          for (final doc in snapshot.docs) {
-            final data = Map<String, dynamic>.from(
-              doc.data() as Map<String, dynamic>,
-            );
-            final name = (data['name']?.toString() ?? doc.id).trim();
-            if (name.isEmpty) continue;
-            final updatedAt = parseRemoteDate(data['updatedAt']);
-            if (updatedAt.isAfter(maxUpdatedAt)) {
-              maxUpdatedAt = updatedAt;
-            }
-
-            final existing = existingUnitsMap[name];
-            if (existing != null &&
-                (existing.syncStatus == SyncStatus.pending ||
-                    existing.syncStatus == SyncStatus.conflict)) {
-              await detectAndFlagConflict(
-                entityId: existing.id,
-                entityType: 'units',
-                serverData: data,
-                localEntity: existing,
-                localToJson: (e) => _unitToJson(e as UnitEntity),
-              );
-              continue;
-            }
-
-            final unit = existing ?? UnitEntity();
-            final remoteId = data['id']?.toString().trim();
-            unit.id = (remoteId != null && remoteId.isNotEmpty)
-                ? remoteId
-                : name;
-            unit.name = name;
-            unit.createdAt =
-                data['createdAt']?.toString() ??
-                existing?.createdAt ??
-                updatedAt.toIso8601String();
-            unit.isDeleted = data['isDeleted'] == true;
-            unit.updatedAt = updatedAt;
-            unit.syncStatus = SyncStatus.synced;
-            await _dbService.units.put(unit);
+        final unitsToPut = <UnitEntity>[];
+        for (final doc in snapshot.docs) {
+          final data = Map<String, dynamic>.from(
+            doc.data() as Map<String, dynamic>,
+          );
+          final name = (data['name']?.toString() ?? doc.id).trim();
+          if (name.isEmpty) continue;
+          final updatedAt = parseRemoteDate(data['updatedAt']);
+          if (updatedAt.isAfter(maxUpdatedAt)) {
+            maxUpdatedAt = updatedAt;
           }
-        });
+
+          final existing = existingUnitsMap[name];
+          if (existing != null) {
+            await detectAndFlagConflict(
+              entityId: existing.id,
+              entityType: 'units',
+              serverData: data,
+              localEntity: existing,
+              localToJson: (e) => _unitToJson(e as UnitEntity),
+            );
+            continue;
+          }
+
+          final unit = UnitEntity();
+          final remoteId = data['id']?.toString().trim();
+          unit.id = (remoteId != null && remoteId.isNotEmpty) ? remoteId : name;
+          unit.name = name;
+          unit.createdAt =
+              data['createdAt']?.toString() ?? updatedAt.toIso8601String();
+          unit.isDeleted = data['isDeleted'] == true;
+          unit.updatedAt = updatedAt;
+          unit.syncStatus = SyncStatus.synced;
+          unitsToPut.add(unit);
+        }
+        if (unitsToPut.isNotEmpty) {
+          await _dbService.db.writeTxn(() async {
+            await _dbService.units.putAll(unitsToPut);
+          });
+        }
         pulledCount = snapshot.docs.length;
         await setLastSyncTimestamp('units', maxUpdatedAt);
       }
@@ -402,48 +400,48 @@ class MasterDataSyncDelegate {
           for (final c in existingCategoriesList) c.id: c,
         };
 
-        await _dbService.db.writeTxn(() async {
-          for (final doc in snapshot.docs) {
-            final data = Map<String, dynamic>.from(
-              doc.data() as Map<String, dynamic>,
-            );
-            final id = (data['id']?.toString() ?? doc.id).trim();
-            if (id.isEmpty) continue;
-            final updatedAt = parseRemoteDate(data['updatedAt']);
-            if (updatedAt.isAfter(maxUpdatedAt)) {
-              maxUpdatedAt = updatedAt;
-            }
-
-            final existing = existingCategoriesMap[id];
-            if (existing != null &&
-                (existing.syncStatus == SyncStatus.pending ||
-                    existing.syncStatus == SyncStatus.conflict)) {
-              await detectAndFlagConflict(
-                entityId: id,
-                entityType: 'product_categories',
-                serverData: data,
-                localEntity: existing,
-                localToJson: (e) => _categoryToJson(e as CategoryEntity),
-              );
-              continue;
-            }
-
-            final category = existing ?? CategoryEntity();
-            category.id = id;
-            category.name = data['name']?.toString() ?? existing?.name ?? '';
-            category.itemType = normalizeProductItemTypeLabel(
-              data['itemType']?.toString() ?? existing?.itemType ?? '',
-            );
-            category.createdAt =
-                data['createdAt']?.toString() ??
-                existing?.createdAt ??
-                updatedAt.toIso8601String();
-            category.isDeleted = data['isDeleted'] == true;
-            category.updatedAt = updatedAt;
-            category.syncStatus = SyncStatus.synced;
-            await _dbService.categories.put(category);
+        final categoriesToPut = <CategoryEntity>[];
+        for (final doc in snapshot.docs) {
+          final data = Map<String, dynamic>.from(
+            doc.data() as Map<String, dynamic>,
+          );
+          final id = (data['id']?.toString() ?? doc.id).trim();
+          if (id.isEmpty) continue;
+          final updatedAt = parseRemoteDate(data['updatedAt']);
+          if (updatedAt.isAfter(maxUpdatedAt)) {
+            maxUpdatedAt = updatedAt;
           }
-        });
+
+          final existing = existingCategoriesMap[id];
+          if (existing != null) {
+            await detectAndFlagConflict(
+              entityId: id,
+              entityType: 'product_categories',
+              serverData: data,
+              localEntity: existing,
+              localToJson: (e) => _categoryToJson(e as CategoryEntity),
+            );
+            continue;
+          }
+
+          final category = CategoryEntity();
+          category.id = id;
+          category.name = data['name']?.toString() ?? '';
+          category.itemType = normalizeProductItemTypeLabel(
+            data['itemType']?.toString() ?? '',
+          );
+          category.createdAt =
+              data['createdAt']?.toString() ?? updatedAt.toIso8601String();
+          category.isDeleted = data['isDeleted'] == true;
+          category.updatedAt = updatedAt;
+          category.syncStatus = SyncStatus.synced;
+          categoriesToPut.add(category);
+        }
+        if (categoriesToPut.isNotEmpty) {
+          await _dbService.db.writeTxn(() async {
+            await _dbService.categories.putAll(categoriesToPut);
+          });
+        }
         pulledCount = snapshot.docs.length;
         await setLastSyncTimestamp('product_categories', maxUpdatedAt);
       }
@@ -580,59 +578,57 @@ class MasterDataSyncDelegate {
 
         final existingTypesMap = {for (final t in existingTypesList) t.id: t};
 
-        await _dbService.db.writeTxn(() async {
-          for (final doc in snapshot.docs) {
-            final data = Map<String, dynamic>.from(
-              doc.data() as Map<String, dynamic>,
-            );
-            final id = (data['id']?.toString() ?? doc.id).trim();
-            if (id.isEmpty) continue;
-            final updatedAt = parseRemoteDate(data['updatedAt']);
-            if (updatedAt.isAfter(maxUpdatedAt)) {
-              maxUpdatedAt = updatedAt;
-            }
-
-            final existing = existingTypesMap[id];
-            if (existing != null &&
-                (existing.syncStatus == SyncStatus.pending ||
-                    existing.syncStatus == SyncStatus.conflict)) {
-              await detectAndFlagConflict(
-                entityId: id,
-                entityType: 'product_types',
-                serverData: data,
-                localEntity: existing,
-                localToJson: (e) => _productTypeToJson(e as ProductTypeEntity),
-              );
-              continue;
-            }
-
-            final type = existing ?? ProductTypeEntity();
-            type.id = id;
-            type.name = normalizeProductItemTypeLabel(
-              data['name']?.toString() ?? existing?.name ?? '',
-            );
-            type.description = data['description']?.toString();
-            type.iconName = data['iconName']?.toString();
-            type.color = data['color']?.toString();
-            if (data['tabs'] is List) {
-              type.tabs = (data['tabs'] as List)
-                  .map((e) => e.toString())
-                  .toList();
-            }
-            type.defaultUom = data['defaultUom']?.toString();
-            type.defaultGst = (data['defaultGst'] as num?)?.toDouble();
-            type.skuPrefix = data['skuPrefix']?.toString();
-            type.displayUnit = data['displayUnit']?.toString();
-            type.createdAt =
-                data['createdAt']?.toString() ??
-                existing?.createdAt ??
-                updatedAt.toIso8601String();
-            type.isDeleted = data['isDeleted'] == true;
-            type.updatedAt = updatedAt;
-            type.syncStatus = SyncStatus.synced;
-            await _dbService.productTypes.put(type);
+        final typesToPut = <ProductTypeEntity>[];
+        for (final doc in snapshot.docs) {
+          final data = Map<String, dynamic>.from(
+            doc.data() as Map<String, dynamic>,
+          );
+          final id = (data['id']?.toString() ?? doc.id).trim();
+          if (id.isEmpty) continue;
+          final updatedAt = parseRemoteDate(data['updatedAt']);
+          if (updatedAt.isAfter(maxUpdatedAt)) {
+            maxUpdatedAt = updatedAt;
           }
-        });
+
+          final existing = existingTypesMap[id];
+          if (existing != null) {
+            await detectAndFlagConflict(
+              entityId: id,
+              entityType: 'product_types',
+              serverData: data,
+              localEntity: existing,
+              localToJson: (e) => _productTypeToJson(e as ProductTypeEntity),
+            );
+            continue;
+          }
+
+          final type = ProductTypeEntity();
+          type.id = id;
+          type.name = normalizeProductItemTypeLabel(
+            data['name']?.toString() ?? '',
+          );
+          type.description = data['description']?.toString();
+          type.iconName = data['iconName']?.toString();
+          type.color = data['color']?.toString();
+          if (data['tabs'] is List) {
+            type.tabs = (data['tabs'] as List).map((e) => e.toString()).toList();
+          }
+          type.defaultUom = data['defaultUom']?.toString();
+          type.defaultGst = (data['defaultGst'] as num?)?.toDouble();
+          type.skuPrefix = data['skuPrefix']?.toString();
+          type.displayUnit = data['displayUnit']?.toString();
+          type.createdAt =
+              data['createdAt']?.toString() ?? updatedAt.toIso8601String();
+          type.isDeleted = data['isDeleted'] == true;
+          type.updatedAt = updatedAt;
+          type.syncStatus = SyncStatus.synced;
+          typesToPut.add(type);
+        }
+        if (typesToPut.isNotEmpty) {
+          await _dbService.db.writeTxn(() async {
+            await _dbService.productTypes.putAll(typesToPut);
+          });
+        }
         pulledCount = snapshot.docs.length;
         await setLastSyncTimestamp('product_types', maxUpdatedAt);
       }

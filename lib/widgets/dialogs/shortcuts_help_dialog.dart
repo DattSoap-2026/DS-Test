@@ -104,7 +104,6 @@ class ShortcutsHelpDialog extends StatelessWidget {
                       'Ctrl + /',
                       'Show Keyboard Shortcuts',
                     ),
-                    _buildShortcut(context, 'Ctrl + R', 'Sync Data (Manual)'),
                     _buildShortcut(context, 'Ctrl + S', 'Save Current Form'),
                     _buildShortcut(context, 'Esc', 'Close Dialog / Cancel'),
                   ]),

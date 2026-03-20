@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:isar/isar.dart';
+import '../core/sync/collection_registry.dart';
 import '../core/sync/sync_queue_service.dart';
 import '../core/sync/sync_service.dart';
 import 'database_service.dart';
@@ -127,7 +128,7 @@ class MasterDataService extends OfflineFirstService {
       operation: action,
       payload: payload,
     );
-    await SyncService.instance.pushAllPending();
+    await SyncService.instance.trySync();
   }
 
   // Cache storage
@@ -751,6 +752,8 @@ class MasterDataService extends OfflineFirstService {
   ) async {
     // 1. Update Local ISAR
     final now = DateTime.now();
+    final queuedProducts = <ProductEntity>[];
+    final queuedCategories = <CategoryEntity>[];
     try {
       await dbService.db.writeTxn(() async {
         final localProducts = await dbService.products
@@ -764,6 +767,7 @@ class MasterDataService extends OfflineFirstService {
             p.syncStatus = SyncStatus.pending;
           }
           await dbService.products.put(p);
+          queuedProducts.add(p);
         }
 
         final localCategories = await dbService.categories
@@ -778,55 +782,35 @@ class MasterDataService extends OfflineFirstService {
             c.syncStatus = SyncStatus.pending;
           }
           await dbService.categories.put(c);
+          queuedCategories.add(c);
         }
       });
     } catch (e) {
       developer.log('Isar propagation failed: $e');
     }
 
-    final firestore = db;
-    if (firestore == null) return;
-
     try {
-      final remote = FirestoreQueryDelegate(firestore);
-      final products = await remote.getCollection(
-        collection: 'products',
-        filters: <FirestoreQueryFilter>[
-          FirestoreQueryFilter(
-            field: 'itemType',
-            operator: FirestoreQueryOperator.isEqualTo,
-            value: oldName,
-          ),
-        ],
-      );
-
-      for (final doc in products.docs) {
-        await const MasterDataRemoteWriteDelegate().updateDocument(
-          doc.reference,
-          {'itemType': newName},
+      for (final product in queuedProducts) {
+        await SyncQueueService.instance.addToQueue(
+          collectionName: CollectionRegistry.products,
+          documentId: product.id,
+          operation: 'update',
+          payload: product.toJson(),
         );
       }
-
-      // Also update categories that reference this type
-      final cats = await remote.getCollection(
-        collection: 'product_categories',
-        filters: <FirestoreQueryFilter>[
-          FirestoreQueryFilter(
-            field: 'itemType',
-            operator: FirestoreQueryOperator.isEqualTo,
-            value: oldName,
-          ),
-        ],
-      );
-
-      for (final doc in cats.docs) {
-        await const MasterDataRemoteWriteDelegate().updateDocument(
-          doc.reference,
-          {'itemType': newName},
+      for (final category in queuedCategories) {
+        await SyncQueueService.instance.addToQueue(
+          collectionName: CollectionRegistry.productCategories,
+          documentId: category.id,
+          operation: 'update',
+          payload: category.toJson(),
         );
+      }
+      if (queuedProducts.isNotEmpty || queuedCategories.isNotEmpty) {
+        await SyncService.instance.trySync();
       }
     } catch (e) {
-      developer.log('Propagation failed: $e');
+      developer.log('Queue propagation failed: $e');
     }
   }
 
@@ -943,6 +927,7 @@ class MasterDataService extends OfflineFirstService {
     String newType,
   ) async {
     final now = DateTime.now();
+    final queuedProducts = <ProductEntity>[];
     try {
       await dbService.db.writeTxn(() async {
         final localProducts = await dbService.products
@@ -960,41 +945,27 @@ class MasterDataService extends OfflineFirstService {
             p.syncStatus = SyncStatus.pending;
           }
           await dbService.products.put(p);
+          queuedProducts.add(p);
         }
       });
     } catch (e) {
       developer.log('Local category propagation failed: $e');
     }
 
-    final firestore = db;
-    if (firestore == null) return;
-
     try {
-      // Find products that match both old name and old type to be safe
-      final products = await FirestoreQueryDelegate(firestore).getCollection(
-        collection: 'products',
-        filters: <FirestoreQueryFilter>[
-          FirestoreQueryFilter(
-            field: 'category',
-            operator: FirestoreQueryOperator.isEqualTo,
-            value: oldName,
-          ),
-          FirestoreQueryFilter(
-            field: 'itemType',
-            operator: FirestoreQueryOperator.isEqualTo,
-            value: oldType,
-          ),
-        ],
-      );
-
-      for (final doc in products.docs) {
-        await const MasterDataRemoteWriteDelegate().updateDocument(
-          doc.reference,
-          {'category': newName, 'itemType': newType},
+      for (final product in queuedProducts) {
+        await SyncQueueService.instance.addToQueue(
+          collectionName: CollectionRegistry.products,
+          documentId: product.id,
+          operation: 'update',
+          payload: product.toJson(),
         );
       }
+      if (queuedProducts.isNotEmpty) {
+        await SyncService.instance.trySync();
+      }
     } catch (e) {
-      developer.log('Category propagation failed: $e');
+      developer.log('Category queue propagation failed: $e');
     }
   }
 

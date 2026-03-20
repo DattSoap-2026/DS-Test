@@ -12,7 +12,6 @@ import '../../services/sales_service.dart';
 import '../../services/database_service.dart';
 import '../sales/sales_history_screen.dart';
 import '../sales/salesman_kpi_drilldown_screen.dart';
-import '../../services/sync_manager.dart';
 import '../../widgets/ui/offline_banner.dart';
 import '../../widgets/dashboard/kpi_card.dart';
 import '../../widgets/ui/unified_card.dart';
@@ -67,7 +66,6 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
       if (!mounted) return;
       _startSalesWatcher();
       _loadDashboardData();
-      Future.microtask(_runBackgroundSync);
     });
   }
 
@@ -113,16 +111,6 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
       if (!mounted) return;
       _loadDashboardData();
     });
-  }
-
-  Future<void> _runBackgroundSync() async {
-    try {
-      await context.read<AppSyncCoordinator>().syncOfflineSalesViaService();
-    } catch (_) {
-      // Best-effort sync only; dashboard should remain responsive.
-    }
-    if (!mounted) return;
-    await _loadDashboardData();
   }
 
   Future<void> _loadDashboardData({bool forcePageLoader = false}) async {
